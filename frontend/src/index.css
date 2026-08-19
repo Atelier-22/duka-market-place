@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  DESIGN SYSTEM NOTES (see docs/ARCHITECTURE.md for the product rationale)
+  ---------------------------------------------------------------------
+  Palette:
+    brand-green-deep   #0B3D2E  — hero backgrounds, headers, high-contrast text on white
+    brand-green         #137A4C  — primary buttons, links, active states
+    brand-green-fresh   #1FAE6B  — accents, success, glows
+    brand-green-mist    #E7F5EC  — tinted panel backgrounds
+    brand-yellow         #F2B705  — earnings/shopper energy, ratings, highlights
+    brand-red             #D6493B  — warnings, urgent status, destructive actions
+  Type:
+    display = Fraunces (a warm, slightly irregular serif — used ONLY for
+      hero headlines and section titles, at large sizes, to avoid the
+      generic-SaaS-sans-everywhere look)
+    sans = Inter — everything else (body, UI labels, numbers)
+  Signature element: the "liquid glass" panel — a translucent, blurred,
+    softly-bordered card that floats over a layered gradient/blob
+    background. Used consistently for every card-like surface across the
+    whole product so the glass language reads as intentional, not decorative.
+*/
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply font-sans text-brand-ink antialiased;
+  background: #F3FBF6;
+}
+
+/* Reduced motion respect */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+::selection {
+  background: rgba(31, 174, 107, 0.25);
+}
+
+/* Visible keyboard focus everywhere, glass-appropriate */
+:focus-visible {
+  outline: 2px solid #1FAE6B;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ----------------------------------------------------------------------
+   Atmospheric background: soft green/white gradient with subtle colored
+   blobs. Applied once at the app shell level, sits behind everything.
+   ---------------------------------------------------------------------- */
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 15% 0%, #EAF8EF 0%, transparent 55%),
+    radial-gradient(90% 70% at 100% 10%, #FBF3D8 0%, transparent 50%),
+    linear-gradient(180deg, #F6FBF8 0%, #F1F8F3 40%, #EDF6F0 100%);
+}
+
+.atmosphere::before,
+.atmosphere::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(70px);
+  opacity: 0.5;
+}
+
+.atmosphere::before {
+  width: 42vw;
+  height: 42vw;
+  background: radial-gradient(circle, rgba(31,174,107,0.35), transparent 70%);
+  top: -10%;
+  left: -8%;
+}
+
+.atmosphere::after {
+  width: 34vw;
+  height: 34vw;
+  background: radial-gradient(circle, rgba(242,183,5,0.28), transparent 70%);
+  bottom: -12%;
+  right: -6%;
+}
+
+.atmosphere-blob-red {
+  position: fixed;
+  z-index: -1;
+  width: 26vw;
+  height: 26vw;
+  border-radius: 999px;
+  filter: blur(80px);
+  opacity: 0.16;
+  background: radial-gradient(circle, rgba(214,73,59,0.6), transparent 70%);
+  top: 35%;
+  left: 45%;
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------------------
+   Glass primitive — used by <GlassCard/> and any element wanting the look.
+   ---------------------------------------------------------------------- */
+.glass {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 8px 32px 0 rgba(11, 61, 46, 0.10),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+}
+
+.glass-deep {
+  background: rgba(11, 61, 46, 0.72);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.glass-hover {
+  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 240ms ease;
+}
+.glass-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 60px -10px rgba(11, 61, 46, 0.25);
+}
+
+.text-gradient-brand {
+  background: linear-gradient(100deg, #0B3D2E 0%, #137A4C 45%, #1FAE6B 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.shimmer-bg {
+  background: linear-gradient(90deg, #E7F5EC 25%, #FFFFFF 50%, #E7F5EC 75%);
+  background-size: 200% 100%;
+}
