@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { BRAND } from '../../config/brand';
-import { DukaMark } from '../ui/DukaLogo';
+import { DukaLockup } from '../ui/DukaLogo';
 import { GlassButton } from '../ui/GlassButton';
 import { useAuth } from '../../context/AuthContext';
 
@@ -26,10 +26,9 @@ export function PublicNavbar() {
 
   return (
     <header className="sticky top-0 z-40 px-4 pt-4">
-      <nav className="glass mx-auto flex max-w-6xl items-center justify-between rounded-full px-5 py-3">
-        <Link to="/" className="flex items-center gap-2">
-          <DukaMark size={32} />
-          <span className="font-display text-lg font-semibold text-brand-green-deep">{BRAND.name}</span>
+      <nav className="glass mx-auto flex max-w-6xl items-center justify-between rounded-3xl px-5 py-2.5">
+        <Link to="/" aria-label={`${BRAND.name} home`}>
+          <DukaLockup markSize={30} />
         </Link>
 
         <div className="hidden items-center gap-6 md:flex">
