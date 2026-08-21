@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { api, apiErrorMessage } from '../services/api';
+import { clearSession, getAccessToken, setSession } from '../services/session';
 import { LinkedAccount, User, UserRole } from '../types';
 
 interface AuthContextValue {
@@ -24,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const loadMe = useCallback(async () => {
-    const token = localStorage.getItem('duka_access_token');
+    const token = getAccessToken();
     if (!token) {
       setIsLoading(false);
       return;
@@ -34,8 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(res.data.user);
       setLinkedAccounts(res.data.linkedAccounts ?? []);
     } catch {
-      localStorage.removeItem('duka_access_token');
-      localStorage.removeItem('duka_refresh_token');
+      clearSession();
     } finally {
       setIsLoading(false);
     }
@@ -45,9 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadMe();
   }, [loadMe]);
 
-  function adoptSession(data: { user: User; accessToken: string; refreshToken: string; linkedAccounts?: LinkedAccount[] }) {
-    localStorage.setItem('duka_access_token', data.accessToken);
-    localStorage.setItem('duka_refresh_token', data.refreshToken);
+  /**
+   * @param remember whether this becomes the session a newly opened tab starts
+   *   from. True for signing in; false when this tab changes account on its own
+   *   — switching to the admin here must not decide what a later tab becomes,
+   *   which is the whole reason every tab used to follow the last one.
+   */
+  function adoptSession(
+    data: { user: User; accessToken: string; refreshToken: string; linkedAccounts?: LinkedAccount[] },
+    remember = true
+  ) {
+    setSession(data.accessToken, data.refreshToken, remember);
     setUser(data.user);
     setLinkedAccounts(data.linkedAccounts ?? []);
   }
@@ -73,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function switchRole(role: UserRole) {
     try {
       const res = await api.post('/auth/switch-role', { role });
-      adoptSession({ ...res.data, linkedAccounts });
+      adoptSession({ ...res.data, linkedAccounts }, false);
     } catch (err) {
       throw new Error(apiErrorMessage(err));
     }
@@ -83,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function switchAccount(userId: string): Promise<UserRole> {
     try {
       const res = await api.post('/auth/switch-account', { userId });
-      adoptSession(res.data);
+      adoptSession(res.data, false);
       return res.data.user.role as UserRole;
     } catch (err) {
       throw new Error(apiErrorMessage(err));
@@ -91,8 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
-    localStorage.removeItem('duka_access_token');
-    localStorage.removeItem('duka_refresh_token');
+    clearSession();
     setUser(null);
     setLinkedAccounts([]);
   }

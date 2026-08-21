@@ -1,11 +1,12 @@
 import axios from 'axios';
+import { clearSession, getAccessToken, getRefreshToken, setAccessToken } from './session';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api';
 
 export const api = axios.create({ baseURL: API_URL });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('duka_access_token');
+  const token = getAccessToken();
   if (token) {
     config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
@@ -23,7 +24,7 @@ api.interceptors.response.use(
     const original = error.config;
     if (error.response?.status === 401 && !original._retried) {
       original._retried = true;
-      const refreshToken = localStorage.getItem('duka_refresh_token');
+      const refreshToken = getRefreshToken();
       if (!refreshToken) return Promise.reject(error);
 
       refreshing =
@@ -31,12 +32,13 @@ api.interceptors.response.use(
         axios
           .post(`${API_URL}/auth/refresh`, { refreshToken })
           .then((r) => {
-            localStorage.setItem('duka_access_token', r.data.accessToken);
+            // This tab's token only. A refresh is not a sign-in and must not
+            // reach across into the other tabs' sessions.
+            setAccessToken(r.data.accessToken);
             return r.data.accessToken as string;
           })
           .catch(() => {
-            localStorage.removeItem('duka_access_token');
-            localStorage.removeItem('duka_refresh_token');
+            clearSession();
             return null;
           })
           .finally(() => {

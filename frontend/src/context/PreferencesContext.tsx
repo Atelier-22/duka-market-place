@@ -53,10 +53,19 @@ const PreferencesContext = createContext<PreferencesContextValue | undefined>(un
 
 const LOCAL_KEY = 'duka_preferences';
 
-/** Appearance must survive a reload before /me returns, so it is mirrored locally. */
+/**
+ * Appearance must survive a reload before /me returns, so it is mirrored.
+ *
+ * Per tab, for the same reason the session is: two tabs can be two different
+ * accounts with two different themes, and a shared mirror meant whichever tab
+ * changed last decided what the others painted for the first moment after a
+ * reload. localStorage is still written, but only as the seed a brand-new tab
+ * paints from — a tab with its own copy never reads it.
+ */
 function readLocal(): Preferences {
   try {
-    const raw = localStorage.getItem(LOCAL_KEY);
+    const own = sessionStorage.getItem(LOCAL_KEY);
+    const raw = own ?? localStorage.getItem(LOCAL_KEY);
     return raw ? { ...DEFAULTS, ...JSON.parse(raw) } : DEFAULTS;
   } catch {
     return DEFAULTS;
@@ -64,9 +73,9 @@ function readLocal(): Preferences {
 }
 
 function writeLocal(prefs: Preferences) {
-  try {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(prefs));
-  } catch {
+  const json = JSON.stringify(prefs);
+  try { sessionStorage.setItem(LOCAL_KEY, json); } catch { /* blocked storage */ }
+  try { localStorage.setItem(LOCAL_KEY, json); } catch {
     // Private windows and blocked storage — the server copy still holds.
   }
 }
