@@ -44,7 +44,7 @@ export function RegisterPage() {
       <GlassCard glow="green" padding="lg" className="w-full">
         {/* The logo, on the two pages where someone is deciding whether
             they trust this site with a password. */}
-        <DukaMark size={40} className="text-brand-green-deep" />
+        <DukaMark size={48} />
         <h1 className="mt-4 font-display text-2xl font-medium text-brand-green-deep">Create your account</h1>
         <p className="mt-1 text-sm text-brand-ink/60">Join as a customer or a shopper.</p>
 

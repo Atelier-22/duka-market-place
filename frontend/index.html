@@ -6,12 +6,16 @@
   <title>Duka — If you want it, we find it.</title>
   <meta name="description" content="Duka connects you with a verified local shopper who goes to the market, shop, or seller you name, buys what you need, and delivers it to your door." />
 
-  <!-- The tab icon. SVG so it stays sharp at every size a browser asks for,
-       instead of the default globe. The .ico line is a fallback for older
-       browsers that ignore SVG favicons; both point at the same mark. -->
-  <link rel="icon" type="image/svg+xml" href="/duka-mark.svg" />
-  <link rel="alternate icon" href="/duka-mark.svg" />
-  <link rel="apple-touch-icon" href="/duka-mark.svg" />
+  <!-- The tab icon is the mark on its own, not the full lockup: the wordmark
+       and strapline turn to a smudge below about 64px, and a favicon is 16.
+       Sizes are declared so the browser picks the right one instead of
+       downscaling a large image itself. -->
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <!-- iOS composites this onto black, so it is the one icon with a solid plate. -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
 
   <!-- Tints the browser chrome on Android and the status bar on iOS, so the

@@ -9,7 +9,7 @@ export function PublicFooter() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
             <p className="flex items-center gap-2 font-display text-xl font-semibold text-white">
-              <DukaMark size={26} />
+              <DukaMark size={28} variant="light" />
               {BRAND.name}
             </p>
             <p className="mt-2 text-sm text-white/60">{BRAND.tagline}</p>

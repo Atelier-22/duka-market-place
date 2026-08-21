@@ -28,7 +28,7 @@ export function PublicNavbar() {
     <header className="sticky top-0 z-40 px-4 pt-4">
       <nav className="glass mx-auto flex max-w-6xl items-center justify-between rounded-full px-5 py-3">
         <Link to="/" className="flex items-center gap-2">
-          <DukaMark size={30} className="text-brand-green-deep" />
+          <DukaMark size={32} />
           <span className="font-display text-lg font-semibold text-brand-green-deep">{BRAND.name}</span>
         </Link>
 

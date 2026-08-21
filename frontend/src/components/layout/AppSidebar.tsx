@@ -55,15 +55,11 @@ export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
     >
       <div className={`flex items-center ${collapsed ? 'flex-col gap-2' : 'gap-2 px-1'}`}>
         {collapsed && (
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-white">
-            <DukaMark size={21} />
-          </span>
+          <DukaMark size={34} />
         )}
         {!collapsed && (
           <>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-white">
-              <DukaMark size={21} />
-            </span>
+            <DukaMark size={32} />
             <div className="min-w-0">
               <p className="truncate font-display text-base font-semibold text-brand-green-deep">{BRAND.name}</p>
               <p className="text-[11px] uppercase tracking-wide text-brand-ink/40">{roleLabel}</p>
