@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { LoadingState } from '../../components/ui/LoadingState';
 
 export function AdminShoppersPage() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => { api.get('/admin/shoppers').then((r) => setRows(r.data.shoppers)).finally(() => setLoading(false)); }, []);
@@ -23,7 +25,11 @@ export function AdminShoppersPage() {
           </thead>
           <tbody>
             {rows.map((s) => (
-              <tr key={s.id} className="border-b border-brand-green/5 last:border-0">
+              <tr
+                key={s.id}
+                onClick={() => navigate(`/admin/shoppers/${s.id}`)}
+                className="cursor-pointer border-b border-brand-green/5 transition-colors last:border-0 hover:bg-brand-green-mist/50"
+              >
                 <td className="px-4 py-3 font-medium">{s.full_name}</td>
                 <td className="px-4 py-3 text-brand-ink/60">{s.phone}</td>
                 <td className="px-4 py-3"><StatusBadge status={s.verification_status} /></td>

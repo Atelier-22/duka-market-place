@@ -35,7 +35,10 @@ import { OrderMessagesPage } from './pages/shared/OrderMessagesPage';
 import { SettingsPage } from './pages/shared/SettingsPage';
 import { ChatListPage } from './pages/shared/ChatListPage';
 
-import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminOverviewPage } from './pages/admin/AdminOverviewPage';
+import { AdminCustomerDetailPage } from './pages/admin/AdminCustomerDetailPage';
+import { AdminShopperDetailPage } from './pages/admin/AdminShopperDetailPage';
+import { AdminOrderDetailPage } from './pages/admin/AdminOrderDetailPage';
 import { AdminCustomersPage } from './pages/admin/AdminCustomersPage';
 import { AdminShoppersPage } from './pages/admin/AdminShoppersPage';
 import { AdminVerificationsPage } from './pages/admin/AdminVerificationsPage';
@@ -95,12 +98,15 @@ export default function App() {
         {/* Admin panel */}
         <Route element={<ProtectedRoute allow={['admin']} />}>
           <Route element={<AdminLayout />}>
-            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin" element={<AdminOverviewPage />} />
             <Route path="/admin/customers" element={<AdminCustomersPage />} />
+            <Route path="/admin/customers/:id" element={<AdminCustomerDetailPage />} />
             <Route path="/admin/shoppers" element={<AdminShoppersPage />} />
+            <Route path="/admin/shoppers/:id" element={<AdminShopperDetailPage />} />
             <Route path="/admin/verifications" element={<AdminVerificationsPage />} />
             <Route path="/admin/requests" element={<AdminRequestsPage />} />
             <Route path="/admin/orders" element={<AdminOrdersPage />} />
+            <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
             <Route path="/admin/disputes" element={<AdminDisputesPage />} />
             <Route path="/admin/fees" element={<AdminFeesPage />} />
           </Route>

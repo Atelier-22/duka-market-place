@@ -10,7 +10,8 @@
     "lint": "eslint src --ext .ts",
     "db:migrate": "psql \"$DATABASE_URL\" -f ../database/schema.sql",
     "db:seed": "psql \"$DATABASE_URL\" -f ../database/seed.sql",
-    "test:e2e": "node scripts/e2e-order-lifecycle.cjs"
+    "test:e2e": "node scripts/e2e-order-lifecycle.cjs",
+    "test:admin": "node scripts/admin-control-centre-probe.cjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

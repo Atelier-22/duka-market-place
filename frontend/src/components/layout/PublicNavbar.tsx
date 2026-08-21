@@ -16,7 +16,11 @@ export function PublicNavbar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const homePath = user ? (user.role === 'shopper' ? '/shopper' : user.role === 'admin' ? '/admin' : '/app') : '/';
+  // Deliberately never routes to /admin. The admin panel has no discoverable
+  // entry point anywhere in the public, customer or shopper UI — it is reached
+  // only by typing the URL while signed in as an admin. An admin browsing the
+  // public site is sent to the customer app like anyone else.
+  const homePath = user ? (user.role === 'shopper' ? '/shopper' : '/app') : '/';
 
   return (
     <header className="sticky top-0 z-40 px-4 pt-4">

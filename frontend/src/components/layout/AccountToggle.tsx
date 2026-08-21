@@ -7,7 +7,8 @@ import { UserRole } from '../../types';
 const HOME_FOR: Record<UserRole, string> = {
   customer: '/app',
   shopper: '/shopper',
-  admin: '/admin',
+  // Never linked from here — see the admin filter below.
+  admin: '/app',
 };
 
 const LABEL_FOR: Record<UserRole, string> = {
@@ -27,7 +28,12 @@ export function AccountToggle() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (!user || linkedAccounts.length === 0) return null;
+  // An admin account is never surfaced here. This widget lives in the customer
+  // and shopper sidebars, and showing an "Admin" row there would advertise the
+  // panel's existence to anyone looking over the user's shoulder.
+  const switchable = linkedAccounts.filter((a) => a.role !== 'admin');
+
+  if (!user || switchable.length === 0) return null;
 
   async function handleSwitch(accountId: string) {
     setError(null);
@@ -55,7 +61,7 @@ export function AccountToggle() {
           <span className="ml-auto text-[11px] text-brand-ink/40">Current</span>
         </div>
 
-        {linkedAccounts.map((account) => (
+        {switchable.map((account) => (
           <button
             key={account.id}
             type="button"

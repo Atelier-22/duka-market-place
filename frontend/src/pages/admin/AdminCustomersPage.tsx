@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { LoadingState } from '../../components/ui/LoadingState';
@@ -8,6 +9,7 @@ function formatUgx(n: number) {
 }
 
 export function AdminCustomersPage() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => { api.get('/admin/customers').then((r) => setRows(r.data.customers)).finally(() => setLoading(false)); }, []);
@@ -26,7 +28,11 @@ export function AdminCustomersPage() {
           </thead>
           <tbody>
             {rows.map((c) => (
-              <tr key={c.id} className="border-b border-brand-green/5 last:border-0">
+              <tr
+                key={c.id}
+                onClick={() => navigate(`/admin/customers/${c.id}`)}
+                className="cursor-pointer border-b border-brand-green/5 transition-colors last:border-0 hover:bg-brand-green-mist/50"
+              >
                 <td className="px-4 py-3 font-medium">{c.full_name}</td>
                 <td className="px-4 py-3 text-brand-ink/60">{c.phone}</td>
                 <td className="px-4 py-3">{c.total_orders}</td>

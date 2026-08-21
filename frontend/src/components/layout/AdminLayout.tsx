@@ -5,7 +5,7 @@ import {
 import { AppSidebar } from './AppSidebar';
 
 const ITEMS = [
-  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/admin', label: 'Overview', icon: LayoutDashboard },
   { to: '/admin/customers', label: 'Customers', icon: Users },
   { to: '/admin/shoppers', label: 'Shoppers', icon: ShoppingBag },
   { to: '/admin/verifications', label: 'Verification', icon: BadgeCheck },
