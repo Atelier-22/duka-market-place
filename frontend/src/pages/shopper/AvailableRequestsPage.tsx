@@ -15,6 +15,9 @@ function formatUgx(n: number) {
   return new Intl.NumberFormat('en-UG').format(n) + ' UGX';
 }
 
+/** How often the open list checks for work posted since it was opened. */
+const POLL_MS = 20_000;
+
 export function AvailableRequestsPage() {
   const { push } = useToast();
   const [requests, setRequests] = useState<ShoppingRequest[]>([]);
@@ -27,9 +30,25 @@ export function AvailableRequestsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [capacity, setCapacity] = useState<{ count: number; limit: number; atCapacity: boolean } | null>(null);
+  /** Requests that appeared after this page was opened. */
+  const [freshIds, setFreshIds] = useState<Set<string>>(new Set());
 
   function load() {
-    api.get('/requests/available').then((res) => setRequests(res.data.requests)).finally(() => setLoading(false));
+    api.get('/requests/available')
+      .then((res) => {
+        const incoming: ShoppingRequest[] = res.data.requests;
+        // Flag what arrived since this page was opened, so a shopper who leaves
+        // it up can see at a glance what is new rather than re-reading the list.
+        setRequests((current) => {
+          const known = new Set(current.map((r) => r.id));
+          if (current.length > 0) {
+            const fresh = incoming.filter((r) => !known.has(r.id)).map((r) => r.id);
+            if (fresh.length) setFreshIds((f) => new Set([...f, ...fresh]));
+          }
+          return incoming;
+        });
+      })
+      .finally(() => setLoading(false));
     // Reuses the dashboard payload rather than adding an endpoint just to
     // answer "how many jobs am I already carrying".
     api.get('/shoppers/dashboard')
@@ -41,6 +60,13 @@ export function AvailableRequestsPage() {
       .catch(() => undefined);
   }
   useEffect(load, []);
+  // A shopper leaves this page open waiting for work; making them reload it to
+  // find out whether anything came in is the problem the alerts solve, and the
+  // list should not be the last thing to hear about it.
+  useEffect(() => {
+    const t = setInterval(load, POLL_MS);
+    return () => clearInterval(t);
+  }, []);
 
   async function handleSubmitOffer() {
     if (!selected) return;
@@ -88,7 +114,12 @@ export function AvailableRequestsPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {requests.map((r) => (
-              <GlassCard key={r.id}>
+              <GlassCard key={r.id} glow={freshIds.has(r.id) ? 'yellow' : undefined}>
+                {freshIds.has(r.id) && (
+                  <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-brand-green-fresh px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                    New
+                  </span>
+                )}
                 <p className="font-display text-lg font-medium text-brand-green-deep">{r.title}</p>
                 <p className="mt-1 text-xs uppercase tracking-wide text-brand-ink/40 capitalize">
                   {r.sourcing_type.replace(/_/g, ' ')}

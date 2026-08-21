@@ -17,6 +17,7 @@ export interface Preferences {
   notify_orders: boolean;
   notify_offers: boolean;
   notify_marketing: boolean;
+  notify_new_requests: boolean;
 }
 
 const DEFAULTS: Preferences = {
@@ -29,6 +30,7 @@ const DEFAULTS: Preferences = {
   notify_orders: true,
   notify_offers: true,
   notify_marketing: false,
+  notify_new_requests: true,
 };
 
 interface PreferencesContextValue {

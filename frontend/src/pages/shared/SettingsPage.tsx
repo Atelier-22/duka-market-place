@@ -396,6 +396,16 @@ export function SettingsPage() {
                 label="Offers"
                 description="When a shopper offers to take your request"
               />
+              {/* Only meaningful to a shopper — a customer has no available
+                  jobs list, so showing them the switch would be noise. */}
+              {user?.role === 'shopper' && (
+                <Toggle
+                  checked={preferences.notify_new_requests}
+                  onChange={(v) => update({ notifyNewRequests: v })}
+                  label="New jobs posted"
+                  description="When a customer posts a request you could take"
+                />
+              )}
               <Toggle
                 checked={preferences.notify_marketing}
                 onChange={(v) => update({ notifyMarketing: v })}

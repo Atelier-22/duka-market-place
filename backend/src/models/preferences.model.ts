@@ -11,6 +11,8 @@ export interface PreferencesRow {
   notify_orders: boolean;
   notify_offers: boolean;
   notify_marketing: boolean;
+  /** Shopper-side: alert me when a new job is posted. */
+  notify_new_requests: boolean;
 }
 
 /**
@@ -36,7 +38,7 @@ export async function getOrCreatePreferences(userId: string): Promise<Preference
 
 const UPDATABLE = [
   'theme', 'accent', 'language', 'tone', 'traits',
-  'notify_messages', 'notify_orders', 'notify_offers', 'notify_marketing',
+  'notify_messages', 'notify_orders', 'notify_offers', 'notify_marketing', 'notify_new_requests',
 ] as const;
 
 export type PreferencePatch = Partial<Record<(typeof UPDATABLE)[number], unknown>>;

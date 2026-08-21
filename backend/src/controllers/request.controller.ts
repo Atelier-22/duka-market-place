@@ -6,6 +6,7 @@ import {
   listOpenRequests, getRequestItems,
 } from '../models/request.model';
 import { listOffersForRequest } from '../models/offer.model';
+import { notifyShoppersOfNewRequest } from '../services/notification.service';
 import { ApiError } from '../middleware/errorHandler';
 
 const createRequestSchema = z.object({
@@ -50,7 +51,16 @@ export async function create(req: Request, res: Response) {
     await addRequestItem(requestRow.id, item);
   }
 
-  res.status(201).json({ request: requestRow });
+  // Items are added first so a shopper who taps the notification straight away
+  // sees the whole request rather than an empty shell.
+  const alerted = await notifyShoppersOfNewRequest({
+    requestId: requestRow.id,
+    customerId: req.user!.id,
+    title: input.title,
+    budgetMaxUgx: input.budgetMaxUgx ?? null,
+  });
+
+  res.status(201).json({ request: requestRow, shoppersAlerted: alerted });
 }
 
 export async function getById(req: Request, res: Response) {

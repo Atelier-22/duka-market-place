@@ -1,4 +1,6 @@
 import { createNotification } from '../models/notification.model';
+import { MAX_ACTIVE_JOBS } from '../models/order.model';
+import { query } from '../db/pool';
 import { OrderStatus, UserRole } from '../types';
 
 /**
@@ -127,6 +129,73 @@ export async function notifyNewMessage(input: {
     body: input.preview.slice(0, 140),
     link: `${orderLink(input.recipientRole, input.orderId)}/messages`,
   });
+}
+
+/**
+ * Tell shoppers a job has been posted.
+ *
+ * The one event that decides whether a shopper earns anything was the one event
+ * that raised no notification — they had to keep reopening "Available jobs" to
+ * find out. This fans out to every shopper who could actually take it.
+ *
+ * Written as a single INSERT..SELECT rather than a loop: this runs inside the
+ * request that creates the job, and one round trip per shopper would make
+ * posting a request slower for every shopper who joins the platform.
+ *
+ * Who is skipped, and why:
+ *   - deactivated accounts, and anyone who turned these alerts off
+ *   - shoppers already carrying the maximum number of jobs — they cannot take
+ *     it, so telling them is just noise
+ *   - the customer's own shopper account, for people who hold both roles;
+ *     nobody needs alerting to their own request
+ */
+export async function notifyShoppersOfNewRequest(input: {
+  requestId: string;
+  customerId: string;
+  title: string;
+  budgetMaxUgx: number | null;
+}): Promise<number> {
+  try {
+    const budget = input.budgetMaxUgx
+      ? `Budget up to ${new Intl.NumberFormat('en-UG').format(Number(input.budgetMaxUgx))} UGX`
+      : 'Open budget';
+
+    const rows = await query<{ user_id: string }>(
+      `INSERT INTO notifications (user_id, channel, title, body, link)
+       SELECT u.id, 'in_app', $2, $3, '/shopper/available'
+         FROM users u
+         JOIN shopper_profiles sp ON sp.user_id = u.id
+         LEFT JOIN user_preferences p ON p.user_id = u.id
+        WHERE u.role = 'shopper'
+          AND u.is_active
+          AND COALESCE(p.notify_new_requests, TRUE)
+          AND u.id <> $1
+          -- Same person holding both roles: matched on the identity they
+          -- registered with, since the two accounts are separate rows.
+          AND NOT EXISTS (
+            SELECT 1 FROM users c
+             WHERE c.id = $1
+               AND (
+                 (c.email IS NOT NULL AND u.email IS NOT NULL AND lower(c.email) = lower(u.email))
+                 OR regexp_replace(c.phone, '[^0-9+]', '', 'g') = regexp_replace(u.phone, '[^0-9+]', '', 'g')
+               )
+          )
+          AND (
+            SELECT count(*) FROM orders o
+             WHERE o.shopper_id = u.id
+               AND o.status NOT IN ('completed', 'cancelled', 'refunded')
+          ) < $4
+        RETURNING user_id`,
+      [input.customerId, `New job: ${input.title}`, budget, MAX_ACTIVE_JOBS]
+    );
+    return rows.length;
+  } catch (err) {
+    // Same rule as every other notification: never fail the action that
+    // triggered it. A customer's request must post even if nobody is told.
+    // eslint-disable-next-line no-console
+    console.error('Failed to notify shoppers of a new request', err);
+    return 0;
+  }
 }
 
 export async function notifyNewOffer(input: {

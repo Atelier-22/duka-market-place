@@ -23,6 +23,7 @@ const preferencesSchema = z.object({
   notifyMessages: z.boolean().optional(),
   notifyOrders: z.boolean().optional(),
   notifyOffers: z.boolean().optional(),
+  notifyNewRequests: z.boolean().optional(),
   notifyMarketing: z.boolean().optional(),
 });
 
@@ -38,6 +39,7 @@ export async function patchPreferences(req: Request, res: Response) {
     notify_messages: input.notifyMessages,
     notify_orders: input.notifyOrders,
     notify_offers: input.notifyOffers,
+    notify_new_requests: input.notifyNewRequests,
     notify_marketing: input.notifyMarketing,
   });
 
