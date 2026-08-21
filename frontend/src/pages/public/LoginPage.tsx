@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GlassCard } from '../../components/ui/GlassCard';
+import { DukaMark } from '../../components/ui/DukaLogo';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
 import { PasswordInput } from '../../components/ui/PasswordInput';
@@ -33,7 +34,10 @@ export function LoginPage() {
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md items-center px-4 py-16">
       <GlassCard glow="green" padding="lg" className="w-full">
-        <h1 className="font-display text-2xl font-medium text-brand-green-deep">Welcome back</h1>
+        {/* The logo, on the two pages where someone is deciding whether
+            they trust this site with a password. */}
+        <DukaMark size={40} className="text-brand-green-deep" />
+        <h1 className="mt-4 font-display text-2xl font-medium text-brand-green-deep">Welcome back</h1>
         <p className="mt-1 text-sm text-brand-ink/60">Log in to continue.</p>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">

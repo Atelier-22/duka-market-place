@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, LucideIcon, MoreHorizontal, X } from 'lucide-react';
 import { BRAND } from '../../config/brand';
+import { DukaMark } from '../ui/DukaLogo';
 import { useAuth } from '../../context/AuthContext';
 import { useConversations } from '../../hooks/useConversations';
 import { AccountToggle } from './AccountToggle';
@@ -62,8 +63,8 @@ export function MobileNav({ items, roleLabel }: MobileNavProps) {
     <>
       {/* Top bar — identity and role, nothing that competes for the thumb. */}
       <header className="glass sticky top-0 z-40 flex items-center gap-2.5 rounded-none px-4 py-3 lg:hidden">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh font-display text-xs font-bold text-white">
-          {BRAND.name[0]}
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-white">
+          <DukaMark size={19} />
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-sm font-semibold leading-tight text-brand-green-deep">

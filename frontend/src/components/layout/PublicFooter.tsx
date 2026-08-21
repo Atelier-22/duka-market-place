@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { BRAND } from '../../config/brand';
+import { DukaMark } from '../ui/DukaLogo';
 
 export function PublicFooter() {
   return (
@@ -7,7 +8,10 @@ export function PublicFooter() {
       <div className="glass-deep mx-auto max-w-6xl rounded-xl3 p-10">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
-            <p className="font-display text-xl font-semibold text-white">{BRAND.name}</p>
+            <p className="flex items-center gap-2 font-display text-xl font-semibold text-white">
+              <DukaMark size={26} />
+              {BRAND.name}
+            </p>
             <p className="mt-2 text-sm text-white/60">{BRAND.tagline}</p>
           </div>
           <div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LogOut, LucideIcon, PanelLeft } from 'lucide-react';
 import { BRAND } from '../../config/brand';
+import { DukaMark } from '../ui/DukaLogo';
 import { useAuth } from '../../context/AuthContext';
 import { AccountToggle } from './AccountToggle';
 import { useConversations } from '../../hooks/useConversations';
@@ -52,11 +53,16 @@ export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
         collapsed ? 'w-[68px] p-3' : 'w-64 p-5',
       ].join(' ')}
     >
-      <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2 px-1'}`}>
+      <div className={`flex items-center ${collapsed ? 'flex-col gap-2' : 'gap-2 px-1'}`}>
+        {collapsed && (
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-white">
+            <DukaMark size={21} />
+          </span>
+        )}
         {!collapsed && (
           <>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh font-display text-sm font-bold text-white">
-              {BRAND.name[0]}
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-white">
+              <DukaMark size={21} />
             </span>
             <div className="min-w-0">
               <p className="truncate font-display text-base font-semibold text-brand-green-deep">{BRAND.name}</p>

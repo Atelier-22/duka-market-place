@@ -1,0 +1,17 @@
+{
+  "name": "Duka — If you want it, we find it.",
+  "short_name": "Duka",
+  "description": "Tell us what you need. A verified local shopper finds it and brings it to you.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F3FBF6",
+  "theme_color": "#1B5E3A",
+  "icons": [
+    {
+      "src": "/duka-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

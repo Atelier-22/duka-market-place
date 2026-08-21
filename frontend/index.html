@@ -2,9 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Duka — Tell us what you need. We'll find someone nearby to get it.</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Duka — If you want it, we find it.</title>
   <meta name="description" content="Duka connects you with a verified local shopper who goes to the market, shop, or seller you name, buys what you need, and delivers it to your door." />
+
+  <!-- The tab icon. SVG so it stays sharp at every size a browser asks for,
+       instead of the default globe. The .ico line is a fallback for older
+       browsers that ignore SVG favicons; both point at the same mark. -->
+  <link rel="icon" type="image/svg+xml" href="/duka-mark.svg" />
+  <link rel="alternate icon" href="/duka-mark.svg" />
+  <link rel="apple-touch-icon" href="/duka-mark.svg" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <!-- Tints the browser chrome on Android and the status bar on iOS, so the
+       app does not sit under a grey strip on a phone. -->
+  <meta name="theme-color" content="#1B5E3A" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0E1512" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-title" content="Duka" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+
+  <!-- What a link to Duka looks like when it is pasted into WhatsApp. -->
+  <meta property="og:title" content="Duka — If you want it, we find it." />
+  <meta property="og:description" content="Tell us what you need. A verified local shopper finds it and brings it to you." />
+  <meta property="og:type" content="website" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>

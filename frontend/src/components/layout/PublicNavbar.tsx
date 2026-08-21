@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { BRAND } from '../../config/brand';
+import { DukaMark } from '../ui/DukaLogo';
 import { GlassButton } from '../ui/GlassButton';
 import { useAuth } from '../../context/AuthContext';
 
@@ -27,9 +28,7 @@ export function PublicNavbar() {
     <header className="sticky top-0 z-40 px-4 pt-4">
       <nav className="glass mx-auto flex max-w-6xl items-center justify-between rounded-full px-5 py-3">
         <Link to="/" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh font-display text-sm font-bold text-white">
-            {BRAND.name[0]}
-          </span>
+          <DukaMark size={30} className="text-brand-green-deep" />
           <span className="font-display text-lg font-semibold text-brand-green-deep">{BRAND.name}</span>
         </Link>
 
