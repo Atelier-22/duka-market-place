@@ -296,6 +296,29 @@ body[data-theme='dark']::before {
   100% { box-shadow: 0 0 0 0 rgb(var(--brand-green-fresh) / 0); }
 }
 
+/* ----------------------------------------------------------------------
+   Liquid glass — for the top bar, which sits over the page rather than
+   being part of it.
+
+   Much lighter than .glass: a heavier blur so what is behind genuinely
+   refracts, almost no fill so the colour reads through, and a bright hairline
+   along the top edge where light would catch. No shadow — a shadow would
+   separate it from the page, and the point is that it does not.
+   ---------------------------------------------------------------------- */
+.glass-liquid {
+  background: rgb(var(--glass-bg) / 0.28);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-bottom: 1px solid rgb(var(--glass-bg) / 0.35);
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.35);
+}
+
+[data-theme='dark'] .glass-liquid {
+  background: rgb(var(--glass-bg) / 0.34);
+  border-bottom-color: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.06);
+}
+
 /* Room for the fixed mobile tab strip, plus the iPhone home indicator. The
    bar only exists below lg, so the padding goes away with it. */
 .app-main {

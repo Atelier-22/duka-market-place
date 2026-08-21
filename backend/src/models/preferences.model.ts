@@ -13,6 +13,13 @@ export interface PreferencesRow {
   notify_marketing: boolean;
   /** Shopper-side: alert me when a new job is posted. */
   notify_new_requests: boolean;
+  /**
+   * Whether this person has agreed to share their location with us. The
+   * browser owns the actual permission; this is the answer that has to follow
+   * them to a new device, and it decides whether we prompt again.
+   */
+  share_location: boolean;
+  location_prompt_dismissed_at: string | null;
 }
 
 /**
@@ -39,6 +46,7 @@ export async function getOrCreatePreferences(userId: string): Promise<Preference
 const UPDATABLE = [
   'theme', 'accent', 'language', 'tone', 'traits',
   'notify_messages', 'notify_orders', 'notify_offers', 'notify_marketing', 'notify_new_requests',
+  'share_location', 'location_prompt_dismissed_at',
 ] as const;
 
 export type PreferencePatch = Partial<Record<(typeof UPDATABLE)[number], unknown>>;

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, LucideIcon, MoreHorizontal, X } from 'lucide-react';
-import { DukaLockup } from '../ui/DukaLogo';
 import { useAuth } from '../../context/AuthContext';
 import { useConversations } from '../../hooks/useConversations';
 import { AccountToggle } from './AccountToggle';
@@ -15,7 +14,6 @@ export interface NavItem {
 
 interface MobileNavProps {
   items: NavItem[];
-  roleLabel: string;
 }
 
 /** How many destinations get a permanent tab; the rest live behind "More". */
@@ -33,7 +31,7 @@ const TAB_COUNT = 4;
  * a thumb already is — a menu button in the top-left corner is the hardest
  * place to reach one-handed on a large phone.
  */
-export function MobileNav({ items, roleLabel }: MobileNavProps) {
+export function MobileNav({ items }: MobileNavProps) {
   const { user, logout } = useAuth();
   const { totalUnread } = useConversations(!!user);
   const navigate = useNavigate();
@@ -61,10 +59,6 @@ export function MobileNav({ items, roleLabel }: MobileNavProps) {
   return (
     <>
       {/* Top bar — identity and role, nothing that competes for the thumb. */}
-      <header className="glass sticky top-0 z-40 flex justify-center rounded-none px-4 py-2.5 lg:hidden">
-        <DukaLockup markSize={34} roleLabel={roleLabel} />
-      </header>
-
       {/* Bottom tabs. pb-safe keeps them clear of the iPhone home indicator. */}
       <nav
         className="glass fixed inset-x-0 bottom-0 z-40 flex items-stretch rounded-none border-t border-brand-green/10 lg:hidden"

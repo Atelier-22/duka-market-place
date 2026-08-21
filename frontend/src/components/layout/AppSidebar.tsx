@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LogOut, LucideIcon, PanelLeft } from 'lucide-react';
-import { DukaLockup, DukaMark } from '../ui/DukaLogo';
 import { useAuth } from '../../context/AuthContext';
 import { AccountToggle } from './AccountToggle';
 import { useConversations } from '../../hooks/useConversations';
@@ -16,12 +15,11 @@ interface NavItem {
 
 interface AppSidebarProps {
   items: NavItem[];
-  roleLabel: string;
 }
 
 const STORAGE_KEY = 'duka_sidebar_collapsed';
 
-export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
+export function AppSidebar({ items }: AppSidebarProps) {
   const { user, logout } = useAuth();
   // Drives the unread badge on the Chats item.
   const { totalUnread } = useConversations(!!user);
@@ -70,15 +68,9 @@ export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
         </button>
       </div>
 
-      {collapsed ? (
-        <div className="mt-1 flex justify-center">
-          <DukaMark size={34} />
-        </div>
-      ) : (
-        <DukaLockup markSize={52} roleLabel={roleLabel} className="mt-1" />
-      )}
-
-      <nav className={`mt-8 flex flex-1 flex-col gap-1 ${collapsed ? 'items-center' : ''}`}>
+      {/* No logo here any more — the top bar carries it, and showing it twice
+          on a desktop was just the same mark in two places. */}
+      <nav className={`mt-4 flex flex-1 flex-col gap-1 ${collapsed ? 'items-center' : ''}`}>
         {items.map((item) => {
           const Icon = item.icon;
           const count = item.badge === 'messages' ? totalUnread : 0;

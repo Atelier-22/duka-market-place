@@ -21,6 +21,8 @@ export interface Preferences {
   notify_offers: boolean;
   notify_marketing: boolean;
   notify_new_requests: boolean;
+  share_location: boolean;
+  location_prompt_dismissed_at: string | null;
 }
 
 const DEFAULTS: Preferences = {
@@ -34,10 +36,14 @@ const DEFAULTS: Preferences = {
   notify_offers: true,
   notify_marketing: false,
   notify_new_requests: true,
+  share_location: false,
+  location_prompt_dismissed_at: null,
 };
 
 interface PreferencesContextValue {
   preferences: Preferences;
+  /** True once the server's copy has arrived; defaults are not an answer. */
+  loaded: boolean;
   /** Applies immediately, then persists. Reverts if the server rejects it. */
   update: (patch: Partial<Record<string, unknown>>) => Promise<void>;
   saving: boolean;
@@ -83,6 +89,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [preferences, setPreferences] = useState<Preferences>(readLocal);
   const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     applyToDocument(preferences);
@@ -103,7 +110,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     api.get('/settings/preferences')
       .then((res) => setPreferences({ ...DEFAULTS, ...res.data.preferences }))
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => setLoaded(true));
   }, [user]);
 
   const update = useCallback(async (patch: Partial<Record<string, unknown>>) => {
@@ -122,7 +130,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }, [preferences]);
 
   return (
-    <PreferencesContext.Provider value={{ preferences, update, saving }}>
+    <PreferencesContext.Provider value={{ preferences, loaded, update, saving }}>
       {children}
     </PreferencesContext.Provider>
   );

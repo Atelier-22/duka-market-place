@@ -16,7 +16,8 @@
     "test:admin": "node scripts/admin-control-centre-probe.cjs",
     "test:chat": "node scripts/chat-features-probe.cjs",
     "test:jobs": "node scripts/multi-job-probe.cjs",
-    "test:alerts": "node scripts/job-alerts-probe.cjs"
+    "test:alerts": "node scripts/job-alerts-probe.cjs",
+    "test:settings": "node scripts/settings-probe.cjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

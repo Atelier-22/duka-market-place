@@ -11,6 +11,8 @@ interface AuthContextValue {
   register: (input: { role: UserRole; fullName: string; phone: string; email?: string; password: string }) => Promise<void>;
   switchRole: (role: UserRole) => Promise<void>;
   switchAccount: (userId: string) => Promise<UserRole>;
+  /** Re-read /auth/me, after something changes the stored user — an avatar, say. */
+  refresh: () => Promise<void>;
   logout: () => void;
 }
 
@@ -97,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, linkedAccounts, isLoading, login, register, switchRole, switchAccount, logout }}
+      value={{ user, linkedAccounts, isLoading, login, register, switchRole, switchAccount, refresh: loadMe, logout }}
     >
       {children}
     </AuthContext.Provider>

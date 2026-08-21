@@ -32,6 +32,10 @@ const preferencesSchema = z.object({
   notifyOffers: z.boolean().optional(),
   notifyNewRequests: z.boolean().optional(),
   notifyMarketing: z.boolean().optional(),
+  shareLocation: z.boolean().optional(),
+  // Sent when the prompt is dismissed, so it can return later rather than
+  // either nagging every load or never appearing again.
+  locationPromptDismissedAt: z.string().datetime().nullable().optional(),
 });
 
 export async function patchPreferences(req: Request, res: Response) {
@@ -48,6 +52,8 @@ export async function patchPreferences(req: Request, res: Response) {
     notify_offers: input.notifyOffers,
     notify_new_requests: input.notifyNewRequests,
     notify_marketing: input.notifyMarketing,
+    share_location: input.shareLocation,
+    location_prompt_dismissed_at: input.locationPromptDismissedAt,
   });
 
   res.json({ preferences });

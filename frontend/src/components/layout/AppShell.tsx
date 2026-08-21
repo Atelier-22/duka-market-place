@@ -1,5 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
+import { AppTopBar } from './AppTopBar';
+import { LocationPrompt } from '../domain/LocationPrompt';
 import { MobileNav, NavItem } from './MobileNav';
 
 interface AppShellProps {
@@ -23,11 +25,16 @@ export function AppShell({ items, roleLabel, maxWidth = 'max-w-7xl' }: AppShellP
   return (
     <div className="min-h-screen">
       <div className="atmosphere" />
-      <MobileNav items={items} roleLabel={roleLabel} />
+      {/* Logo left, your picture right, on a phone and on a desktop alike. */}
+      <AppTopBar roleLabel={roleLabel} />
+      <MobileNav items={items} />
+
+      {/* Asks about location once, then not again for a week. */}
+      <LocationPrompt />
 
       <div className={`mx-auto flex ${maxWidth} gap-4 p-3 sm:p-4`}>
         <div className="hidden lg:block">
-          <AppSidebar items={items} roleLabel={roleLabel} />
+          <AppSidebar items={items} />
         </div>
 
         {/*

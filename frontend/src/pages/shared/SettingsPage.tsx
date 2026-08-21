@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  Bell, Database, Download, Globe, LucideIcon, Monitor, Moon, Palette,
+  Bell, ChevronLeft, ChevronRight, Globe, LucideIcon, MapPin, Monitor, Moon, Palette,
   Search, ShieldCheck, Sparkles, Sun, User,
 } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
@@ -11,9 +11,10 @@ import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { ImageUpload } from '../../components/ui/ImageUpload';
+import { LocationSetting } from '../../components/domain/LocationSetting';
 import { useToast } from '../../components/ui/Toast';
 
-type SectionId = 'personalization' | 'account' | 'appearance' | 'general' | 'notifications' | 'security' | 'data';
+type SectionId = 'personalization' | 'account' | 'appearance' | 'general' | 'location' | 'notifications' | 'security';
 
 interface Section {
   id: SectionId;
@@ -28,9 +29,9 @@ const SECTIONS: Section[] = [
   { id: 'account', label: 'Account', icon: User, keywords: 'email phone number profile picture avatar name photo' },
   { id: 'appearance', label: 'Appearance', icon: Palette, keywords: 'theme dark light system colour color accent' },
   { id: 'general', label: 'General', icon: Globe, keywords: 'language english swahili luganda region' },
+  { id: 'location', label: 'Location', icon: MapPin, keywords: 'location gps map delivery address share tracking find me nearby' },
   { id: 'notifications', label: 'Notifications', icon: Bell, keywords: 'alerts messages orders offers marketing email push toggle' },
   { id: 'security', label: 'Security and login', icon: ShieldCheck, keywords: 'password change sign in login credentials' },
-  { id: 'data', label: 'Data controls', icon: Database, keywords: 'export download data privacy account information' },
 ];
 
 const TONES: { value: Tone; label: string; blurb: string }[] = [
@@ -121,6 +122,22 @@ export function SettingsPage() {
 
   const [search, setSearch] = useState('');
   const [active, setActive] = useState<SectionId>('personalization');
+  /**
+   * On a phone the sections were a horizontally scrolling strip of chips above
+   * the panel — the ones past the third were off-screen with nothing to say so,
+   * which is why they read as hidden. Below `md` this becomes a plain list you
+   * tap into, and `null` means you are looking at that list.
+   */
+  const [mobileSection, setMobileSection] = useState<SectionId | null>(null);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 768
+  );
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const [fullName, setFullName] = useState(user?.fullName ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
@@ -139,7 +156,13 @@ export function SettingsPage() {
   }, [search]);
 
   // A search that narrows to one section should just take you there.
-  const shown = search.trim() ? matches : SECTIONS.filter((s) => s.id === active);
+  const current: SectionId | null = isMobile ? mobileSection : active;
+  const shown = search.trim()
+    ? matches
+    : current
+    ? SECTIONS.filter((s) => s.id === current)
+    : [];
+  const openSection = SECTIONS.find((s) => s.id === current);
 
   async function saveProfile() {
     setSavingProfile(true);
@@ -172,20 +195,6 @@ export function SettingsPage() {
     }
   }
 
-  async function exportData() {
-    try {
-      const res = await api.get('/settings/export');
-      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `duka-data-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      push(apiErrorMessage(err), 'error');
-    }
-  }
 
   function toggleTrait(trait: string) {
     const has = preferences.traits.includes(trait);
@@ -207,32 +216,78 @@ export function SettingsPage() {
         />
       </div>
 
+      {/* On a phone, tapping into a section replaces the list; the header
+          becomes a back button. On a desktop the nav and the panel sit side by
+          side as before. */}
+      {isMobile && mobileSection && !search.trim() && (
+        <button
+          type="button"
+          onClick={() => setMobileSection(null)}
+          className="mt-5 flex items-center gap-1 text-sm font-medium text-brand-ink/55 hover:text-brand-green-deep"
+        >
+          <ChevronLeft size={17} strokeWidth={2} />
+          All settings
+        </button>
+      )}
+
       <div className="mt-6 flex flex-col gap-6 md:flex-row">
         {!search.trim() && (
-          <nav className="flex shrink-0 flex-row gap-1 overflow-x-auto md:w-56 md:flex-col">
-            {SECTIONS.map((s) => {
-              const Icon = s.icon;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => setActive(s.id)}
-                  className={[
-                    'flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-                    active === s.id
-                      ? 'bg-brand-green-mist text-brand-green-deep'
-                      : 'text-brand-ink/60 hover:bg-brand-green-mist/60',
-                  ].join(' ')}
-                >
-                  <Icon size={17} strokeWidth={1.75} className="shrink-0" />
-                  {s.label}
-                </button>
-              );
-            })}
-          </nav>
+          <>
+            {/* Desktop rail */}
+            <nav className="hidden shrink-0 md:flex md:w-56 md:flex-col md:gap-1">
+              {SECTIONS.map((sec) => {
+                const Icon = sec.icon;
+                return (
+                  <button
+                    key={sec.id}
+                    type="button"
+                    onClick={() => setActive(sec.id)}
+                    className={[
+                      'flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                      active === sec.id
+                        ? 'bg-brand-green-mist text-brand-green-deep'
+                        : 'text-brand-ink/60 hover:bg-brand-green-mist/60',
+                    ].join(' ')}
+                  >
+                    <Icon size={17} strokeWidth={1.75} className="shrink-0" />
+                    {sec.label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Phone list */}
+            {!mobileSection && (
+              <GlassCard padding="sm" hover={false} className="md:hidden">
+                <div className="flex flex-col">
+                  {SECTIONS.map((sec) => {
+                    const Icon = sec.icon;
+                    return (
+                      <button
+                        key={sec.id}
+                        type="button"
+                        onClick={() => setMobileSection(sec.id)}
+                        className="flex items-center gap-3 border-b border-brand-green/8 px-2 py-4 text-left transition-colors last:border-0 active:bg-brand-green-mist/60"
+                      >
+                        <Icon size={19} strokeWidth={1.75} className="shrink-0 text-brand-ink/45" />
+                        <span className="flex-1 text-[15px] font-medium text-brand-ink">{sec.label}</span>
+                        <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-brand-ink/30" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </GlassCard>
+            )}
+          </>
         )}
 
         <div className="min-w-0 flex-1">
+          {isMobile && openSection && !search.trim() && (
+            <h2 className="mb-3 font-display text-xl font-medium text-brand-green-deep md:hidden">
+              {openSection.label}
+            </h2>
+          )}
+
           {search.trim() && matches.length === 0 && (
             <GlassCard padding="lg" hover={false}>
               <p className="text-sm text-brand-ink/50">No settings match "{search}".</p>
@@ -387,6 +442,15 @@ export function SettingsPage() {
             </SectionCard>
           )}
 
+          {shown.some((s) => s.id === 'location') && (
+            <SectionCard
+              title="Location"
+              description="Used only while an order of yours is in flight, and never in the background."
+            >
+              <LocationSetting />
+            </SectionCard>
+          )}
+
           {shown.some((s) => s.id === 'notifications') && (
             <SectionCard title="Notifications" description="Choose what reaches your bell.">
               <Toggle
@@ -453,17 +517,6 @@ export function SettingsPage() {
             </SectionCard>
           )}
 
-          {shown.some((s) => s.id === 'data') && (
-            <SectionCard title="Data controls" description="Everything this account holds, in one file.">
-              <GlassButton size="sm" variant="secondary" onClick={exportData}>
-                <Download size={15} strokeWidth={2} /> Export my data
-              </GlassButton>
-              <p className="mt-3 text-xs text-brand-ink/45">
-                Downloads your account details, preferences, addresses, requests, orders, ratings and
-                notifications as JSON.
-              </p>
-            </SectionCard>
-          )}
         </div>
       </div>
     </div>
