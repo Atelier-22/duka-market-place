@@ -22,17 +22,56 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-export async function findUserByPhone(phone: string): Promise<UserRow | null> {
+const PHONE_NORMALIZED = "regexp_replace(phone, '[^0-9+]', '', 'g')";
+
+/**
+ * A phone number is only unique per role now, so a lookup by phone alone can
+ * return more than one row (one customer account, one shopper account).
+ * Callers that need a single account must disambiguate — login does it by
+ * checking which candidates the submitted password verifies against.
+ */
+export async function findUsersByPhone(phone: string): Promise<UserRow[]> {
   // Compare on the normalized form on both sides so rows written before
   // normalization (with spaces/dashes) still match.
-  return queryOne<UserRow>(
-    "SELECT * FROM users WHERE regexp_replace(phone, '[^0-9+]', '', 'g') = $1",
+  return query<UserRow>(
+    `SELECT * FROM users WHERE ${PHONE_NORMALIZED} = $1 ORDER BY created_at`,
     [normalizePhone(phone)]
   );
 }
 
-export async function findUserByEmail(email: string): Promise<UserRow | null> {
-  return queryOne<UserRow>('SELECT * FROM users WHERE LOWER(email) = $1', [normalizeEmail(email)]);
+export async function findUserByPhoneAndRole(phone: string, role: UserRole): Promise<UserRow | null> {
+  return queryOne<UserRow>(
+    `SELECT * FROM users WHERE ${PHONE_NORMALIZED} = $1 AND role = $2`,
+    [normalizePhone(phone), role]
+  );
+}
+
+export async function findUserByEmailAndRole(email: string, role: UserRole): Promise<UserRow | null> {
+  return queryOne<UserRow>('SELECT * FROM users WHERE LOWER(email) = $1 AND role = $2', [
+    normalizeEmail(email),
+    role,
+  ]);
+}
+
+/**
+ * Other accounts that plausibly belong to the same person — same email, or the
+ * same phone under a different role. Plausibly only: the caller must still
+ * prove ownership with the password before treating one as linked.
+ */
+export async function findSiblingAccounts(user: UserRow): Promise<UserRow[]> {
+  // A NULL email must never match another NULL email, or every account without
+  // an email would be siblings with every other one.
+  return query<UserRow>(
+    `SELECT * FROM users
+      WHERE id <> $1
+        AND is_active
+        AND (
+          ${PHONE_NORMALIZED} = $2
+          OR ($3::text IS NOT NULL AND LOWER(email) = $3)
+        )
+      ORDER BY role`,
+    [user.id, normalizePhone(user.phone), user.email ? normalizeEmail(user.email) : null]
+  );
 }
 
 export async function findUserById(id: string): Promise<UserRow | null> {

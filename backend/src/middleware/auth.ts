@@ -6,7 +6,7 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      user?: { id: string; role: UserRole };
+      user?: { id: string; role: UserRole; linked: string[] };
     }
   }
 }
@@ -18,7 +18,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
   try {
     const payload = verifyAccessToken(header.slice('Bearer '.length));
-    req.user = { id: payload.sub, role: payload.role };
+    req.user = { id: payload.sub, role: payload.role, linked: payload.linked ?? [] };
     next();
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });

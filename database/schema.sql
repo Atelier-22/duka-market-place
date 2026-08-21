@@ -52,8 +52,8 @@ CREATE TABLE users (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   role              user_role NOT NULL,
   full_name         VARCHAR(150) NOT NULL,
-  email             VARCHAR(255) UNIQUE,
-  phone             VARCHAR(30) NOT NULL UNIQUE,
+  email             VARCHAR(255),
+  phone             VARCHAR(30) NOT NULL,
   password_hash     TEXT NOT NULL,
   avatar_url        TEXT,
   is_active         BOOLEAN NOT NULL DEFAULT TRUE,
@@ -61,10 +61,19 @@ CREATE TABLE users (
   email_verified_at TIMESTAMPTZ,
   last_login_at     TIMESTAMPTZ,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  -- Uniqueness is scoped to the role, not the whole table: one person may hold
+  -- both a customer and a shopper account on the same email/phone, but never
+  -- two accounts of the same role. Two separate constraints are required —
+  -- a single UNIQUE (email, phone, role) would compare the three columns as one
+  -- tuple and still allow a duplicate phone within a role under a new email.
+  CONSTRAINT users_email_role_key UNIQUE (email, role),
+  CONSTRAINT users_phone_role_key UNIQUE (phone, role)
 );
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_phone ON users(phone);
+CREATE INDEX idx_users_email ON users(email);
 
 CREATE TABLE customer_profiles (
   user_id           UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,

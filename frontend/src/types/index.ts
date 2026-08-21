@@ -9,6 +9,16 @@ export interface User {
   avatarUrl: string | null;
 }
 
+/**
+ * A separate account under another role that this session proved ownership of
+ * at login — the same email/phone, opened by the same password.
+ */
+export interface LinkedAccount {
+  id: string;
+  role: UserRole;
+  fullName: string;
+}
+
 export type SourcingType = 'specific_market' | 'specific_shop' | 'social_seller' | 'shopper_choice';
 
 export type RequestStatus = 'draft' | 'open' | 'offer_received' | 'assigned' | 'cancelled' | 'expired';

@@ -37,6 +37,14 @@ export interface AuthUser {
 export interface JwtPayload {
   sub: string;
   role: UserRole;
+  /**
+   * Ids of the other accounts this person proved ownership of at login, by the
+   * submitted password also verifying against them. Carried in the signed token
+   * so /auth/switch-account can hand out tokens for a sibling account without
+   * asking for the password again — and so a sibling that was never
+   * password-proven can never be switched into.
+   */
+  linked?: string[];
 }
 
 export interface PricingBreakdown {

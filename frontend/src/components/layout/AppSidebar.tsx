@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { BRAND } from '../../config/brand';
 import { useAuth } from '../../context/AuthContext';
+import { AccountToggle } from './AccountToggle';
 
 interface NavItem {
   to: string;
@@ -52,6 +53,9 @@ export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
       <div className="mt-auto border-t border-brand-green/10 pt-4">
         <p className="truncate px-1 text-sm font-medium text-brand-ink">{user?.fullName}</p>
         <p className="truncate px-1 text-xs text-brand-ink/40">{user?.phone}</p>
+
+        <AccountToggle />
+
         <button
           onClick={() => {
             logout();

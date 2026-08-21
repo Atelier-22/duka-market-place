@@ -21,8 +21,9 @@ function pgUniqueViolationMessage(err: unknown): string | null {
   if (e?.code !== '23505') return null;
 
   const target = `${e.constraint ?? ''} ${e.detail ?? ''}`;
-  if (target.includes('email')) return 'An account with this email already exists — try logging in instead';
-  if (target.includes('phone')) return 'An account with this phone number already exists — try logging in instead';
+  // Uniqueness is scoped per role, so these only fire for a same-role duplicate.
+  if (target.includes('email')) return 'You already have an account of this type on this email — try logging in instead';
+  if (target.includes('phone')) return 'You already have an account of this type on this phone number — try logging in instead';
   return 'That record already exists';
 }
 

@@ -1,13 +1,16 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { api, apiErrorMessage } from '../services/api';
-import { User, UserRole } from '../types';
+import { LinkedAccount, User, UserRole } from '../types';
 
 interface AuthContextValue {
   user: User | null;
+  /** Other-role accounts this session may switch into without re-authenticating. */
+  linkedAccounts: LinkedAccount[];
   isLoading: boolean;
   login: (phone: string, password: string) => Promise<void>;
   register: (input: { role: UserRole; fullName: string; phone: string; email?: string; password: string }) => Promise<void>;
   switchRole: (role: UserRole) => Promise<void>;
+  switchAccount: (userId: string) => Promise<UserRole>;
   logout: () => void;
 }
 
@@ -15,6 +18,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadMe = useCallback(async () => {
@@ -26,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.get('/auth/me');
       setUser(res.data.user);
+      setLinkedAccounts(res.data.linkedAccounts ?? []);
     } catch {
       localStorage.removeItem('duka_access_token');
       localStorage.removeItem('duka_refresh_token');
@@ -38,12 +43,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadMe();
   }, [loadMe]);
 
+  function adoptSession(data: { user: User; accessToken: string; refreshToken: string; linkedAccounts?: LinkedAccount[] }) {
+    localStorage.setItem('duka_access_token', data.accessToken);
+    localStorage.setItem('duka_refresh_token', data.refreshToken);
+    setUser(data.user);
+    setLinkedAccounts(data.linkedAccounts ?? []);
+  }
+
   async function login(phone: string, password: string) {
     try {
       const res = await api.post('/auth/login', { phone, password });
-      localStorage.setItem('duka_access_token', res.data.accessToken);
-      localStorage.setItem('duka_refresh_token', res.data.refreshToken);
-      setUser(res.data.user);
+      adoptSession(res.data);
     } catch (err) {
       throw new Error(apiErrorMessage(err));
     }
@@ -52,9 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function register(input: { role: UserRole; fullName: string; phone: string; email?: string; password: string }) {
     try {
       const res = await api.post('/auth/register', input);
-      localStorage.setItem('duka_access_token', res.data.accessToken);
-      localStorage.setItem('duka_refresh_token', res.data.refreshToken);
-      setUser(res.data.user);
+      adoptSession(res.data);
     } catch (err) {
       throw new Error(apiErrorMessage(err));
     }
@@ -63,9 +71,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function switchRole(role: UserRole) {
     try {
       const res = await api.post('/auth/switch-role', { role });
-      localStorage.setItem('duka_access_token', res.data.accessToken);
-      localStorage.setItem('duka_refresh_token', res.data.refreshToken);
-      setUser(res.data.user);
+      adoptSession({ ...res.data, linkedAccounts });
+    } catch (err) {
+      throw new Error(apiErrorMessage(err));
+    }
+  }
+
+  /** Swap to a linked account; returns its role so the caller can redirect. */
+  async function switchAccount(userId: string): Promise<UserRole> {
+    try {
+      const res = await api.post('/auth/switch-account', { userId });
+      adoptSession(res.data);
+      return res.data.user.role as UserRole;
     } catch (err) {
       throw new Error(apiErrorMessage(err));
     }
@@ -75,10 +92,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('duka_access_token');
     localStorage.removeItem('duka_refresh_token');
     setUser(null);
+    setLinkedAccounts([]);
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, switchRole, logout }}>
+    <AuthContext.Provider
+      value={{ user, linkedAccounts, isLoading, login, register, switchRole, switchAccount, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
