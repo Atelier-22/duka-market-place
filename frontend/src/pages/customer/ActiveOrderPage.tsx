@@ -11,6 +11,7 @@ import { LoadingState } from '../../components/ui/LoadingState';
 import { OrderTimeline } from '../../components/domain/OrderTimeline';
 import { PricingBreakdown } from '../../components/domain/PricingBreakdown';
 import { DeliveryTracker } from '../../components/domain/DeliveryTracker';
+import { OrderShopper, ShopperSummaryCard } from '../../components/domain/ShopperSummaryCard';
 import { RatingStars } from '../../components/ui/RatingStars';
 import { useToast } from '../../components/ui/Toast';
 import { useBroadcastPosition, useOrderTracking } from '../../hooks/useOrderTracking';
@@ -24,6 +25,7 @@ export function ActiveOrderPage() {
   const { push } = useToast();
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<any[]>([]);
+  const [shopper, setShopper] = useState<OrderShopper | null>(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [stars, setStars] = useState(5);
@@ -40,6 +42,7 @@ export function ActiveOrderPage() {
     api.get(`/orders/${id}`).then((res) => {
       setOrder(res.data.order);
       setItems(res.data.items);
+      setShopper(res.data.shopper ?? null);
     }).finally(() => setLoading(false));
   }
 
@@ -99,6 +102,14 @@ export function ActiveOrderPage() {
         </GlassCard>
 
         <div className="flex flex-col gap-4">
+          {/* Who is doing this, first — before prices and options. */}
+          {shopper && (
+            <ShopperSummaryCard
+              shopper={shopper}
+              onMessage={() => navigate(`/app/orders/${order.id}/messages`)}
+            />
+          )}
+
           {order.item_price_ugx && (
             <PricingBreakdown
               itemPriceUgx={order.item_price_ugx}

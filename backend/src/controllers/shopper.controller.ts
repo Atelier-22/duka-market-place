@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { mediaUrl } from '../utils/validators';
 import { query, queryOne } from '../db/pool';
 import { MAX_ACTIVE_JOBS, listActiveJobsForShopper } from '../models/order.model';
+import { onlineExpr } from '../services/presence.service';
 import { ApiError } from '../middleware/errorHandler';
 
 export async function getDashboard(req: Request, res: Response) {
@@ -94,12 +95,38 @@ export async function submitVerification(req: Request, res: Response) {
   res.status(201).json({ record });
 }
 
+/**
+ * What a customer may see about a shopper before trusting them with money.
+ *
+ * Columns are listed explicitly rather than selected with `sp.*`, which used to
+ * ship available_balance_ugx and lifetime_earnings_ugx to anyone who asked —
+ * a shopper's wallet balance and total income are nobody else's business.
+ * Anything added to shopper_profiles later stays private until it is named here.
+ */
 export async function getPublicProfile(req: Request, res: Response) {
   const profile = await queryOne(
-    `SELECT sp.*, u.full_name, u.avatar_url FROM shopper_profiles sp
-     JOIN users u ON u.id = sp.user_id WHERE sp.user_id = $1`,
+    `SELECT u.id, u.full_name, u.avatar_url, u.created_at AS joined_at,
+            sp.bio, sp.operating_area, sp.specialties, sp.verification_status,
+            sp.is_online, sp.rating_avg, sp.rating_count,
+            sp.completed_jobs, sp.completion_rate,
+            ${onlineExpr('u')} AS is_active_now
+       FROM shopper_profiles sp
+       JOIN users u ON u.id = sp.user_id
+      WHERE sp.user_id = $1 AND u.is_active`,
     [req.params.id]
   );
   if (!profile) throw new ApiError(404, 'Shopper not found');
-  res.json({ profile });
+
+  // What other customers said, which is the part people actually read. The
+  // rater's name is shown; nothing else about them is.
+  const reviews = await query(
+    `SELECT r.stars, r.created_at, rater.full_name AS rated_by_name, rater.avatar_url AS rated_by_avatar
+       FROM ratings r
+       JOIN users rater ON rater.id = r.rated_by
+      WHERE r.rated_user = $1
+      ORDER BY r.created_at DESC LIMIT 10`,
+    [req.params.id]
+  );
+
+  res.json({ profile, reviews });
 }

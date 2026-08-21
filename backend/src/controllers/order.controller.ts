@@ -30,7 +30,23 @@ export async function getById(req: Request, res: Response) {
   assertParticipant(order, req.user!.id, req.user!.role);
   const history = await getOrderStatusHistory(order.id);
   const items = await query('SELECT * FROM order_items WHERE order_id = $1 ORDER BY created_at', [order.id]);
-  res.json({ order, history, items });
+
+  // Who is doing the shopping. The customer had no way to see this on the order
+  // itself — only a name buried in the chat — so they were tracking a stranger
+  // on a map. Balances and earnings are deliberately not included.
+  const shopper = order.shopper_id
+    ? await queryOne(
+        `SELECT u.id, u.full_name, u.avatar_url, u.phone,
+                sp.verification_status, sp.rating_avg, sp.rating_count,
+                sp.completed_jobs, sp.operating_area
+           FROM users u
+           LEFT JOIN shopper_profiles sp ON sp.user_id = u.id
+          WHERE u.id = $1`,
+        [order.shopper_id]
+      )
+    : null;
+
+  res.json({ order, history, items, shopper });
 }
 
 export async function listMine(req: Request, res: Response) {

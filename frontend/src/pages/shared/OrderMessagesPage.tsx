@@ -7,6 +7,7 @@ import { GlassButton } from '../../components/ui/GlassButton';
 import { ChatMessage } from '../../components/domain/ChatMessage';
 import { VoiceNotePlayer } from '../../components/domain/VoiceNotePlayer';
 import { PresenceDot, lastSeenLabel } from '../../components/domain/PresenceDot';
+import { ShopperProfileModal } from '../../components/domain/ShopperProfileModal';
 import { tickStateFor } from '../../components/domain/MessageTicks';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { useToast } from '../../components/ui/Toast';
@@ -53,6 +54,7 @@ export function OrderMessagesPage() {
   const [attachment, setAttachment] = useState('');
   const [voice, setVoice] = useState<PendingVoice | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   /** Sent-but-not-yet-acknowledged messages, rendered after the real ones. */
   const [pending, setPending] = useState<any[]>([]);
@@ -206,6 +208,9 @@ export function OrderMessagesPage() {
   }
 
   const name = conversation?.other_name ?? 'Conversation';
+  // Only shoppers have a profile to show; a customer's details are not on
+  // display for the shopper the way a shopper's are for the customer.
+  const viewableShopperId = conversation?.other_role === 'shopper' ? conversation.other_id : null;
   const canSend = Boolean(body.trim() || attachment || voice);
   const composerDisabled = recorder.recording;
   const visible = [...messages, ...pending];
@@ -224,7 +229,15 @@ export function OrderMessagesPage() {
       <GlassCard hover={false} padding="md" className="flex flex-1 flex-col overflow-hidden">
         {/* Thread header — who you are talking to, whether they are there, and a way back to the order */}
         <div className="flex items-center gap-3 border-b border-brand-green/10 pb-3">
-          <div className="relative shrink-0">
+          {/* Tapping the person opens their profile — the natural place to
+              look someone up is the thread you are talking to them in. */}
+          <button
+            type="button"
+            onClick={() => viewableShopperId && setShowProfile(true)}
+            disabled={!viewableShopperId}
+            aria-label={viewableShopperId ? `View ${name}'s profile` : undefined}
+            className="relative shrink-0"
+          >
             {conversation?.other_avatar ? (
               <img src={conversation.other_avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
             ) : (
@@ -233,9 +246,16 @@ export function OrderMessagesPage() {
               </span>
             )}
             <PresenceDot online={presence.online} variant="avatar" />
-          </div>
+          </button>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold text-brand-green-deep">{name}</p>
+            <button
+              type="button"
+              onClick={() => viewableShopperId && setShowProfile(true)}
+              disabled={!viewableShopperId}
+              className="block max-w-full truncate text-left font-semibold text-brand-green-deep disabled:cursor-default"
+            >
+              {name}
+            </button>
             <p className="flex items-center gap-1.5 truncate text-xs">
               <PresenceDot online={presence.online} />
               <span className={presence.online ? 'font-medium text-brand-green-fresh' : 'text-brand-ink/45'}>
@@ -396,6 +416,10 @@ export function OrderMessagesPage() {
           </form>
         )}
       </GlassCard>
+
+      {showProfile && viewableShopperId && (
+        <ShopperProfileModal shopperId={viewableShopperId} onClose={() => setShowProfile(false)} />
+      )}
     </div>
   );
 }

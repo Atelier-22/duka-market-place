@@ -49,9 +49,12 @@ export interface ShopperOffer {
   request_id: string;
   shopper_id: string;
   shopper_name?: string;
+  shopper_avatar?: string | null;
   rating_avg?: number;
   rating_count?: number;
   completed_jobs?: number;
+  verification_status?: string;
+  operating_area?: string | null;
   estimated_item_price_ugx: number | null;
   shopping_fee_ugx: number;
   delivery_fee_ugx: number;

@@ -299,6 +299,32 @@ async function tableCounts() {
   const track = await call('GET', `/orders/${orderId}/tracking`, { token: cust });
   step('tracking endpoint responds', track.status === 200, `${track.status} ${JSON.stringify(track.body)}`);
 
+  // ---- the customer can look up who is shopping for them ------------------
+  const prof = await call('GET', `/shoppers/${shopId}/public-profile`, { token: cust });
+  step('customer can read the shopper profile', prof.status === 200 && !!prof.body?.profile?.full_name,
+    `${prof.status} ${JSON.stringify(prof.body?.profile)}`);
+  step('profile carries what a customer needs to judge trust',
+    ['avatar_url', 'verification_status', 'rating_avg', 'completed_jobs', 'joined_at']
+      .every((k) => k in (prof.body?.profile ?? {})),
+    JSON.stringify(Object.keys(prof.body?.profile ?? {})));
+  step('profile includes the review list', Array.isArray(prof.body?.reviews), '');
+
+  // This endpoint used to SELECT sp.*, which shipped the shopper's wallet
+  // balance and lifetime income to anyone who asked — unauthenticated.
+  const leaked = ['available_balance_ugx', 'lifetime_earnings_ugx', 'operating_lat', 'operating_lng']
+    .filter((k) => k in (prof.body?.profile ?? {}));
+  step('profile leaks no balance, earnings or home coordinates', leaked.length === 0, leaked.join(', '));
+
+  const anonProfile = await call('GET', `/shoppers/${shopId}/public-profile`);
+  step('the profile is not readable anonymously', anonProfile.status === 401, `${anonProfile.status}`);
+
+  const orderView = await call('GET', `/orders/${orderId}`, { token: cust });
+  step('the order names its shopper for the customer',
+    orderView.body?.shopper?.id === shopId && !!orderView.body?.shopper?.full_name,
+    JSON.stringify(orderView.body?.shopper));
+  step('the order view leaks no shopper balance',
+    !('available_balance_ugx' in (orderView.body?.shopper ?? {})), '');
+
   // ---- uploads: the file, the URL it returns, and every consumer of it ----
   const up = await uploadProbe(shop, 'chat');
   step('upload returns 201', up.status === 201, `${up.status} ${JSON.stringify(up.body)}`);
