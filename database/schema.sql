@@ -251,6 +251,7 @@ CREATE TABLE order_items (
 );
 CREATE INDEX idx_order_items_order ON order_items(order_id);
 
+CREATE TABLE evidence (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id      UUID REFERENCES orders(id) ON DELETE CASCADE,
   uploaded_by   UUID NOT NULL REFERENCES users(id),

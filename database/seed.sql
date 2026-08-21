@@ -1,4 +1,5 @@
-"Password123!" — dev only, never use in production.
+-- Seed data for local/dev environments.
+-- Any test account created from this file uses the password "Password123!" — dev only, never use in production.
 
 INSERT INTO locations (id, name, type, city, lat, lng, description) VALUES
   (gen_random_uuid(), 'Owino Market', 'market', 'Kampala', 0.3132, 32.5764, 'Largest open-air market in Kampala — clothes, shoes, fabric, produce.'),
