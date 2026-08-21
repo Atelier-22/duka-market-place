@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LogOut, LucideIcon, PanelLeft } from 'lucide-react';
-import { BRAND } from '../../config/brand';
-import { DukaMark } from '../ui/DukaLogo';
+import { DukaLockup, DukaMark } from '../ui/DukaLogo';
 import { useAuth } from '../../context/AuthContext';
 import { AccountToggle } from './AccountToggle';
 import { useConversations } from '../../hooks/useConversations';
@@ -53,19 +52,9 @@ export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
         collapsed ? 'w-[68px] p-3' : 'w-64 p-5',
       ].join(' ')}
     >
-      <div className={`flex items-center ${collapsed ? 'flex-col gap-2' : 'gap-2 px-1'}`}>
-        {collapsed && (
-          <DukaMark size={34} />
-        )}
-        {!collapsed && (
-          <>
-            <DukaMark size={32} />
-            <div className="min-w-0">
-              <p className="truncate font-display text-base font-semibold text-brand-green-deep">{BRAND.name}</p>
-              <p className="text-[11px] uppercase tracking-wide text-brand-ink/40">{roleLabel}</p>
-            </div>
-          </>
-        )}
+      {/* The toggle sits on its own row so the lockup below it can be centred
+          rather than shunted off-axis by a control beside it. */}
+      <div className={`flex ${collapsed ? 'justify-center' : 'justify-end'}`}>
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
@@ -75,12 +64,19 @@ export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
           className={[
             'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-brand-ink/50',
             'transition-colors hover:bg-brand-green-mist hover:text-brand-green-deep',
-            collapsed ? '' : 'ml-auto',
           ].join(' ')}
         >
           <PanelLeft size={18} strokeWidth={1.75} />
         </button>
       </div>
+
+      {collapsed ? (
+        <div className="mt-1 flex justify-center">
+          <DukaMark size={34} />
+        </div>
+      ) : (
+        <DukaLockup markSize={52} roleLabel={roleLabel} className="mt-1" />
+      )}
 
       <nav className={`mt-8 flex flex-1 flex-col gap-1 ${collapsed ? 'items-center' : ''}`}>
         {items.map((item) => {

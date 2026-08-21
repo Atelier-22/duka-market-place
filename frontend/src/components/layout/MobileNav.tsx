@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, LucideIcon, MoreHorizontal, X } from 'lucide-react';
-import { BRAND } from '../../config/brand';
-import { DukaMark } from '../ui/DukaLogo';
+import { DukaLockup } from '../ui/DukaLogo';
 import { useAuth } from '../../context/AuthContext';
 import { useConversations } from '../../hooks/useConversations';
 import { AccountToggle } from './AccountToggle';
@@ -62,14 +61,8 @@ export function MobileNav({ items, roleLabel }: MobileNavProps) {
   return (
     <>
       {/* Top bar — identity and role, nothing that competes for the thumb. */}
-      <header className="glass sticky top-0 z-40 flex items-center gap-2.5 rounded-none px-4 py-3 lg:hidden">
-        <DukaMark size={30} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-sm font-semibold leading-tight text-brand-green-deep">
-            {BRAND.name}
-          </p>
-          <p className="text-[10px] uppercase tracking-wide text-brand-ink/40">{roleLabel}</p>
-        </div>
+      <header className="glass sticky top-0 z-40 flex justify-center rounded-none px-4 py-2.5 lg:hidden">
+        <DukaLockup markSize={34} roleLabel={roleLabel} />
       </header>
 
       {/* Bottom tabs. pb-safe keeps them clear of the iPhone home indicator. */}

@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '../../components/ui/GlassCard';
-import { DukaMark } from '../../components/ui/DukaLogo';
+import { DukaLockup } from '../../components/ui/DukaLogo';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
 import { PasswordInput } from '../../components/ui/PasswordInput';
@@ -42,11 +42,11 @@ export function RegisterPage() {
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md items-center px-4 py-16">
       <GlassCard glow="green" padding="lg" className="w-full">
-        {/* The logo, on the two pages where someone is deciding whether
-            they trust this site with a password. */}
-        <DukaMark size={48} />
-        <h1 className="mt-4 font-display text-2xl font-medium text-brand-green-deep">Create your account</h1>
-        <p className="mt-1 text-sm text-brand-ink/60">Join as a customer or a shopper.</p>
+        {/* The full lockup, on the two pages where someone is deciding
+            whether they trust this site with a password. */}
+        <DukaLockup markSize={56} className="mb-5" />
+        <h1 className="text-center font-display text-2xl font-medium text-brand-green-deep">Create your account</h1>
+        <p className="mt-1 text-center text-sm text-brand-ink/60">Join as a customer or a shopper.</p>
 
         <div className="mt-5 grid grid-cols-2 gap-2 rounded-full bg-brand-green-mist p-1">
           {(['customer', 'shopper'] as UserRole[]).map((r) => (
