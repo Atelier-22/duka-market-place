@@ -130,9 +130,59 @@ async function tableCounts() {
     const r = await run();
     const got = await statusNow();
     step(label, r.status < 400 && got === expected, `http ${r.status}, status "${got}" ${r.status >= 400 ? JSON.stringify(r.body) : ''}`);
+    // The delivery panel only exists while the order is in flight, so its
+    // checks have to run here rather than after the walk completes.
+    if (expected === 'purchased') await deliveryClockChecks();
+  }
+
+  await afterWalkChecks();
+
+  // ---- delivery clock: both buttons on the shopper's panel ----------------
+  async function deliveryClockChecks() {
+  const doneNow = await call('POST', `/orders/${orderId}/shopping-done`, {
+    token: shop, body: { startDeliveryNow: true, etaMinutes: 25 },
+  });
+  step('done shopping -> deliver now', doneNow.status === 200, `${doneNow.status} ${JSON.stringify(doneNow.body)}`);
+
+  const tNow = await call('GET', `/orders/${orderId}/tracking`, { token: cust });
+  step('delivery clock started with the ETA',
+    tNow.body?.deliveryStartedAt !== null && tNow.body?.deliveryEtaMinutes === 25,
+    JSON.stringify({ started: tNow.body?.deliveryStartedAt, eta: tNow.body?.deliveryEtaMinutes }));
+
+  const later = new Date(Date.now() + 86400000).toISOString();
+  const doneLater = await call('POST', `/orders/${orderId}/shopping-done`, {
+    token: shop, body: { startDeliveryNow: false, deferredTo: later },
+  });
+  step('done shopping -> deliver later', doneLater.status === 200, `${doneLater.status} ${JSON.stringify(doneLater.body)}`);
+
+  const tLater = await call('GET', `/orders/${orderId}/tracking`, { token: cust });
+  step('deferring records the time and stops the clock',
+    tLater.body?.deliveryDeferredTo !== null && tLater.body?.deliveryStartedAt === null,
+    JSON.stringify({ deferred: tLater.body?.deliveryDeferredTo, started: tLater.body?.deliveryStartedAt }));
+
+  const badDefer = await call('POST', `/orders/${orderId}/shopping-done`, {
+    token: shop, body: { startDeliveryNow: false },
+  });
+  step('deferring without a time is refused', badDefer.status === 400, `${badDefer.status}`);
+
+  const custCannot = await call('POST', `/orders/${orderId}/shopping-done`, {
+    token: cust, body: { startDeliveryNow: true },
+  });
+  step('customer cannot mark shopping done', custCannot.status === 403, `${custCannot.status}`);
+
+  const pos = await call('POST', `/orders/${orderId}/location`, {
+    token: shop, body: { lat: 0.3476, lng: 32.5825, accuracyM: 12.5 },
+  });
+  step('shopper can publish a position', pos.status === 201, `${pos.status} ${JSON.stringify(pos.body)}`);
+
+  const custPos = await call('POST', `/orders/${orderId}/location`, {
+    token: cust, body: { lat: 0.3476, lng: 32.5825 },
+  });
+  step('customer cannot publish a position', custPos.status >= 400, `${custPos.status}`);
   }
 
   // ---- the extras the UI relies on ----------------------------------------
+  async function afterWalkChecks() {
   const track = await call('GET', `/orders/${orderId}/tracking`, { token: cust });
   step('tracking endpoint responds', track.status === 200, `${track.status} ${JSON.stringify(track.body)}`);
 
@@ -176,6 +226,7 @@ async function tableCounts() {
   const history = await call('GET', `/orders/${orderId}`, { token: cust });
   const steps = (history.body?.history ?? []).map((h) => h.to_status);
   step('status history recorded every step', steps.length >= 7, JSON.stringify(steps));
+  }
 
   // ---- cleanup ------------------------------------------------------------
   // orders/requests do not cascade from users, so unwind in dependency order.

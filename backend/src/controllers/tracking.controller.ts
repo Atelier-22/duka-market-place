@@ -136,12 +136,15 @@ export async function markShoppingDone(req: Request, res: Response) {
     throw new ApiError(400, 'A deferred delivery needs the agreed time');
   }
 
+  // Every parameter inside a CASE needs an explicit cast: the other branch is
+  // a bare NULL, so Postgres has nothing to infer the type from and falls back
+  // to text — which then fails against the integer/timestamp columns.
   const updated = await queryOne(
     `UPDATE orders SET
        shopping_done_at     = COALESCE(shopping_done_at, now()),
-       delivery_started_at  = CASE WHEN $2 THEN now() ELSE NULL END,
-       delivery_eta_minutes = CASE WHEN $2 THEN $3 ELSE NULL END,
-       delivery_deferred_to = CASE WHEN $2 THEN NULL ELSE $4::timestamptz END
+       delivery_started_at  = CASE WHEN $2::boolean THEN now() ELSE NULL END,
+       delivery_eta_minutes = CASE WHEN $2::boolean THEN $3::integer ELSE NULL END,
+       delivery_deferred_to = CASE WHEN $2::boolean THEN NULL ELSE $4::timestamptz END
      WHERE id = $1 RETURNING *`,
     [order.id, input.startDeliveryNow, input.etaMinutes ?? 30, input.deferredTo ?? null]
   );
