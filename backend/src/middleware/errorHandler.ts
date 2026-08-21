@@ -11,9 +11,29 @@ export class ApiError extends Error {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+/**
+ * Postgres surfaces constraint breaches as driver errors, not ApiErrors. Without
+ * this mapping a duplicate phone/email that slipped past the pre-check (a race,
+ * or a row stored in a different letter case) becomes an opaque 500.
+ */
+function pgUniqueViolationMessage(err: unknown): string | null {
+  const e = err as { code?: string; constraint?: string; detail?: string };
+  if (e?.code !== '23505') return null;
+
+  const target = `${e.constraint ?? ''} ${e.detail ?? ''}`;
+  if (target.includes('email')) return 'An account with this email already exists — try logging in instead';
+  if (target.includes('phone')) return 'An account with this phone number already exists — try logging in instead';
+  return 'That record already exists';
+}
+
 export function errorHandler(err: unknown, req: Request, res: Response, next: NextFunction) {
   if (err instanceof ZodError) {
     return res.status(400).json({ error: 'Validation failed', details: err.flatten() });
+  }
+
+  const duplicate = pgUniqueViolationMessage(err);
+  if (duplicate) {
+    return res.status(409).json({ error: duplicate });
   }
   if (err instanceof InvalidTransitionError || err instanceof UnauthorizedTransitionError) {
     return res.status(409).json({ error: err.message });

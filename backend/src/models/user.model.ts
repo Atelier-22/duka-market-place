@@ -13,13 +13,27 @@ export interface UserRow {
   created_at: string;
 }
 
+/** Strips formatting so "0700 000 000" and "0700-000-000" resolve to one account. */
+export function normalizePhone(phone: string): string {
+  return phone.replace(/[^0-9+]/g, '');
+}
+
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
 export async function findUserByPhone(phone: string): Promise<UserRow | null> {
-  return queryOne<UserRow>('SELECT * FROM users WHERE phone = $1', [phone]);
+  // Compare on the normalized form on both sides so rows written before
+  // normalization (with spaces/dashes) still match.
+  return queryOne<UserRow>(
+    "SELECT * FROM users WHERE regexp_replace(phone, '[^0-9+]', '', 'g') = $1",
+    [normalizePhone(phone)]
+  );
 }
 
 export async function findUserByEmail(email: string): Promise<UserRow | null> {
-  return queryOne<UserRow>('SELECT * FROM users WHERE email = $1', [email]);
-} 
+  return queryOne<UserRow>('SELECT * FROM users WHERE LOWER(email) = $1', [normalizeEmail(email)]);
+}
 
 export async function findUserById(id: string): Promise<UserRow | null> {
   return queryOne<UserRow>('SELECT * FROM users WHERE id = $1', [id]);

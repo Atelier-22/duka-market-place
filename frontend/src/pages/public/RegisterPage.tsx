@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
@@ -34,7 +34,8 @@ export function RegisterPage() {
     }
   }
 
-  if (user) navigate(user.role === 'shopper' ? '/shopper' : '/app');
+  // Redirect declaratively — calling navigate() during render warns and can loop.
+  if (user) return <Navigate to={user.role === 'shopper' ? '/shopper' : '/app'} replace />;
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md items-center px-4 py-16">

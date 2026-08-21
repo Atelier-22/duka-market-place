@@ -9,6 +9,8 @@ import {
   ensureShopperProfile,
   updateUserRole,
   toPublicUser,
+  normalizePhone,
+  normalizeEmail,
 } from '../models/user.model';
 import { hashPassword, verifyPassword, signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/auth';
 import { ApiError } from '../middleware/errorHandler';
@@ -24,22 +26,31 @@ const registerSchema = z.object({
 export async function register(req: Request, res: Response) {
   const input = registerSchema.parse(req.body);
 
-  const existing = await findUserByPhone(input.phone);
-  if (existing) throw new ApiError(409, 'An account with this phone number already exists');
+  const phone = normalizePhone(input.phone);
+  // Treat a blank email the same as no email — an empty string would collide
+  // with every other blank on the UNIQUE index.
+  const email = input.email?.trim() ? normalizeEmail(input.email) : null;
 
-  if (input.email) {
-    const existingEmail = await findUserByEmail(input.email);
+  const existing = await findUserByPhone(phone);
+  if (existing) {
+    throw new ApiError(409, 'An account with this phone number already exists — try logging in instead');
+  }
+
+  if (email) {
+    const existingEmail = await findUserByEmail(email);
     if (existingEmail) {
       throw new ApiError(409, 'An account with this email already exists — try logging in instead');
     }
   }
 
   const passwordHash = await hashPassword(input.password);
+  // A duplicate that races past the checks above surfaces as a Postgres 23505,
+  // which errorHandler maps to the same 409 rather than a 500.
   const user = await createUser({
     role: input.role,
-    fullName: input.fullName,
-    email: input.email ?? null,
-    phone: input.phone,
+    fullName: input.fullName.trim(),
+    email,
+    phone,
     passwordHash,
   });
 
