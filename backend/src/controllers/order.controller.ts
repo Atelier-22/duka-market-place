@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { findOrderById, listOrdersForUser, updateOrderStatus, getOrderStatusHistory } from '../models/order.model';
 import { assertValidTransition } from '../utils/orderStateMachine';
 import { computePricing } from '../services/pricing.service';
+import { notifyOrderStatus } from '../services/notification.service';
 import { query, queryOne } from '../db/pool';
 import { ApiError } from '../middleware/errorHandler';
 import { OrderStatus } from '../types';
@@ -39,6 +40,7 @@ async function transition(req: Request, res: Response, to: OrderStatus, note?: s
   assertParticipant(order, req.user!.id, req.user!.role);
   assertValidTransition(order.status, to, req.user!.role);
   const updated = await updateOrderStatus(order.id, to, req.user!.id, { note });
+  await notifyOrderStatus(updated, to, req.user!.id);
   res.json({ order: updated });
 }
 
@@ -81,6 +83,7 @@ export async function markItemFound(req: Request, res: Response) {
   // single actionable "approve this purchase" screen rather than two steps.
   assertValidTransition(updated.status, 'awaiting_customer_approval', req.user!.role);
   const awaiting = await updateOrderStatus(updated.id, 'awaiting_customer_approval', req.user!.id);
+  await notifyOrderStatus(awaiting, 'awaiting_customer_approval', req.user!.id);
 
   res.json({ order: awaiting, pricing: computePricing({
     itemPriceUgx: input.actualPriceUgx,
@@ -108,6 +111,7 @@ export async function approvePurchase(req: Request, res: Response) {
     totalAmountUgx: pricing.totalAmountUgx,
     note: 'Customer approved the purchase price and photo',
   });
+  await notifyOrderStatus(updated, 'purchased', req.user!.id);
 
   await query(
     `INSERT INTO payments (order_id, payer_id, method, status, amount_ugx)
@@ -139,6 +143,7 @@ export async function markOutForDelivery(req: Request, res: Response) {
   const updated = await updateOrderStatus(order.id, 'out_for_delivery', req.user!.id, {
     note: 'Shopper purchased the item and is delivering it',
   });
+  await notifyOrderStatus(updated, 'out_for_delivery', req.user!.id);
   res.json({ order: updated });
 }
 
@@ -153,6 +158,7 @@ export async function confirmDelivered(req: Request, res: Response) {
   const updated = await updateOrderStatus(order.id, 'delivered', req.user!.id, {
     note: 'Customer confirmed receipt of the item',
   });
+  await notifyOrderStatus(updated, 'delivered', req.user!.id);
   res.json({ order: updated });
 }
 
@@ -163,6 +169,7 @@ export async function complete(req: Request, res: Response) {
   assertValidTransition(order.status, 'completed', req.user!.role);
 
   const updated = await updateOrderStatus(order.id, 'completed', req.user!.id);
+  await notifyOrderStatus(updated, 'completed', req.user!.id);
 
   const pricing = computePricing({
     itemPriceUgx: order.item_price_ugx ?? 0,
@@ -208,5 +215,6 @@ export async function cancel(req: Request, res: Response) {
   assertParticipant(order, req.user!.id, req.user!.role);
   assertValidTransition(order.status, 'cancelled', req.user!.role);
   const updated = await updateOrderStatus(order.id, 'cancelled', req.user!.id, { note: reason });
+  await notifyOrderStatus(updated, 'cancelled', req.user!.id);
   res.json({ order: updated });
 }

@@ -6,6 +6,7 @@ import { Order, ShoppingRequest } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { DashboardStat } from '../../components/domain/DashboardStat';
+import { NotificationBell } from '../../components/domain/NotificationBell';
 import { RequestCard } from '../../components/domain/RequestCard';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { LoadingState } from '../../components/ui/LoadingState';
@@ -47,9 +48,12 @@ export function CustomerDashboardPage() {
           </h1>
           <p className="text-sm text-brand-ink/50">Here's what's happening with your requests.</p>
         </div>
-        <Link to="/app/requests/new">
-          <GlassButton><PlusCircle size={17} strokeWidth={2} /> Request something</GlassButton>
-        </Link>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <Link to="/app/requests/new">
+            <GlassButton size="sm"><PlusCircle size={16} strokeWidth={2} /> Request something</GlassButton>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

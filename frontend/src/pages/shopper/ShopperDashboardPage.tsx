@@ -5,6 +5,7 @@ import { api } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { DashboardStat } from '../../components/domain/DashboardStat';
+import { NotificationBell } from '../../components/domain/NotificationBell';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { useAuth } from '../../context/AuthContext';
@@ -48,6 +49,7 @@ export function ShopperDashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <NotificationBell />
           <GlassButton
             size="sm"
             variant={data.profile.is_online ? 'danger' : 'primary'}

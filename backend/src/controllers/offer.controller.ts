@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { createOffer, findOfferById, markOfferAccepted, declineOtherOffers } from '../models/offer.model';
 import { findRequestById, updateRequestStatus } from '../models/request.model';
 import { createOrder } from '../models/order.model';
+import { findUserById } from '../models/user.model';
+import { notifyNewOffer, notifyOfferAccepted } from '../services/notification.service';
 import { ApiError } from '../middleware/errorHandler';
 
 const createOfferSchema = z.object({
@@ -37,6 +39,14 @@ export async function submitOffer(req: Request, res: Response) {
     await updateRequestStatus(requestRow.id, 'offer_received');
   }
 
+  const shopper = await findUserById(req.user!.id);
+  await notifyNewOffer({
+    requestId: requestRow.id,
+    customerId: requestRow.customer_id,
+    shopperName: shopper?.full_name ?? 'A shopper',
+    feeUgx: input.shoppingFeeUgx,
+  });
+
   res.status(201).json({ offer });
 }
 
@@ -67,6 +77,8 @@ export async function acceptOffer(req: Request, res: Response) {
     deliveryFeeUgx: offer.delivery_fee_ugx,
     deliveryAddressId: requestRow.delivery_address_id,
   });
+
+  await notifyOfferAccepted({ shopperId: offer.shopper_id, orderId: order.id });
 
   res.status(201).json({ order });
 }

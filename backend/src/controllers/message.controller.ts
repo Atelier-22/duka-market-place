@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { query, queryOne } from '../db/pool';
 import { findOrderById } from '../models/order.model';
+import { findUserById } from '../models/user.model';
+import { notifyNewMessage } from '../services/notification.service';
 import { ApiError } from '../middleware/errorHandler';
 
 async function assertParticipant(orderId: string, userId: string, role: string) {
@@ -30,11 +32,26 @@ const sendSchema = z.object({
 }).refine((v) => v.body || v.attachmentUrl, { message: 'Message must have text or an attachment' });
 
 export async function send(req: Request, res: Response) {
-  await assertParticipant(req.params.orderId, req.user!.id, req.user!.role);
+  const order = await assertParticipant(req.params.orderId, req.user!.id, req.user!.role);
   const input = sendSchema.parse(req.body);
   const message = await queryOne(
     `INSERT INTO messages (order_id, sender_id, body, attachment_url) VALUES ($1,$2,$3,$4) RETURNING *`,
     [req.params.orderId, req.user!.id, input.body ?? null, input.attachmentUrl ?? null]
   );
+
+  // Whoever is on the other side of this order gets the bell entry.
+  const isSenderCustomer = order.customer_id === req.user!.id;
+  const recipientId = isSenderCustomer ? order.shopper_id : order.customer_id;
+  if (recipientId) {
+    const sender = await findUserById(req.user!.id);
+    await notifyNewMessage({
+      orderId: order.id,
+      recipientId,
+      recipientRole: isSenderCustomer ? 'shopper' : 'customer',
+      senderName: sender?.full_name ?? 'Someone',
+      preview: input.body ?? 'Sent an attachment',
+    });
+  }
+
   res.status(201).json({ message });
 }
