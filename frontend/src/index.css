@@ -311,6 +311,15 @@ body[data-theme='dark']::before {
   h1, h2, h3, p, span, td, th, dt, dd, li { overflow-wrap: anywhere; }
 }
 
+/* Nothing may push the page sideways on a phone. A fixed-width dropdown
+   anchored to a button near the right edge used to hang off the left of the
+   viewport; that particular one is now a sheet, but this stops the next one
+   from being discovered by a user instead of by us. Anything that genuinely
+   needs to scroll horizontally does it in its own overflow-x container. */
+@media (max-width: 640px) {
+  html, body { overflow-x: hidden; }
+}
+
 /* iOS zooms the whole page when a focused input is under 16px. Every field
    in the app is 15px, which is exactly the size that triggers it. */
 @media (max-width: 640px) {
