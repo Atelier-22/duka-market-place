@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import { mediaUrl } from '../utils/validators';
 import { getOrCreatePreferences, updatePreferences } from '../models/preferences.model';
 import {
   findUserById, findUserByEmailAndRole, findUserByPhoneAndRole,
@@ -47,7 +48,7 @@ const profileSchema = z.object({
   fullName: z.string().min(2).max(150).optional(),
   email: z.string().email().nullable().optional(),
   phone: z.string().min(9).max(30).optional(),
-  avatarUrl: z.string().url().nullable().optional(),
+  avatarUrl: mediaUrl.nullable().optional(),
 });
 
 /**

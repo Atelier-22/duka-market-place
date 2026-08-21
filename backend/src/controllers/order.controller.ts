@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import { mediaUrl } from '../utils/validators';
 import { findOrderById, listOrdersForUser, updateOrderStatus, getOrderStatusHistory } from '../models/order.model';
 import { assertValidTransition } from '../utils/orderStateMachine';
 import { computePricing } from '../services/pricing.service';
@@ -58,7 +59,7 @@ export async function markShopping(req: Request, res: Response) {
 
 const itemFoundSchema = z.object({
   actualPriceUgx: z.number().int().positive(),
-  photoUrl: z.string().url(),
+  photoUrl: mediaUrl,
   shopName: z.string().max(150).optional(),
 });
 
@@ -122,7 +123,7 @@ export async function approvePurchase(req: Request, res: Response) {
   res.json({ order: updated, pricing });
 }
 
-const receiptSchema = z.object({ receiptPhotoUrl: z.string().url(), amountUgx: z.number().int().positive() });
+const receiptSchema = z.object({ receiptPhotoUrl: mediaUrl, amountUgx: z.number().int().positive() });
 
 // shopper: purchased -> out_for_delivery, with receipt evidence
 export async function markOutForDelivery(req: Request, res: Response) {

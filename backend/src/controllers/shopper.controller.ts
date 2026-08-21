@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import { mediaUrl } from '../utils/validators';
 import { query, queryOne } from '../db/pool';
 import { ApiError } from '../middleware/errorHandler';
 
@@ -78,7 +79,7 @@ export async function updateProfile(req: Request, res: Response) {
 
 const verificationSchema = z.object({
   documentType: z.string().min(2).max(50),
-  documentUrl: z.string().url(),
+  documentUrl: mediaUrl,
 });
 
 export async function submitVerification(req: Request, res: Response) {

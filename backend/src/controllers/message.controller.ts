@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import { mediaUrl } from '../utils/validators';
 import { query, queryOne } from '../db/pool';
 import { findOrderById } from '../models/order.model';
 import { findUserById } from '../models/user.model';
@@ -88,7 +89,7 @@ export async function list(req: Request, res: Response) {
 
 const sendSchema = z.object({
   body: z.string().max(2000).optional(),
-  attachmentUrl: z.string().url().optional(),
+  attachmentUrl: mediaUrl.optional(),
 }).refine((v) => v.body || v.attachmentUrl, { message: 'Message must have text or an attachment' });
 
 export async function send(req: Request, res: Response) {

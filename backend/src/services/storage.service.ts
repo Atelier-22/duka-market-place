@@ -37,9 +37,12 @@ class LocalStorageDriver implements StorageDriver {
   }
 
   getUrl(key: string): string {
-    // In dev this is served statically by Express (see src/index.ts).
-    // A real driver would return a signed/CDN URL instead.
-    return `/uploads/${key}`;
+    // Absolute, not relative. The file is served by this API (see index.ts),
+    // but the URL is stored in the database and rendered by a frontend on a
+    // different origin — a relative path would resolve against the frontend
+    // and 404, and would also fail the URL validation on every endpoint that
+    // accepts an uploaded file.
+    return `${env.publicUrl}/uploads/${key}`;
   }
 
   async delete(key: string): Promise<void> {

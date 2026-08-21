@@ -38,6 +38,21 @@ async function call(method, path, { token, body } = {}) {
   return { status: res.status, body: json };
 }
 
+// Smallest valid PNG (1x1 transparent) — a real image, not a text blob, so
+// the upload path is exercised the way the browser does it.
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+
+async function uploadProbe(token, folder) {
+  const form = new FormData();
+  form.append('file', new Blob([PNG], { type: 'image/png' }), 'probe.png');
+  const res = await fetch(`${API}/uploads?folder=${folder}`, {
+    method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form,
+  });
+  let body = null;
+  try { body = await res.json(); } catch { /* non-json */ }
+  return { status: res.status, body };
+}
+
 async function tableCounts() {
   const t = await pool.query(
     "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY 1"
@@ -186,12 +201,43 @@ async function tableCounts() {
   const track = await call('GET', `/orders/${orderId}/tracking`, { token: cust });
   step('tracking endpoint responds', track.status === 200, `${track.status} ${JSON.stringify(track.body)}`);
 
+  // ---- uploads: the file, the URL it returns, and every consumer of it ----
+  const up = await uploadProbe(shop, 'chat');
+  step('upload returns 201', up.status === 201, `${up.status} ${JSON.stringify(up.body)}`);
+
+  const fileUrl = up.body?.url;
+  step('upload URL is absolute', typeof fileUrl === 'string' && /^https?:\/\//.test(fileUrl), String(fileUrl));
+
+  if (fileUrl) {
+    const fetched = await fetch(fileUrl);
+    step('uploaded file is served back',
+      fetched.status === 200 && (fetched.headers.get('content-type') || '').startsWith('image/'),
+      `${fetched.status} ${fetched.headers.get('content-type')}`);
+
+    const withImage = await call('POST', `/orders/${orderId}/messages`, {
+      token: shop, body: { attachmentUrl: fileUrl },
+    });
+    step('chat accepts an uploaded image', withImage.status === 201, `${withImage.status} ${JSON.stringify(withImage.body)}`);
+
+    const avatar = await call('PATCH', '/settings/profile', { token: shop, body: { avatarUrl: fileUrl } });
+    step('profile accepts an uploaded avatar', avatar.status === 200, `${avatar.status} ${JSON.stringify(avatar.body)}`);
+
+    // Rows written before uploads became absolute still hold this shape.
+    const legacy = await call('PATCH', '/settings/profile', {
+      token: shop, body: { avatarUrl: '/uploads/avatars/legacy.png' },
+    });
+    step('legacy relative upload URL still accepted', legacy.status === 200, `${legacy.status}`);
+  }
+
+  const anon = await fetch(`${API}/uploads?folder=chat`, { method: 'POST' });
+  step('upload requires authentication', anon.status === 401, `${anon.status}`);
+
   const msg = await call('POST', `/orders/${orderId}/messages`, { token: shop, body: { body: 'E2E hello' } });
   step('shopper sends message', msg.status === 201, `${msg.status}`);
 
   const convC = await call('GET', '/messages/conversations', { token: cust });
   step('customer inbox lists the chat',
-    convC.status === 200 && convC.body.conversations?.length === 1 && convC.body.conversations[0].unread === 1,
+    convC.status === 200 && convC.body.conversations?.length === 1 && convC.body.conversations[0].unread >= 1,
     `${convC.status} ${JSON.stringify(convC.body?.conversations?.map((x) => ({ u: x.unread, n: x.other_name })))}`);
 
   const convS = await call('GET', '/messages/conversations', { token: shop });
@@ -199,7 +245,7 @@ async function tableCounts() {
     `${convS.status} count=${convS.body?.conversations?.length}`);
 
   const read = await call('POST', `/orders/${orderId}/messages/read`, { token: cust });
-  step('marking read clears unread', read.status === 200 && read.body.marked === 1, JSON.stringify(read.body));
+  step('marking read clears unread', read.status === 200 && read.body.marked >= 1, JSON.stringify(read.body));
 
   const notif = await call('GET', '/notifications', { token: cust });
   const titles = (notif.body?.notifications ?? []).map((n) => n.title);

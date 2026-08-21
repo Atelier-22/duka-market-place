@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import { mediaUrl } from '../utils/validators';
 import {
   createRequest, addRequestItem, findRequestById, listRequestsForCustomer,
   listOpenRequests, getRequestItems,
@@ -23,7 +24,7 @@ const createRequestSchema = z.object({
         name: z.string().min(1).max(200),
         quantity: z.string().max(50).optional(),
         description: z.string().max(500).optional(),
-        referencePhotoUrl: z.string().url().optional(),
+        referencePhotoUrl: mediaUrl.optional(),
       })
     )
     .min(1),
