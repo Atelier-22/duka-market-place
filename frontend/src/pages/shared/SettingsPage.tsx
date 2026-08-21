@@ -149,20 +149,29 @@ export function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
+  /**
+   * Location does nothing for an admin — they have no orders to be found on —
+   * so it is not offered rather than offered and inert.
+   */
+  const sections = useMemo(
+    () => SECTIONS.filter((s) => s.id !== 'location' || user?.role !== 'admin'),
+    [user?.role]
+  );
+
   const matches = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return SECTIONS;
-    return SECTIONS.filter((s) => `${s.label} ${s.keywords}`.toLowerCase().includes(q));
-  }, [search]);
+    if (!q) return sections;
+    return sections.filter((s) => `${s.label} ${s.keywords}`.toLowerCase().includes(q));
+  }, [search, sections]);
 
   // A search that narrows to one section should just take you there.
   const current: SectionId | null = isMobile ? mobileSection : active;
   const shown = search.trim()
     ? matches
     : current
-    ? SECTIONS.filter((s) => s.id === current)
+    ? sections.filter((s) => s.id === current)
     : [];
-  const openSection = SECTIONS.find((s) => s.id === current);
+  const openSection = sections.find((s) => s.id === current);
 
   async function saveProfile() {
     setSavingProfile(true);
@@ -235,7 +244,7 @@ export function SettingsPage() {
           <>
             {/* Desktop rail */}
             <nav className="hidden shrink-0 md:flex md:w-56 md:flex-col md:gap-1">
-              {SECTIONS.map((sec) => {
+              {sections.map((sec) => {
                 const Icon = sec.icon;
                 return (
                   <button
@@ -260,7 +269,7 @@ export function SettingsPage() {
             {!mobileSection && (
               <GlassCard padding="sm" hover={false} className="md:hidden">
                 <div className="flex flex-col">
-                  {SECTIONS.map((sec) => {
+                  {sections.map((sec) => {
                     const Icon = sec.icon;
                     return (
                       <button

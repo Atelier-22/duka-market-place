@@ -1,5 +1,5 @@
 import {
-  BadgeCheck, FileText, LayoutDashboard, Package, Scale, Settings, ShoppingBag, Users,
+  BadgeCheck, FileText, LayoutDashboard, Package, Percent, Scale, Settings, ShoppingBag, Users,
 } from 'lucide-react';
 import { AppShell } from './AppShell';
 import { NavItem } from './MobileNav';
@@ -12,7 +12,10 @@ const ITEMS: NavItem[] = [
   { to: '/admin/verifications', label: 'Verification', icon: BadgeCheck },
   { to: '/admin/requests', label: 'Requests', icon: FileText },
   { to: '/admin/disputes', label: 'Disputes', icon: Scale },
-  { to: '/admin/fees', label: 'Fees', icon: Settings },
+  // Fees is the platform's pricing, not the admin's own preferences — it had
+  // the Settings icon only because there was no Settings page to give it to.
+  { to: '/admin/fees', label: 'Fees', icon: Percent },
+  { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 export function AdminLayout() {

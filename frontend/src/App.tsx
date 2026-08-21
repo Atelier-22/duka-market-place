@@ -109,6 +109,9 @@ export default function App() {
             <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
             <Route path="/admin/disputes" element={<AdminDisputesPage />} />
             <Route path="/admin/fees" element={<AdminFeesPage />} />
+            {/* The same SettingsPage the customer and shopper dashboards use —
+                an admin is a person with an account like anyone else. */}
+            <Route path="/admin/settings" element={<SettingsPage />} />
           </Route>
         </Route>
 
