@@ -282,6 +282,20 @@ body[data-theme='dark']::before {
   100% { transform: translate3d(-2%, -1%, 0) scale(1.02); }
 }
 
+/* Marks the panel a timeline step just sent you to. Scrolling there is not
+   enough on a long order page — you arrive and still have to work out which
+   card you were sent to. Two pulses, then it gets out of the way. */
+.flash-target {
+  animation: duka-flash 1s ease-out 2;
+  border-radius: theme('borderRadius.xl2');
+}
+
+@keyframes duka-flash {
+  0%   { box-shadow: 0 0 0 0 rgb(var(--brand-green-fresh) / 0.55); }
+  70%  { box-shadow: 0 0 0 12px rgb(var(--brand-green-fresh) / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(var(--brand-green-fresh) / 0); }
+}
+
 /* Room for the fixed mobile tab strip, plus the iPhone home indicator. The
    bar only exists below lg, so the padding goes away with it. */
 .app-main {

@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, CheckCircle2, MessageCircle, Package, PartyPopper } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { Order } from '../../types';
+import { Order, OrderStatus } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { ZoomableImage } from '../../components/ui/ZoomableImage';
 import { LoadingState } from '../../components/ui/LoadingState';
-import { OrderTimeline } from '../../components/domain/OrderTimeline';
+import { OrderTimeline, TimelineAction } from '../../components/domain/OrderTimeline';
+import { ActionNeededBanner } from '../../components/domain/ActionNeededBanner';
 import { PricingBreakdown } from '../../components/domain/PricingBreakdown';
 import { DeliveryTracker } from '../../components/domain/DeliveryTracker';
 import { OrderShopper, ShopperSummaryCard } from '../../components/domain/ShopperSummaryCard';
@@ -80,6 +81,30 @@ export function ActiveOrderPage() {
   if (loading) return <LoadingState />;
   if (!order) return null;
 
+  /**
+   * Where each stage of the order lives on this page.
+   *
+   * "Awaiting your approval" was the stage people could not act on: they read
+   * it in the timeline and then had to find the approve card themselves,
+   * somewhere further down a page that also holds a map, a price breakdown and
+   * a list of options. Now the step is the way there.
+   */
+  const chat = `/app/orders/${order.id}/messages`;
+  const mine = (step: string, hint: string): Partial<Record<OrderStatus, TimelineAction>> =>
+    order.status === step ? { [step]: { targetId: `step-${step}`, hint } } as any : {};
+
+  const timelineActions: Partial<Record<OrderStatus, TimelineAction>> = {
+    // The stages the shopper drives are not things the customer can act on, so
+    // they lead to the two places worth looking: where the shopper is, and the
+    // conversation with them.
+    ...(trackable && { shopper_assigned: { targetId: 'live-tracking', hint: 'See where your shopper is' } }),
+    ...(trackable && { shopping: { to: chat, hint: 'Message your shopper' } }),
+    ...mine('awaiting_customer_approval', 'Approve the purchase'),
+    ...mine('out_for_delivery', 'Confirm when it arrives'),
+    ...mine('delivered', 'Mark the order complete'),
+    ...(order.status === 'completed' && !rated && { completed: { targetId: 'step-completed', hint: 'Rate your shopper' } }),
+  };
+
   return (
     <div className="mx-auto max-w-3xl pb-16">
       <button onClick={() => navigate(-1)} className="mb-4 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep"><ArrowLeft size={15} strokeWidth={2} className="inline" /> Back</button>
@@ -89,16 +114,26 @@ export function ActiveOrderPage() {
         <StatusBadge status={order.status} />
       </div>
 
+      {/* Ahead of the tracker and the timeline — this is the whole page's
+          purpose whenever the order is waiting on the customer. */}
+      <ActionNeededBanner
+        status={order.status}
+        perspective="customer"
+        targetId={`step-${order.status}`}
+      />
+
+      <div id="live-tracking">
       <DeliveryTracker
         tracking={tracking}
         sharingLocation={sharingLocation}
         locationError={locationError}
         onPinned={refreshTracking}
       />
+      </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <GlassCard padding="lg" hover={false}>
-          <OrderTimeline status={order.status} />
+          <OrderTimeline status={order.status} actions={timelineActions} />
         </GlassCard>
 
         <div className="flex flex-col gap-4">
@@ -150,7 +185,7 @@ export function ActiveOrderPage() {
 
           {/* Customer actions */}
           {order.status === 'awaiting_customer_approval' && (
-            <GlassCard glow="yellow" hover={false}>
+            <GlassCard id="step-awaiting_customer_approval" glow="yellow" hover={false}>
               <p className="font-medium text-brand-green-deep">Approve this purchase?</p>
               <p className="mt-1 text-sm text-brand-ink/60">Your shopper found the item and is waiting for your go-ahead to buy it.</p>
               <GlassButton className="mt-3" disabled={acting} onClick={() => act('approve')} fullWidth>
@@ -160,7 +195,7 @@ export function ActiveOrderPage() {
           )}
 
           {order.status === 'out_for_delivery' && (
-            <GlassCard glow="green" hover={false}>
+            <GlassCard id="step-out_for_delivery" glow="green" hover={false}>
               <p className="font-medium text-brand-green-deep">Received your item?</p>
               <p className="mt-1 text-sm text-brand-ink/60">Confirm delivery once your shopper hands it over.</p>
               <GlassButton className="mt-3" disabled={acting} onClick={() => act('delivered')} fullWidth>
@@ -170,7 +205,7 @@ export function ActiveOrderPage() {
           )}
 
           {order.status === 'delivered' && (
-            <GlassCard glow="green" hover={false}>
+            <GlassCard id="step-delivered" glow="green" hover={false}>
               <p className="font-medium text-brand-green-deep">Order complete?</p>
               <p className="mt-1 text-sm text-brand-ink/60">Mark this order as done to release your shopper's earnings.</p>
               <GlassButton className="mt-3" disabled={acting} onClick={() => act('complete')} fullWidth>
@@ -180,7 +215,7 @@ export function ActiveOrderPage() {
           )}
 
           {order.status === 'completed' && !rated && (
-            <GlassCard glow="yellow" hover={false}>
+            <GlassCard id="step-completed" glow="yellow" hover={false}>
               <p className="font-medium text-brand-green-deep">Rate your shopper</p>
               <div className="mt-2"><RatingStars value={stars} interactive size="md" onChange={setStars} /></div>
               <GlassButton className="mt-3" onClick={submitRating} fullWidth>Submit rating</GlassButton>

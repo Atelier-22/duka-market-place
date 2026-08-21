@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Bike, Camera, Check, CheckCircle2, CircleAlert, Footprints, MapPin, MessageCircle, Navigation, PartyPopper, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { Order } from '../../types';
+import { Order, OrderStatus } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { LoadingState } from '../../components/ui/LoadingState';
-import { OrderTimeline } from '../../components/domain/OrderTimeline';
+import { OrderTimeline, TimelineAction } from '../../components/domain/OrderTimeline';
+import { ActionNeededBanner } from '../../components/domain/ActionNeededBanner';
 import { LazyLiveMap } from '../../components/domain/LazyLiveMap';
 import { ShoppingDonePanel } from '../../components/domain/ShoppingDonePanel';
 import { ImageUpload } from '../../components/ui/ImageUpload';
@@ -164,6 +165,37 @@ export function ShoppingWorkflowPage() {
   if (loading) return <LoadingState />;
   if (!order) return null;
 
+  /**
+   * Where each stage of the job lives on this page.
+   *
+   * Shoppers were reading the timeline as a picture and then hunting the page
+   * for the card it described — "You paid the shop" says nothing about where
+   * the receipt upload is. Only the stage the job has actually reached has a
+   * panel on screen, so anything else points at the part of the page that does
+   * exist: the route map, or the chat.
+   */
+  const chat = `/shopper/orders/${order.id}/messages`;
+  const at = (step: string, hint: string): Partial<Record<OrderStatus, TimelineAction>> =>
+    order.status === step ? { [step]: { targetId: `step-${step}`, hint } } as any : {};
+
+  const timelineActions: Partial<Record<OrderStatus, TimelineAction>> = {
+    // Past stages still lead somewhere useful rather than going dead.
+    ...(order.status !== 'requested' && { requested: { to: chat, hint: 'Message the customer' } }),
+    ...at('requested', 'Accept or decline'),
+    ...at('shopper_assigned', 'Say you are on your way'),
+    ...at('shopping', 'Send the photo and price'),
+    // Nothing for the shopper to do here except chase it up, so this one
+    // goes to the chat rather than to a card that only says "waiting".
+    ...(order.status === 'awaiting_customer_approval'
+      && { awaiting_customer_approval: { to: chat, hint: 'Waiting — nudge the customer' } }),
+    ...at('purchased', 'Upload your receipt'),
+    ...at('out_for_delivery', 'Delivery in progress'),
+    ...at('delivered', 'Mark the job complete'),
+    ...at('completed', 'Rate this customer'),
+    ...(broadcasting && order.status !== 'shopper_assigned'
+      && { shopper_assigned: { targetId: 'route-map', hint: 'See your route' } }),
+  };
+
   return (
     <div className="mx-auto max-w-2xl pb-16">
       <button onClick={() => navigate(-1)} className="mb-4 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep"><ArrowLeft size={15} strokeWidth={2} className="inline" /> Back</button>
@@ -173,12 +205,19 @@ export function ShoppingWorkflowPage() {
         <StatusBadge status={order.status} />
       </div>
 
+      {/* Before the timeline, before the map: what you have to do now. */}
+      <ActionNeededBanner
+        status={order.status}
+        perspective="shopper"
+        targetId={`step-${order.status}`}
+      />
+
       <GlassCard padding="lg" hover={false} className="mt-6">
-        <OrderTimeline status={order.status} perspective="shopper" />
+        <OrderTimeline status={order.status} perspective="shopper" actions={timelineActions} />
       </GlassCard>
 
       {broadcasting && (
-        <GlassCard padding="lg" hover={false} className="mt-6">
+        <GlassCard id="route-map" padding="lg" hover={false} className="mt-6">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Your route</p>
             <span className={`flex items-center gap-1.5 text-xs font-medium ${sharing ? 'text-brand-green-fresh' : 'text-brand-red'}`}>
@@ -267,7 +306,7 @@ export function ShoppingWorkflowPage() {
 
       <div className="mt-6">
         {order.status === 'requested' && (
-          <GlassCard glow="yellow" hover={false}>
+          <GlassCard id="step-requested" glow="yellow" hover={false}>
             <p className="font-medium text-brand-green-deep">This job is waiting for your answer</p>
             <p className="mt-1 text-sm text-brand-ink/60">
               The customer picked you. Accept to take it on, or decline so it goes back to other shoppers.
@@ -284,7 +323,7 @@ export function ShoppingWorkflowPage() {
         )}
 
         {order.status === 'shopper_assigned' && (
-          <GlassCard glow="green" hover={false}>
+          <GlassCard id="step-shopper_assigned" glow="green" hover={false}>
             <p className="font-medium text-brand-green-deep">On your way?</p>
             <p className="mt-1 text-sm text-brand-ink/60">Let the customer know you're headed to the location.</p>
             <GlassButton className="mt-3" disabled={acting} onClick={goShopping} fullWidth>
@@ -294,7 +333,7 @@ export function ShoppingWorkflowPage() {
         )}
 
         {order.status === 'shopping' && (
-          <GlassCard glow="yellow" hover={false}>
+          <GlassCard id="step-shopping" glow="yellow" hover={false}>
             <p className="font-medium text-brand-green-deep">Found the item?</p>
             <p className="mt-1 text-sm text-brand-ink/60">Upload a real photo and enter the exact price — this is what the customer will see before approving.</p>
             <div className="mt-4 flex flex-col gap-3">
@@ -309,7 +348,7 @@ export function ShoppingWorkflowPage() {
         )}
 
         {order.status === 'awaiting_customer_approval' && (
-          <GlassCard hover={false}>
+          <GlassCard id="step-awaiting_customer_approval" hover={false}>
             <p className="font-medium text-brand-green-deep">Waiting for customer approval</p>
             <p className="mt-1 text-sm text-brand-ink/60">
               We've sent your photo and price ({recordedPrice !== null ? `${recordedPrice.toLocaleString('en-UG')} UGX` : 'the recorded price'}) to the customer. You'll be notified once they approve.
@@ -318,7 +357,7 @@ export function ShoppingWorkflowPage() {
         )}
 
         {order.status === 'purchased' && (
-          <GlassCard glow="green" hover={false}>
+          <GlassCard id="step-purchased" glow="green" hover={false}>
             <p className="font-medium text-brand-green-deep">Purchased! Upload your receipt</p>
             <p className="mt-1 text-sm text-brand-ink/60">A photo of the receipt keeps everything transparent and protects both of you.</p>
             <div className="mt-4 flex flex-col gap-3">
@@ -331,14 +370,14 @@ export function ShoppingWorkflowPage() {
         )}
 
         {order.status === 'out_for_delivery' && (
-          <GlassCard hover={false}>
+          <GlassCard id="step-out_for_delivery" hover={false}>
             <p className="font-medium text-brand-green-deep">On the way to the customer</p>
             <p className="mt-1 text-sm text-brand-ink/60">The customer will confirm once they receive the item — your earnings release right after.</p>
           </GlassCard>
         )}
 
         {order.status === 'delivered' && (
-          <GlassCard glow="green" hover={false}>
+          <GlassCard id="step-delivered" glow="green" hover={false}>
             <p className="font-medium text-brand-green-deep">Delivered — mark this job complete</p>
             <GlassButton
               className="mt-3"
@@ -363,7 +402,7 @@ export function ShoppingWorkflowPage() {
         )}
 
         {order.status === 'completed' && (
-          <GlassCard glow="yellow" hover={false}>
+          <GlassCard id="step-completed" glow="yellow" hover={false}>
             <p className="flex items-center gap-2 font-medium text-brand-green-deep">
               <CheckCircle2 size={17} strokeWidth={2} /> Job complete — earnings released to your balance.
             </p>
