@@ -228,6 +228,14 @@ CREATE TABLE orders (
   completed_at        TIMESTAMPTZ,
   cancelled_at         TIMESTAMPTZ,
 
+  -- Delivery clock. The shopper marks shopping done, then either starts
+  -- delivering now (begins the ETA countdown) or defers to a later time
+  -- agreed with the customer directly.
+  shopping_done_at     TIMESTAMPTZ,
+  delivery_started_at  TIMESTAMPTZ,
+  delivery_eta_minutes INTEGER,
+  delivery_deferred_to TIMESTAMPTZ,
+
   created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -363,6 +371,19 @@ CREATE TABLE deliveries (
   delivery_notes    TEXT,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Position trail for a shopper on an active order. The customer's map reads
+-- the most recent row; older rows keep the route for support/disputes.
+CREATE TABLE shopper_locations (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id      UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  shopper_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  lat           NUMERIC(9,6) NOT NULL,
+  lng           NUMERIC(9,6) NOT NULL,
+  accuracy_m    NUMERIC(8,2),
+  recorded_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_shopper_locations_order ON shopper_locations(order_id, recorded_at DESC);
 
 CREATE TABLE ratings (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),

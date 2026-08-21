@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as orderController from '../controllers/order.controller';
+import * as trackingController from '../controllers/tracking.controller';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 
@@ -16,5 +17,10 @@ router.post('/:id/out-for-delivery', requireRole('shopper'), asyncHandler(orderC
 router.post('/:id/delivered', requireRole('customer', 'admin'), asyncHandler(orderController.confirmDelivered));
 router.post('/:id/complete', asyncHandler(orderController.complete));
 router.post('/:id/cancel', asyncHandler(orderController.cancel));
+
+// Live tracking
+router.get('/:id/tracking', asyncHandler(trackingController.getTracking));
+router.post('/:id/location', requireRole('shopper'), asyncHandler(trackingController.postPosition));
+router.post('/:id/shopping-done', requireRole('shopper'), asyncHandler(trackingController.markShoppingDone));
 
 export default router;

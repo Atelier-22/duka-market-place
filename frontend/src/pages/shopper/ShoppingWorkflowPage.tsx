@@ -9,8 +9,14 @@ import { Input } from '../../components/ui/Input';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { OrderTimeline } from '../../components/domain/OrderTimeline';
+import { LazyLiveMap } from '../../components/domain/LazyLiveMap';
+import { ShoppingDonePanel } from '../../components/domain/ShoppingDonePanel';
 import { ImageUpload } from '../../components/ui/ImageUpload';
 import { useToast } from '../../components/ui/Toast';
+import { useBroadcastPosition, useOrderTracking } from '../../hooks/useOrderTracking';
+
+/** While in these statuses the shopper's browser publishes its position. */
+const BROADCAST_STATUSES = ['shopper_assigned', 'shopping', 'item_found', 'awaiting_customer_approval', 'purchased', 'out_for_delivery'];
 
 /**
  * This screen guides the shopper through the workflow described in the
@@ -39,6 +45,10 @@ export function ShoppingWorkflowPage() {
     api.get(`/orders/${id}`).then((res) => setOrder(res.data.order)).finally(() => setLoading(false));
   }
   useEffect(load, [id]);
+
+  const broadcasting = !!order && BROADCAST_STATUSES.includes(order.status);
+  const { sharing, error: locationError } = useBroadcastPosition(id, broadcasting);
+  const { tracking, refresh: refreshTracking } = useOrderTracking(id, broadcasting);
 
   async function goShopping() {
     setActing(true);
@@ -108,6 +118,42 @@ export function ShoppingWorkflowPage() {
       <GlassCard padding="lg" hover={false} className="mt-6">
         <OrderTimeline status={order.status} perspective="shopper" />
       </GlassCard>
+
+      {broadcasting && (
+        <GlassCard padding="lg" hover={false} className="mt-6">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Your route</p>
+            <span className={`flex items-center gap-1.5 text-xs font-medium ${sharing ? 'text-brand-green-fresh' : 'text-brand-red'}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${sharing ? 'bg-brand-green-fresh' : 'bg-brand-red'}`} />
+              {sharing ? 'Sharing location' : 'Location off'}
+            </span>
+          </div>
+          {locationError && <p className="mt-2 text-xs font-medium text-brand-red">{locationError}</p>}
+          <div className="mt-3 overflow-hidden rounded-xl2 border border-brand-green/10">
+            <LazyLiveMap
+              shopper={tracking?.shopper ? { lat: tracking.shopper.lat, lng: tracking.shopper.lng, label: 'You' } : null}
+              destination={tracking?.destination ?? null}
+            />
+          </div>
+          {tracking?.distanceMetres !== null && tracking?.distanceMetres !== undefined && (
+            <p className="mt-3 text-xs text-brand-ink/45">
+              {tracking.distanceMetres < 1000
+                ? `${tracking.distanceMetres} m from the delivery address`
+                : `${(tracking.distanceMetres / 1000).toFixed(1)} km from the delivery address`}
+            </p>
+          )}
+
+          <ShoppingDonePanel
+            orderId={order.id}
+            shoppingDoneAt={tracking?.shoppingDoneAt ?? null}
+            deliveryStartedAt={tracking?.deliveryStartedAt ?? null}
+            deliveryDeferredTo={tracking?.deliveryDeferredTo ?? null}
+            sharingLocation={sharing}
+            locationError={locationError}
+            onDone={() => { refreshTracking(); load(); }}
+          />
+        </GlassCard>
+      )}
 
       <div className="mt-6">
         {order.status === 'shopper_assigned' && (

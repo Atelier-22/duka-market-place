@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LogOut, LucideIcon } from 'lucide-react';
+import { LogOut, LucideIcon, PanelLeft } from 'lucide-react';
 import { BRAND } from '../../config/brand';
 import { useAuth } from '../../context/AuthContext';
 import { AccountToggle } from './AccountToggle';
@@ -15,32 +16,77 @@ interface AppSidebarProps {
   roleLabel: string;
 }
 
+const STORAGE_KEY = 'duka_sidebar_collapsed';
+
 export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Remembered per device. Reading localStorage can throw in a private window,
+  // so a failure just means "start expanded".
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
+    } catch {
+      // Preference is a nicety; losing it is fine.
+    }
+  }, [collapsed]);
+
   return (
-    <aside className="glass sticky top-4 mb-4 flex h-[calc(100vh-2rem)] w-64 shrink-0 flex-col rounded-xl3 p-5">
-      <div className="flex items-center gap-2 px-1">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh font-display text-sm font-bold text-white">
-          {BRAND.name[0]}
-        </span>
-        <div>
-          <p className="font-display text-base font-semibold text-brand-green-deep">{BRAND.name}</p>
-          <p className="text-[11px] uppercase tracking-wide text-brand-ink/40">{roleLabel}</p>
-        </div>
+    <aside
+      className={[
+        'glass sticky top-4 mb-4 flex h-[calc(100vh-2rem)] shrink-0 flex-col rounded-xl3 transition-[width] duration-200 ease-out',
+        collapsed ? 'w-[68px] p-3' : 'w-64 p-5',
+      ].join(' ')}
+    >
+      <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2 px-1'}`}>
+        {!collapsed && (
+          <>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh font-display text-sm font-bold text-white">
+              {BRAND.name[0]}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate font-display text-base font-semibold text-brand-green-deep">{BRAND.name}</p>
+              <p className="text-[11px] uppercase tracking-wide text-brand-ink/40">{roleLabel}</p>
+            </div>
+          </>
+        )}
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          title={collapsed ? 'Open sidebar' : 'Close sidebar'}
+          aria-label={collapsed ? 'Open sidebar' : 'Close sidebar'}
+          aria-expanded={!collapsed}
+          className={[
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-brand-ink/50',
+            'transition-colors hover:bg-brand-green-mist hover:text-brand-green-deep',
+            collapsed ? '' : 'ml-auto',
+          ].join(' ')}
+        >
+          <PanelLeft size={18} strokeWidth={1.75} />
+        </button>
       </div>
 
-      <nav className="mt-8 flex flex-1 flex-col gap-1">
+      <nav className={`mt-8 flex flex-1 flex-col gap-1 ${collapsed ? 'items-center' : ''}`}>
         {items.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
               key={item.to}
               to={item.to}
+              title={collapsed ? item.label : undefined}
               className={({ isActive }) =>
                 [
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                  'flex items-center rounded-xl text-sm font-medium transition-colors',
+                  collapsed ? 'h-10 w-10 justify-center' : 'w-full gap-3 px-3 py-2.5',
                   isActive
                     ? 'bg-gradient-to-br from-brand-green to-brand-green-fresh text-white shadow-glass'
                     : 'text-brand-ink/65 hover:bg-brand-green-mist hover:text-brand-green-deep',
@@ -48,27 +94,35 @@ export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
               }
             >
               <Icon size={18} strokeWidth={1.75} className="shrink-0" />
-              {item.label}
+              {!collapsed && item.label}
             </NavLink>
           );
         })}
       </nav>
 
-      <div className="mt-auto border-t border-brand-green/10 pt-4">
-        <p className="truncate px-1 text-sm font-medium text-brand-ink">{user?.fullName}</p>
-        <p className="truncate px-1 text-xs text-brand-ink/40">{user?.phone}</p>
-
-        <AccountToggle />
+      <div className={`mt-auto border-t border-brand-green/10 pt-4 ${collapsed ? 'flex flex-col items-center' : ''}`}>
+        {!collapsed && (
+          <>
+            <p className="truncate px-1 text-sm font-medium text-brand-ink">{user?.fullName}</p>
+            <p className="truncate px-1 text-xs text-brand-ink/40">{user?.phone}</p>
+            <AccountToggle />
+          </>
+        )}
 
         <button
           onClick={() => {
             logout();
             navigate('/');
           }}
-          className="mt-3 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-brand-red hover:bg-brand-red/10"
+          title={collapsed ? 'Log out' : undefined}
+          aria-label="Log out"
+          className={[
+            'mt-3 flex items-center rounded-xl text-sm font-medium text-brand-red hover:bg-brand-red/10',
+            collapsed ? 'h-10 w-10 justify-center' : 'w-full gap-3 px-3 py-2 text-left',
+          ].join(' ')}
         >
           <LogOut size={18} strokeWidth={1.75} className="shrink-0" />
-          Log out
+          {!collapsed && 'Log out'}
         </button>
       </div>
     </aside>

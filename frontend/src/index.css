@@ -150,3 +150,19 @@ body {
   background: linear-gradient(90deg, #E7F5EC 25%, #FFFFFF 50%, #E7F5EC 75%);
   background-size: 200% 100%;
 }
+
+/* Pulse under the shopper's live position marker (LiveMap divIcon). Defined
+   here rather than inline because @keyframes cannot live in a style attribute. */
+@keyframes duka-ping {
+  75%, 100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Leaflet paints its own controls; soften them to match the glass palette. */
+.leaflet-container {
+  font-family: inherit;
+  background: #E7F5EC;
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.75) !important;
+}

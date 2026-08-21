@@ -9,8 +9,13 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { OrderTimeline } from '../../components/domain/OrderTimeline';
 import { PricingBreakdown } from '../../components/domain/PricingBreakdown';
+import { DeliveryTracker } from '../../components/domain/DeliveryTracker';
 import { RatingStars } from '../../components/ui/RatingStars';
 import { useToast } from '../../components/ui/Toast';
+import { useOrderTracking } from '../../hooks/useOrderTracking';
+
+/** Statuses during which the live map is worth showing the customer. */
+const TRACKABLE_STATUSES = ['shopper_assigned', 'shopping', 'item_found', 'awaiting_customer_approval', 'purchased', 'out_for_delivery'];
 
 export function ActiveOrderPage() {
   const { id } = useParams();
@@ -22,6 +27,8 @@ export function ActiveOrderPage() {
   const [acting, setActing] = useState(false);
   const [stars, setStars] = useState(5);
   const [rated, setRated] = useState(false);
+
+  const { tracking } = useOrderTracking(id, !!order && TRACKABLE_STATUSES.includes(order.status));
 
   function load() {
     api.get(`/orders/${id}`).then((res) => {
@@ -72,6 +79,8 @@ export function ActiveOrderPage() {
         <h1 className="font-display text-2xl font-medium text-brand-green-deep">Order #{order.id.slice(0, 8)}</h1>
         <StatusBadge status={order.status} />
       </div>
+
+      <DeliveryTracker tracking={tracking} />
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <GlassCard padding="lg" hover={false}>

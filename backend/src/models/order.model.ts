@@ -14,6 +14,13 @@ export interface OrderRow {
   platform_fee_ugx: number;
   total_amount_ugx: number | null;
   delivery_address_id: string;
+
+  // Delivery clock — see migration 002_live_tracking.sql
+  shopping_done_at: string | null;
+  delivery_started_at: string | null;
+  delivery_eta_minutes: number | null;
+  delivery_deferred_to: string | null;
+
   created_at: string;
   updated_at: string;
 }
