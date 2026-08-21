@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CheckCircle2 } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
@@ -40,7 +41,7 @@ export function ShopperVerificationPage() {
       <GlassCard padding="lg" hover={false} className="mt-6">
         {submitted ? (
           <p className="text-sm font-medium text-brand-green-deep">
-            ✅ Submitted! We'll review your document and update your status soon.
+            <CheckCircle2 size={16} strokeWidth={2} className="mr-1 inline" /> Submitted! We'll review your document and update your status soon.
           </p>
         ) : (
           <div className="flex flex-col gap-4">

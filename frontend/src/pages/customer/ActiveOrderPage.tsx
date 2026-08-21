@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Check, CheckCircle2, MessageCircle, Package, PartyPopper } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { Order } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -65,7 +66,7 @@ export function ActiveOrderPage() {
 
   return (
     <div className="mx-auto max-w-3xl pb-16">
-      <button onClick={() => navigate(-1)} className="mb-4 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep">← Back</button>
+      <button onClick={() => navigate(-1)} className="mb-4 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep"><ArrowLeft size={15} strokeWidth={2} className="inline" /> Back</button>
 
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-medium text-brand-green-deep">Order #{order.id.slice(0, 8)}</h1>
@@ -99,7 +100,7 @@ export function ActiveOrderPage() {
                       <p className="font-medium text-brand-ink">{it.name}</p>
                       <p className="text-brand-ink/50">{new Intl.NumberFormat('en-UG').format(it.price_ugx)} UGX · {it.shop_name}</p>
                     </div>
-                    {it.is_selected && <span className="text-brand-green-fresh">✓</span>}
+                    {it.is_selected && <Check size={16} strokeWidth={2.5} className="text-brand-green-fresh" />}
                   </div>
                 ))}
               </div>
@@ -112,7 +113,7 @@ export function ActiveOrderPage() {
               <p className="font-medium text-brand-green-deep">Approve this purchase?</p>
               <p className="mt-1 text-sm text-brand-ink/60">Your shopper found the item and is waiting for your go-ahead to buy it.</p>
               <GlassButton className="mt-3" disabled={acting} onClick={() => act('approve')} fullWidth>
-                {acting ? 'Approving…' : '✅ Approve purchase'}
+                {acting ? 'Approving…' : <><CheckCircle2 size={17} strokeWidth={2} /> Approve purchase</>}
               </GlassButton>
             </GlassCard>
           )}
@@ -122,7 +123,7 @@ export function ActiveOrderPage() {
               <p className="font-medium text-brand-green-deep">Received your item?</p>
               <p className="mt-1 text-sm text-brand-ink/60">Confirm delivery once your shopper hands it over.</p>
               <GlassButton className="mt-3" disabled={acting} onClick={() => act('delivered')} fullWidth>
-                {acting ? 'Confirming…' : '📦 Confirm delivery'}
+                {acting ? 'Confirming…' : <><Package size={17} strokeWidth={2} /> Confirm delivery</>}
               </GlassButton>
             </GlassCard>
           )}
@@ -132,7 +133,7 @@ export function ActiveOrderPage() {
               <p className="font-medium text-brand-green-deep">Order complete?</p>
               <p className="mt-1 text-sm text-brand-ink/60">Mark this order as done to release your shopper's earnings.</p>
               <GlassButton className="mt-3" disabled={acting} onClick={() => act('complete')} fullWidth>
-                {acting ? 'Completing…' : '🎉 Mark as completed'}
+                {acting ? 'Completing…' : <><PartyPopper size={17} strokeWidth={2} /> Mark as completed</>}
               </GlassButton>
             </GlassCard>
           )}
@@ -148,7 +149,7 @@ export function ActiveOrderPage() {
           {!['completed', 'cancelled', 'refunded'].includes(order.status) && (
             <div className="flex gap-2">
               <GlassButton variant="ghost" size="sm" onClick={() => navigate(`/app/orders/${id}/messages`)}>
-                💬 Message shopper
+                <MessageCircle size={17} strokeWidth={2} /> Message shopper
               </GlassButton>
               <GlassButton
                 variant="danger"

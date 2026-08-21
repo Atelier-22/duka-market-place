@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ShoppingCart } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
@@ -69,7 +70,7 @@ export function ShopperProfilePage() {
           disabled={switching}
           onClick={handleSwitchToCustomer}
         >
-          {switching ? 'Switching…' : '🛒 Switch to customer mode'}
+          {switching ? 'Switching…' : <><ShoppingCart size={17} strokeWidth={2} /> Switch to customer mode</>}
         </GlassButton>
       </GlassCard>
     </div>

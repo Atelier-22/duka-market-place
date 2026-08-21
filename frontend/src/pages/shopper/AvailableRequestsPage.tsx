@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Map } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { ShoppingRequest } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -60,7 +61,7 @@ export function AvailableRequestsPage() {
         {loading ? (
           <LoadingState />
         ) : requests.length === 0 ? (
-          <EmptyState icon="🗺️" title="No open requests right now" description="Check back soon, or make sure you're online." />
+          <EmptyState icon={<Map size={40} strokeWidth={1.25} />} title="No open requests right now" description="Check back soon, or make sure you're online." />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {requests.map((r) => (

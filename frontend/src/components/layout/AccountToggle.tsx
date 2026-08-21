@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeftRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 
@@ -65,7 +66,11 @@ export function AccountToggle() {
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-ink/20" />
             {LABEL_FOR[account.role]}
             <span className="ml-auto text-[11px] text-brand-ink/40">
-              {busy === account.id ? 'Switching…' : '⇄'}
+              {busy === account.id ? (
+                'Switching…'
+              ) : (
+                <ArrowLeftRight size={14} strokeWidth={1.75} />
+              )}
             </span>
           </button>
         ))}

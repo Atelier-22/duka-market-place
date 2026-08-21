@@ -20,7 +20,7 @@ export function DashboardStat({ label, value, icon, trend, accent = 'green' }: D
     <GlassCard padding="md" hover={false}>
       <div className="flex items-start justify-between">
         <p className="text-xs font-medium uppercase tracking-wide text-brand-ink/45">{label}</p>
-        {icon && <span className="text-lg">{icon}</span>}
+        {icon && <span className="shrink-0 text-brand-green-fresh/70">{icon}</span>}
       </div>
       <p className={`mt-2 font-display text-2xl font-semibold ${ACCENT[accent]}`}>{value}</p>
       {trend && <p className="mt-1 text-xs text-brand-green-fresh">{trend}</p>}

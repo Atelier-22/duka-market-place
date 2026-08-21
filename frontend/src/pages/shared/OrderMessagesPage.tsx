@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { api } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
@@ -39,13 +40,13 @@ export function OrderMessagesPage() {
 
   return (
     <div className="mx-auto flex h-[calc(100vh-6rem)] max-w-2xl flex-col pb-4">
-      <button onClick={() => navigate(-1)} className="mb-2 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep">← Back to order</button>
+      <button onClick={() => navigate(-1)} className="mb-2 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep"><ArrowLeft size={15} strokeWidth={2} className="inline" /> Back to order</button>
       <GlassCard hover={false} padding="md" className="flex flex-1 flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto pr-1">
           {loading ? (
             <LoadingState />
           ) : messages.length === 0 ? (
-            <p className="py-16 text-center text-sm text-brand-ink/40">No messages yet. Say hello 👋</p>
+            <p className="py-16 text-center text-sm text-brand-ink/40">No messages yet — say hello.</p>
           ) : (
             <div className="flex flex-col gap-3">
               {messages.map((m) => (

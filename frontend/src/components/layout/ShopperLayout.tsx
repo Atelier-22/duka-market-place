@@ -1,13 +1,14 @@
 import { Outlet } from 'react-router-dom';
+import { BadgeCheck, Home, Map, ShoppingBag, User, Wallet } from 'lucide-react';
 import { AppSidebar } from './AppSidebar';
 
 const ITEMS = [
-  { to: '/shopper', label: 'Dashboard', icon: '🏠' },
-  { to: '/shopper/available', label: 'Available jobs', icon: '🗺️' },
-  { to: '/shopper/orders', label: 'My jobs', icon: '🛍️' },
-  { to: '/shopper/earnings', label: 'Earnings', icon: '💰' },
-  { to: '/shopper/verification', label: 'Verification', icon: '✅' },
-  { to: '/shopper/profile', label: 'Profile', icon: '👤' },
+  { to: '/shopper', label: 'Dashboard', icon: Home },
+  { to: '/shopper/available', label: 'Available jobs', icon: Map },
+  { to: '/shopper/orders', label: 'My jobs', icon: ShoppingBag },
+  { to: '/shopper/earnings', label: 'Earnings', icon: Wallet },
+  { to: '/shopper/verification', label: 'Verification', icon: BadgeCheck },
+  { to: '/shopper/profile', label: 'Profile', icon: User },
 ];
 
 export function ShopperLayout() {

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 
@@ -36,7 +37,7 @@ export function HowItWorksPage() {
 
       <div className="mt-14 text-center">
         <Link to="/register?role=customer">
-          <GlassButton size="lg">Create your first request →</GlassButton>
+          <GlassButton size="lg">Create your first request <ArrowRight size={17} strokeWidth={2} /></GlassButton>
         </Link>
       </div>
     </div>

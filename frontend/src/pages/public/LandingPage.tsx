@@ -1,23 +1,24 @@
 import { Link } from 'react-router-dom';
+import { ArrowRight, Bike, Broccoli, CheckCircle2, Footprints, Handshake, Lightbulb, MapPin, MessageCircle, Percent, Search, ShoppingBag, Smartphone, Star, Clock } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { HeroCarousel } from '../../components/domain/HeroCarousel';
 import { BRAND } from '../../config/brand';
 
 const HOW_IT_WORKS = [
-  { icon: '💬', title: 'Tell us what you need', body: 'A product, a market, a shop, even a TikTok seller — describe it in your own words.' },
-  { icon: '📍', title: 'Choose where to get it', body: 'Pick a specific market or shop, paste a social seller link, or let a shopper find the best option.' },
-  { icon: '🤝', title: 'A nearby shopper accepts', body: 'A verified shopper close to that location picks up your request.' },
-  { icon: '🛍️', title: 'They find and buy it', body: 'Real photos and the real price, uploaded before anything is purchased.' },
-  { icon: '✅', title: 'You approve the purchase', body: 'See the exact price breakdown and approve before the shopper pays.' },
-  { icon: '🚴', title: 'They deliver it', body: 'Straight to the address you choose, tracked every step of the way.' },
+  { icon: MessageCircle, title: 'Tell us what you need', body: 'A product, a market, a shop, even a TikTok seller — describe it in your own words.' },
+  { icon: MapPin, title: 'Choose where to get it', body: 'Pick a specific market or shop, paste a social seller link, or let a shopper find the best option.' },
+  { icon: Handshake, title: 'A nearby shopper accepts', body: 'A verified shopper close to that location picks up your request.' },
+  { icon: ShoppingBag, title: 'They find and buy it', body: 'Real photos and the real price, uploaded before anything is purchased.' },
+  { icon: CheckCircle2, title: 'You approve the purchase', body: 'See the exact price breakdown and approve before the shopper pays.' },
+  { icon: Bike, title: 'They deliver it', body: 'Straight to the address you choose, tracked every step of the way.' },
 ];
 
 const USE_CASES = [
-  { icon: '👟', title: 'Market finds', body: '"Black shoes, size 42, under 100,000 UGX from Owino Market."' },
-  { icon: '🥦', title: 'Fresh groceries', body: '"Get me tomatoes, onions and greens from Kalerwe Market."' },
-  { icon: '📱', title: 'Social sellers', body: '"Find this exact phone case from a TikTok seller I found."' },
-  { icon: '🔍', title: 'Best price search', body: '"Find me the cheapest good-quality version of this item."' },
+  { icon: Footprints, title: 'Market finds', body: '"Black shoes, size 42, under 100,000 UGX from Owino Market."' },
+  { icon: Broccoli, title: 'Fresh groceries', body: '"Get me tomatoes, onions and greens from Kalerwe Market."' },
+  { icon: Smartphone, title: 'Social sellers', body: '"Find this exact phone case from a TikTok seller I found."' },
+  { icon: Search, title: 'Best price search', body: '"Find me the cheapest good-quality version of this item."' },
 ];
 
 export function LandingPage() {
@@ -41,7 +42,7 @@ export function LandingPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link to="/register?role=customer">
-                <GlassButton size="lg">Create a shopping request →</GlassButton>
+                <GlassButton size="lg">Create a shopping request <ArrowRight size={17} strokeWidth={2} /></GlassButton>
               </Link>
               <Link to="/become-a-shopper">
                 <GlassButton size="lg" variant="secondary">Become a shopper</GlassButton>
@@ -69,14 +70,14 @@ export function LandingPage() {
               <p className="mt-2 font-display text-lg font-medium text-brand-green-deep">Black shoes, size 42</p>
               <p className="mt-1 text-sm text-brand-ink/60">Owino Market · Budget: 100,000 UGX</p>
               <div className="mt-4 flex items-center gap-2 rounded-xl bg-brand-green-mist p-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green-fresh text-white">🛍️</span>
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green-fresh text-white"><ShoppingBag size={18} strokeWidth={1.75} /></span>
                 <div>
                   <p className="text-sm font-semibold text-brand-green-deep">Nakato is shopping for you</p>
                   <p className="text-xs text-brand-ink/50">Found the item — 55,000 UGX</p>
                 </div>
               </div>
               <div className="mt-4 rounded-xl bg-brand-yellow/15 p-3 text-sm text-yellow-800">
-                💡 Item is 45,000 UGX under your budget — approve to continue.
+                <Lightbulb size={15} strokeWidth={2} className="mr-1 inline" /> Item is 45,000 UGX under your budget — approve to continue.
               </div>
             </GlassCard>
             <GlassCard glow="yellow" padding="sm" className="absolute -bottom-8 -left-8 hidden w-48 animate-float [animation-delay:1s] md:block">
@@ -102,7 +103,7 @@ export function LandingPage() {
           {HOW_IT_WORKS.map((step, i) => (
             <GlassCard key={step.title} className="animate-fade-up" style={{ animationDelay: `${i * 80}ms` }}>
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-green-mist text-xl">
-                {step.icon}
+                <step.icon size={22} strokeWidth={1.5} />
               </span>
               <p className="mt-4 font-display text-base font-medium text-brand-green-deep">{step.title}</p>
               <p className="mt-1.5 text-sm text-brand-ink/60">{step.body}</p>
@@ -137,7 +138,7 @@ export function LandingPage() {
           {USE_CASES.map((uc) => (
             <GlassCard key={uc.title} className="flex gap-4">
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-yellow/15 text-2xl">
-                {uc.icon}
+                <uc.icon size={22} strokeWidth={1.5} />
               </span>
               <div>
                 <p className="font-display text-base font-medium text-brand-green-deep">{uc.title}</p>
@@ -158,18 +159,18 @@ export function LandingPage() {
               shop and delivery. No inventory, no shop rent — just your time and local knowledge.
             </p>
             <Link to="/become-a-shopper" className="mt-6 inline-block">
-              <GlassButton>Start earning →</GlassButton>
+              <GlassButton>Start earning <ArrowRight size={17} strokeWidth={2} /></GlassButton>
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: 'Flexible hours', icon: '🕐' },
-              { label: 'Choose your area', icon: '📍' },
-              { label: 'Transparent fees', icon: '💯' },
-              { label: 'Build your rating', icon: '⭐' },
+              { label: 'Flexible hours', icon: Clock },
+              { label: 'Choose your area', icon: MapPin },
+              { label: 'Transparent fees', icon: Percent },
+              { label: 'Build your rating', icon: Star },
             ].map((f) => (
               <div key={f.label} className="glass rounded-xl2 p-4 text-center">
-                <span className="text-2xl">{f.icon}</span>
+                <f.icon size={22} strokeWidth={1.5} className="text-brand-green-fresh" />
                 <p className="mt-2 text-sm font-medium text-brand-green-deep">{f.label}</p>
               </div>
             ))}

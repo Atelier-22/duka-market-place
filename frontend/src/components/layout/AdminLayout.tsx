@@ -1,15 +1,18 @@
 import { Outlet } from 'react-router-dom';
+import {
+  BadgeCheck, FileText, LayoutDashboard, Package, Scale, Settings, ShoppingBag, Users,
+} from 'lucide-react';
 import { AppSidebar } from './AppSidebar';
 
 const ITEMS = [
-  { to: '/admin', label: 'Dashboard', icon: '📊' },
-  { to: '/admin/customers', label: 'Customers', icon: '🧑' },
-  { to: '/admin/shoppers', label: 'Shoppers', icon: '🛍️' },
-  { to: '/admin/verifications', label: 'Verification', icon: '✅' },
-  { to: '/admin/requests', label: 'Requests', icon: '📝' },
-  { to: '/admin/orders', label: 'Orders', icon: '📦' },
-  { to: '/admin/disputes', label: 'Disputes', icon: '⚖️' },
-  { to: '/admin/fees', label: 'Fees', icon: '⚙️' },
+  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/admin/customers', label: 'Customers', icon: Users },
+  { to: '/admin/shoppers', label: 'Shoppers', icon: ShoppingBag },
+  { to: '/admin/verifications', label: 'Verification', icon: BadgeCheck },
+  { to: '/admin/requests', label: 'Requests', icon: FileText },
+  { to: '/admin/orders', label: 'Orders', icon: Package },
+  { to: '/admin/disputes', label: 'Disputes', icon: Scale },
+  { to: '/admin/fees', label: 'Fees', icon: Settings },
 ];
 
 export function AdminLayout() {

@@ -114,3 +114,29 @@ export const ORDER_STEP_LABELS: Record<OrderStatus, string> = {
   disputed: 'Disputed',
   refunded: 'Refunded',
 };
+
+/**
+ * The same statuses told from the shopper's side of the job. The customer
+ * labels read as things happening *to* them ("Shopper accepted", "Awaiting
+ * your approval"), which is wrong on the shopper's own workflow screen.
+ */
+export const SHOPPER_STEP_LABELS: Record<OrderStatus, string> = {
+  requested: 'Job posted',
+  shopper_assigned: 'You accepted',
+  shopping: 'You are shopping',
+  item_found: 'Options sent',
+  awaiting_customer_approval: 'Waiting on customer',
+  purchased: 'You paid the shop',
+  out_for_delivery: 'You are delivering',
+  delivered: 'Handed over',
+  completed: 'Job complete',
+  cancelled: 'Cancelled',
+  disputed: 'Disputed',
+  refunded: 'Refunded',
+};
+
+export type OrderPerspective = 'customer' | 'shopper';
+
+export function orderStepLabels(perspective: OrderPerspective): Record<OrderStatus, string> {
+  return perspective === 'shopper' ? SHOPPER_STEP_LABELS : ORDER_STEP_LABELS;
+}

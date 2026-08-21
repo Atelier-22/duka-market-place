@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, Coins, Star, TrendingUp } from 'lucide-react';
 import { api } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
@@ -46,9 +47,16 @@ export function ShopperDashboardPage() {
             {data.availableJobsCount} open request{data.availableJobsCount === 1 ? '' : 's'} nearby right now.
           </p>
         </div>
-        <GlassButton variant={data.profile.is_online ? 'danger' : 'primary'} disabled={togglingOnline} onClick={toggleOnline}>
-          {data.profile.is_online ? 'Go offline' : 'Go online'}
-        </GlassButton>
+        <div className="flex items-center gap-2">
+          <GlassButton
+            size="sm"
+            variant={data.profile.is_online ? 'danger' : 'primary'}
+            disabled={togglingOnline}
+            onClick={toggleOnline}
+          >
+            {data.profile.is_online ? 'Go offline' : 'Go online'}
+          </GlassButton>
+        </div>
       </div>
 
       {data.profile.verification_status !== 'approved' && (
@@ -58,16 +66,16 @@ export function ShopperDashboardPage() {
             Complete verification to start accepting jobs. It only takes a couple of minutes.
           </p>
           <Link to="/shopper/verification" className="mt-3 inline-block">
-            <GlassButton size="sm">Verify my account →</GlassButton>
+            <GlassButton size="sm">Verify my account <ArrowRight size={15} strokeWidth={2} /></GlassButton>
           </Link>
         </GlassCard>
       )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <DashboardStat label="Today's earnings" value={formatUgx(data.earnings.today)} icon="💰" accent="yellow" />
-        <DashboardStat label="This week" value={formatUgx(data.earnings.week)} icon="📈" accent="yellow" />
-        <DashboardStat label="Rating" value={`${data.profile.rating_avg || '—'} ★`} icon="⭐" />
-        <DashboardStat label="Completed jobs" value={String(data.profile.completed_jobs)} icon="✅" />
+        <DashboardStat label="Today's earnings" value={formatUgx(data.earnings.today)} icon={<Coins size={18} strokeWidth={1.75} />} accent="yellow" />
+        <DashboardStat label="This week" value={formatUgx(data.earnings.week)} icon={<TrendingUp size={18} strokeWidth={1.75} />} accent="yellow" />
+        <DashboardStat label="Rating" value={String(data.profile.rating_avg || '—')} icon={<Star size={18} strokeWidth={1.75} />} />
+        <DashboardStat label="Completed jobs" value={String(data.profile.completed_jobs)} icon={<CheckCircle2 size={18} strokeWidth={1.75} />} />
       </div>
 
       {data.activeOrder ? (
@@ -80,7 +88,7 @@ export function ShopperDashboardPage() {
             Order #{data.activeOrder.id.slice(0, 8)}
           </p>
           <Link to={`/shopper/orders/${data.activeOrder.id}`} className="mt-4 inline-block">
-            <GlassButton size="sm">Continue job →</GlassButton>
+            <GlassButton size="sm">Continue job <ArrowRight size={15} strokeWidth={2} /></GlassButton>
           </Link>
         </GlassCard>
       ) : (
@@ -88,7 +96,7 @@ export function ShopperDashboardPage() {
           <p className="font-medium text-brand-green-deep">No active job right now</p>
           <p className="mt-1 text-sm text-brand-ink/60">Browse available requests near you and accept one to get started.</p>
           <Link to="/shopper/available" className="mt-4 inline-block">
-            <GlassButton size="sm">Browse available requests →</GlassButton>
+            <GlassButton size="sm">Browse available requests <ArrowRight size={15} strokeWidth={2} /></GlassButton>
           </Link>
         </GlassCard>
       )}

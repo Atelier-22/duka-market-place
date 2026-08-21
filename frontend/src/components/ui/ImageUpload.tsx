@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Camera } from 'lucide-react';
 import { api } from '../../services/api';
 
 interface ImageUploadProps {
@@ -50,7 +51,7 @@ export function ImageUpload({ folder, label, value, onChange }: ImageUploadProps
           <span className="text-sm">Uploading…</span>
         ) : (
           <>
-            <span className="text-2xl">📷</span>
+            <Camera size={24} strokeWidth={1.5} className="text-brand-green/40" />
             <span className="text-sm font-medium">Tap to add a photo</span>
           </>
         )}

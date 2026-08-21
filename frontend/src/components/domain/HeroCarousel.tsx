@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Bike, Camera, Heart, LucideIcon, ShoppingCart } from 'lucide-react';
 
 interface Slide {
-  icon: string;
+  icon: LucideIcon;
   title: string;
   caption: string;
   gradient: string;
@@ -9,25 +10,25 @@ interface Slide {
 
 const SLIDES: Slide[] = [
   {
-    icon: '🛒',
+    icon: ShoppingCart,
     title: 'Any market, any stall',
     caption: 'Owino, Nakasero, Kalerwe — name the place and a shopper who knows it goes for you.',
     gradient: 'from-brand-green-deep via-brand-green to-brand-green-fresh',
   },
   {
-    icon: '📸',
+    icon: Camera,
     title: 'See it before you pay',
     caption: 'Real photos and the real asking price, sent to you before a single shilling moves.',
     gradient: 'from-brand-green via-brand-green-fresh to-brand-yellow',
   },
   {
-    icon: '🚴',
+    icon: Bike,
     title: 'Delivered to your door',
     caption: 'Track your shopper from the stall to your gate, every step of the way.',
     gradient: 'from-brand-yellow via-brand-green-fresh to-brand-green',
   },
   {
-    icon: '💚',
+    icon: Heart,
     title: 'Earn shopping for others',
     caption: 'Turn the trips you already make into income — your area, your hours.',
     gradient: 'from-brand-green-fresh via-brand-green to-brand-green-deep',
@@ -55,7 +56,7 @@ export function HeroCarousel() {
     <div className="relative overflow-hidden rounded-xl3 shadow-glass-lg">
       {/* Sizing element: keeps the box as tall as the tallest slide. */}
       <div className="invisible px-8 py-16 md:px-14 md:py-24" aria-hidden="true">
-        <p className="text-5xl md:text-6xl">🛒</p>
+        <p className="text-brand-green-fresh"><ShoppingCart size={56} strokeWidth={1.25} /></p>
         <p className="mt-5 font-display text-3xl font-medium md:text-5xl">
           {SLIDES.reduce((a, b) => (a.title.length > b.title.length ? a : b)).title}
         </p>
@@ -75,7 +76,7 @@ export function HeroCarousel() {
           ].join(' ')}
           aria-hidden={i !== active}
         >
-          <span className="text-5xl md:text-6xl">{slide.icon}</span>
+          <span className="text-brand-green-fresh"><slide.icon size={56} strokeWidth={1.25} /></span>
           <p className="mt-5 font-display text-3xl font-medium text-white md:text-5xl">
             {slide.title}
           </p>

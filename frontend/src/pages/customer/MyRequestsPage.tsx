@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PlusCircle } from 'lucide-react';
 import { api } from '../../services/api';
 import { ShoppingRequest } from '../../types';
 import { RequestCard } from '../../components/domain/RequestCard';
@@ -30,7 +31,7 @@ export function MyRequestsPage() {
     <div className="pb-10">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-medium text-brand-green-deep">My requests</h1>
-        <GlassButton size="sm" onClick={() => navigate('/app/requests/new')}>➕ New request</GlassButton>
+        <GlassButton size="sm" onClick={() => navigate('/app/requests/new')}><PlusCircle size={16} strokeWidth={2} /> New request</GlassButton>
       </div>
 
       <div className="mt-4 flex gap-2">

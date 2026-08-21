@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, LucideIcon, Search, ShoppingBag, Smartphone, Store } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { Address, Location, SourcingType } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -11,11 +12,11 @@ import { useToast } from '../../components/ui/Toast';
 
 const STEPS = ['What', 'Details', 'Where', 'Budget', 'Delivery', 'Review'];
 
-const SOURCING_OPTIONS: { value: SourcingType; label: string; icon: string; blurb: string }[] = [
-  { value: 'specific_market', label: 'A specific market', icon: '🏪', blurb: 'e.g. Owino, Kalerwe, Nakasero' },
-  { value: 'specific_shop', label: 'A specific shop', icon: '🛍️', blurb: 'Name a shop you know' },
-  { value: 'social_seller', label: 'A social media seller', icon: '📱', blurb: 'Paste a TikTok/Instagram/Facebook link' },
-  { value: 'shopper_choice', label: 'Let the shopper decide', icon: '🔍', blurb: 'Best price & quality nearby' },
+const SOURCING_OPTIONS: { value: SourcingType; label: string; icon: LucideIcon; blurb: string }[] = [
+  { value: 'specific_market', label: 'A specific market', icon: Store, blurb: 'e.g. Owino, Kalerwe, Nakasero' },
+  { value: 'specific_shop', label: 'A specific shop', icon: ShoppingBag, blurb: 'Name a shop you know' },
+  { value: 'social_seller', label: 'A social media seller', icon: Smartphone, blurb: 'Paste a TikTok/Instagram/Facebook link' },
+  { value: 'shopper_choice', label: 'Let the shopper decide', icon: Search, blurb: 'Best price & quality nearby' },
 ];
 
 export function CreateRequestPage() {
@@ -159,7 +160,7 @@ export function CreateRequestPage() {
                       : 'border-brand-green/15 bg-white/50 hover:bg-brand-green-mist/50',
                   ].join(' ')}
                 >
-                  <span className="text-xl">{opt.icon}</span>
+                  <opt.icon size={20} strokeWidth={1.6} className="text-brand-green-fresh" />
                   <p className="mt-2 text-sm font-semibold text-brand-green-deep">{opt.label}</p>
                   <p className="mt-0.5 text-xs text-brand-ink/50">{opt.blurb}</p>
                 </button>
@@ -243,11 +244,11 @@ export function CreateRequestPage() {
 
       <div className="mt-6 flex justify-between">
         <GlassButton variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>
-          ← Back
+          <ArrowLeft size={15} strokeWidth={2} /> Back
         </GlassButton>
         {step < STEPS.length - 1 ? (
           <GlassButton onClick={() => setStep((s) => s + 1)} disabled={!canProceed}>
-            Continue →
+            Continue <ArrowRight size={15} strokeWidth={2} />
           </GlassButton>
         ) : (
           <GlassButton onClick={handleSubmit} disabled={submitting}>

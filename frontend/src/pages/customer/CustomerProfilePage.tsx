@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ShoppingBag } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Input } from '../../components/ui/Input';
 import { GlassButton } from '../../components/ui/GlassButton';
@@ -55,7 +56,7 @@ export function CustomerProfilePage() {
           disabled={switching}
           onClick={handleSwitchToShopper}
         >
-          {switching ? 'Switching…' : '🛍️ Switch to shopper mode'}
+          {switching ? 'Switching…' : <><ShoppingBag size={17} strokeWidth={2} /> Switch to shopper mode</>}
         </GlassButton>
       </GlassCard>
     </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CheckCircle2, Coins, Package, Scale, SearchCheck, ShoppingBag, Users } from 'lucide-react';
 import { api } from '../../services/api';
 import { DashboardStat } from '../../components/domain/DashboardStat';
 import { LoadingState } from '../../components/ui/LoadingState';
@@ -19,13 +20,13 @@ export function AdminDashboardPage() {
       <p className="text-sm text-brand-ink/50">Platform-wide health at a glance.</p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <DashboardStat label="Customers" value={String(data.customers)} icon="🧑" />
-        <DashboardStat label="Shoppers" value={String(data.shoppers)} icon="🛍️" />
-        <DashboardStat label="Active orders" value={String(data.activeOrders)} icon="📦" accent="yellow" />
-        <DashboardStat label="Completed today" value={String(data.completedToday)} icon="✅" />
-        <DashboardStat label="GMV (completed)" value={formatUgx(data.grossMerchandiseValueUgx)} icon="💰" accent="yellow" />
-        <DashboardStat label="Open disputes" value={String(data.openDisputes)} icon="⚖️" accent="red" />
-        <DashboardStat label="Pending verifications" value={String(data.pendingVerifications)} icon="🕵️" accent="yellow" />
+        <DashboardStat label="Customers" value={String(data.customers)} icon={<Users size={18} strokeWidth={1.75} />} />
+        <DashboardStat label="Shoppers" value={String(data.shoppers)} icon={<ShoppingBag size={18} strokeWidth={1.75} />} />
+        <DashboardStat label="Active orders" value={String(data.activeOrders)} icon={<Package size={18} strokeWidth={1.75} />} accent="yellow" />
+        <DashboardStat label="Completed today" value={String(data.completedToday)} icon={<CheckCircle2 size={18} strokeWidth={1.75} />} />
+        <DashboardStat label="GMV (completed)" value={formatUgx(data.grossMerchandiseValueUgx)} icon={<Coins size={18} strokeWidth={1.75} />} accent="yellow" />
+        <DashboardStat label="Open disputes" value={String(data.openDisputes)} icon={<Scale size={18} strokeWidth={1.75} />} accent="red" />
+        <DashboardStat label="Pending verifications" value={String(data.pendingVerifications)} icon={<SearchCheck size={18} strokeWidth={1.75} />} accent="yellow" />
       </div>
 
       <GlassCard hover={false} className="mt-8">

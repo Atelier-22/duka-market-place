@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Hourglass } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { ShoppingRequest, ShopperOffer } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -51,7 +52,7 @@ export function RequestDetailsPage() {
 
   return (
     <div className="mx-auto max-w-3xl pb-16">
-      <button onClick={() => navigate(-1)} className="mb-4 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep">← Back</button>
+      <button onClick={() => navigate(-1)} className="mb-4 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep"><ArrowLeft size={15} strokeWidth={2} className="inline" /> Back</button>
 
       <GlassCard padding="lg" hover={false}>
         <div className="flex items-start justify-between">
@@ -90,7 +91,7 @@ export function RequestDetailsPage() {
         </h2>
         {offers.length === 0 ? (
           <EmptyState
-            icon="⏳"
+            icon={<Hourglass size={40} strokeWidth={1.25} />}
             title="Waiting for offers"
             description="Nearby shoppers are reviewing your request. You'll see their offers here as they come in."
           />

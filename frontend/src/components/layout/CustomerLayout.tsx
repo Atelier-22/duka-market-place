@@ -1,13 +1,14 @@
 import { Outlet } from 'react-router-dom';
+import { ClipboardList, CreditCard, Home, Package, PlusCircle, User } from 'lucide-react';
 import { AppSidebar } from './AppSidebar';
 
 const ITEMS = [
-  { to: '/app', label: 'Dashboard', icon: '🏠' },
-  { to: '/app/requests/new', label: 'Request something', icon: '➕' },
-  { to: '/app/requests', label: 'My requests', icon: '📋' },
-  { to: '/app/orders', label: 'Orders', icon: '📦' },
-  { to: '/app/payments', label: 'Payments', icon: '💳' },
-  { to: '/app/profile', label: 'Profile', icon: '👤' },
+  { to: '/app', label: 'Dashboard', icon: Home },
+  { to: '/app/requests/new', label: 'Request something', icon: PlusCircle },
+  { to: '/app/requests', label: 'My requests', icon: ClipboardList },
+  { to: '/app/orders', label: 'Orders', icon: Package },
+  { to: '/app/payments', label: 'Payments', icon: CreditCard },
+  { to: '/app/profile', label: 'Profile', icon: User },
 ];
 
 export function CustomerLayout() {

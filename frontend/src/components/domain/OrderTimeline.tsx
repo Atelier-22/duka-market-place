@@ -1,18 +1,40 @@
-import { OrderStatus, ORDER_STEPS, ORDER_STEP_LABELS } from '../../types';
+import {
+  Camera, CheckCircle2, ClipboardCheck, CreditCard, FileText, Handshake, Hourglass,
+  LucideIcon, Package, ShoppingBag, Truck,
+} from 'lucide-react';
+import {
+  OrderPerspective, OrderStatus, ORDER_STEPS, orderStepLabels,
+} from '../../types';
 
-const STEP_ICONS: Record<string, string> = {
-  requested: '📝', shopper_assigned: '🤝', shopping: '🛍️', item_found: '📸',
-  awaiting_customer_approval: '⏳', purchased: '💳', out_for_delivery: '🚴',
-  delivered: '📦', completed: '✅',
+const STEP_ICONS: Record<string, LucideIcon> = {
+  requested: FileText,
+  shopper_assigned: Handshake,
+  shopping: ShoppingBag,
+  item_found: Camera,
+  awaiting_customer_approval: Hourglass,
+  purchased: CreditCard,
+  out_for_delivery: Truck,
+  delivered: Package,
+  completed: CheckCircle2,
 };
 
+interface OrderTimelineProps {
+  status: OrderStatus;
+  /**
+   * Whose screen this is. The shopper sees the same stages described as their
+   * own actions rather than as things a shopper did to them.
+   */
+  perspective?: OrderPerspective;
+}
+
 /**
- * The beautiful real-time-style order tracker from the product brief.
- * Renders every stage of REQUESTED → ... → DELIVERED and highlights where
- * the order currently sits. A cancelled/disputed/refunded order still shows
- * the trail it walked before branching off.
+ * The real-time-style order tracker from the product brief. Renders every
+ * stage of REQUESTED → ... → DELIVERED and highlights where the order
+ * currently sits. A cancelled/disputed/refunded order still shows the trail
+ * it walked before branching off.
  */
-export function OrderTimeline({ status }: { status: OrderStatus }) {
+export function OrderTimeline({ status, perspective = 'customer' }: OrderTimelineProps) {
+  const labels = orderStepLabels(perspective);
   const currentIndex = ORDER_STEPS.indexOf(status);
   const isBranched = currentIndex === -1; // cancelled / disputed / refunded
 
@@ -20,7 +42,7 @@ export function OrderTimeline({ status }: { status: OrderStatus }) {
     <div className="relative">
       {isBranched && (
         <div className="mb-4 rounded-xl bg-brand-red/10 px-4 py-3 text-sm font-medium text-brand-red">
-          This order is {ORDER_STEP_LABELS[status].toLowerCase()}.
+          This order is {labels[status].toLowerCase()}.
         </div>
       )}
       <ol className="relative flex flex-col gap-0">
@@ -28,6 +50,7 @@ export function OrderTimeline({ status }: { status: OrderStatus }) {
           const done = !isBranched && i < currentIndex;
           const active = !isBranched && i === currentIndex;
           const isLast = i === ORDER_STEPS.length - 1;
+          const Icon = STEP_ICONS[step];
           return (
             <li key={step} className="relative flex gap-4 pb-8 last:pb-0">
               {!isLast && (
@@ -39,7 +62,7 @@ export function OrderTimeline({ status }: { status: OrderStatus }) {
               )}
               <span
                 className={[
-                  'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg transition-all',
+                  'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all',
                   active
                     ? 'bg-gradient-to-br from-brand-green to-brand-green-fresh text-white shadow-glow animate-float'
                     : done
@@ -47,11 +70,11 @@ export function OrderTimeline({ status }: { status: OrderStatus }) {
                     : 'bg-white text-brand-ink/30 border border-brand-green/15',
                 ].join(' ')}
               >
-                {STEP_ICONS[step]}
+                <Icon size={18} strokeWidth={1.75} />
               </span>
               <div className="pt-1.5">
                 <p className={`font-medium ${active ? 'text-brand-green-deep' : done ? 'text-brand-ink/70' : 'text-brand-ink/35'}`}>
-                  {ORDER_STEP_LABELS[step]}
+                  {labels[step]}
                 </p>
                 {active && <p className="mt-0.5 text-xs text-brand-green-fresh">In progress</p>}
               </div>

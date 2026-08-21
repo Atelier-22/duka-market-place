@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Bike, Camera, CheckCircle2, Footprints, MessageCircle, PartyPopper } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { Order } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -97,7 +98,7 @@ export function ShoppingWorkflowPage() {
 
   return (
     <div className="mx-auto max-w-2xl pb-16">
-      <button onClick={() => navigate(-1)} className="mb-4 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep">← Back</button>
+      <button onClick={() => navigate(-1)} className="mb-4 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep"><ArrowLeft size={15} strokeWidth={2} className="inline" /> Back</button>
 
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-medium text-brand-green-deep">Job #{order.id.slice(0, 8)}</h1>
@@ -105,7 +106,7 @@ export function ShoppingWorkflowPage() {
       </div>
 
       <GlassCard padding="lg" hover={false} className="mt-6">
-        <OrderTimeline status={order.status} />
+        <OrderTimeline status={order.status} perspective="shopper" />
       </GlassCard>
 
       <div className="mt-6">
@@ -114,7 +115,7 @@ export function ShoppingWorkflowPage() {
             <p className="font-medium text-brand-green-deep">On your way?</p>
             <p className="mt-1 text-sm text-brand-ink/60">Let the customer know you're headed to the location.</p>
             <GlassButton className="mt-3" disabled={acting} onClick={goShopping} fullWidth>
-              {acting ? 'Updating…' : "🚶 I'm searching for the item"}
+              {acting ? 'Updating…' : <><Footprints size={17} strokeWidth={2} /> I'm searching for the item</>}
             </GlassButton>
           </GlassCard>
         )}
@@ -128,7 +129,7 @@ export function ShoppingWorkflowPage() {
               <Input label="Actual price (UGX)" type="number" value={actualPrice} onChange={(e) => setActualPrice(e.target.value)} />
               <Input label="Shop / stall name (optional)" value={shopName} onChange={(e) => setShopName(e.target.value)} />
               <GlassButton disabled={acting} onClick={submitItemFound} fullWidth>
-                {acting ? 'Sending…' : '📸 Send to customer for approval'}
+                {acting ? 'Sending…' : <><Camera size={17} strokeWidth={2} /> Send to customer for approval</>}
               </GlassButton>
             </div>
           </GlassCard>
@@ -150,7 +151,7 @@ export function ShoppingWorkflowPage() {
             <div className="mt-4 flex flex-col gap-3">
               <ImageUpload folder="receipts" label="Receipt photo" value={receiptUrl} onChange={setReceiptUrl} />
               <GlassButton disabled={acting} onClick={submitOutForDelivery} fullWidth>
-                {acting ? 'Updating…' : '🚴 Mark as out for delivery'}
+                {acting ? 'Updating…' : <><Bike size={17} strokeWidth={2} /> Mark as out for delivery</>}
               </GlassButton>
             </div>
           </GlassCard>
@@ -183,21 +184,21 @@ export function ShoppingWorkflowPage() {
               }}
               fullWidth
             >
-              {acting ? 'Completing…' : '🎉 Mark job as completed'}
+              {acting ? 'Completing…' : <><PartyPopper size={17} strokeWidth={2} /> Mark job as completed</>}
             </GlassButton>
           </GlassCard>
         )}
 
         {order.status === 'completed' && (
           <GlassCard glow="yellow" hover={false}>
-            <p className="font-medium text-brand-green-deep">✅ Job complete — earnings released to your balance.</p>
+            <p className="flex items-center gap-2 font-medium text-brand-green-deep"><CheckCircle2 size={17} strokeWidth={2} /> Job complete — earnings released to your balance.</p>
           </GlassCard>
         )}
       </div>
 
       {!['completed', 'cancelled', 'refunded'].includes(order.status) && (
         <GlassButton variant="ghost" size="sm" className="mt-4" onClick={() => navigate(`/shopper/orders/${id}/messages`)}>
-          💬 Message customer
+          <MessageCircle size={17} strokeWidth={2} /> Message customer
         </GlassButton>
       )}
     </div>

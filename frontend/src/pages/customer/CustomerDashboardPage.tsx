@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight, ClipboardList, CreditCard, CheckCircle2, Package, PlusCircle, ShoppingCart } from 'lucide-react';
 import { api } from '../../services/api';
 import { Order, ShoppingRequest } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -42,20 +43,20 @@ export function CustomerDashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-medium text-brand-green-deep">
-            Welcome back, {user?.fullName.split(' ')[0]} 👋
+            Welcome back, {user?.fullName.split(' ')[0]}
           </h1>
           <p className="text-sm text-brand-ink/50">Here's what's happening with your requests.</p>
         </div>
         <Link to="/app/requests/new">
-          <GlassButton>➕ Request something</GlassButton>
+          <GlassButton><PlusCircle size={17} strokeWidth={2} /> Request something</GlassButton>
         </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <DashboardStat label="Active requests" value={String(requests.filter((r) => r.status !== 'cancelled').length)} icon="📋" />
-        <DashboardStat label="Total orders" value={String(orders.length)} icon="📦" />
-        <DashboardStat label="Total spent" value={formatUgx(totalSpent)} icon="💳" accent="yellow" />
-        <DashboardStat label="Completed" value={String(orders.filter((o) => o.status === 'completed').length)} icon="✅" />
+        <DashboardStat label="Active requests" value={String(requests.filter((r) => r.status !== 'cancelled').length)} icon={<ClipboardList size={18} strokeWidth={1.75} />} />
+        <DashboardStat label="Total orders" value={String(orders.length)} icon={<Package size={18} strokeWidth={1.75} />} />
+        <DashboardStat label="Total spent" value={formatUgx(totalSpent)} icon={<CreditCard size={18} strokeWidth={1.75} />} accent="yellow" />
+        <DashboardStat label="Completed" value={String(orders.filter((o) => o.status === 'completed').length)} icon={<CheckCircle2 size={18} strokeWidth={1.75} />} />
       </div>
 
       {activeOrder && (
@@ -68,7 +69,7 @@ export function CustomerDashboardPage() {
             Order #{activeOrder.id.slice(0, 8)}
           </p>
           <Link to={`/app/orders/${activeOrder.id}`} className="mt-4 inline-block">
-            <GlassButton size="sm">Track this order →</GlassButton>
+            <GlassButton size="sm">Track this order <ArrowRight size={15} strokeWidth={2} /></GlassButton>
           </Link>
         </GlassCard>
       )}
@@ -76,11 +77,11 @@ export function CustomerDashboardPage() {
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-medium text-brand-green-deep">Recent requests</h2>
-          <Link to="/app/requests" className="text-sm font-semibold text-brand-green-fresh">View all →</Link>
+          <Link to="/app/requests" className="text-sm font-semibold text-brand-green-fresh">View all</Link>
         </div>
         {requests.length === 0 ? (
           <EmptyState
-            icon="🛒"
+            icon={<ShoppingCart size={40} strokeWidth={1.25} />}
             title="No requests yet"
             description="Tell us what you need and a nearby shopper will get it for you."
             action={<Link to="/app/requests/new"><GlassButton size="sm">Create your first request</GlassButton></Link>}

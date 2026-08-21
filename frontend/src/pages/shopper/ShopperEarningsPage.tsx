@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CalendarDays, Coins, Trophy, TrendingUp } from 'lucide-react';
 import { api } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { DashboardStat } from '../../components/domain/DashboardStat';
@@ -30,10 +31,10 @@ export function ShopperEarningsPage() {
       <h1 className="font-display text-2xl font-medium text-brand-green-deep">Earnings</h1>
 
       <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <DashboardStat label="Available balance" value={formatUgx(dashboard?.profile.available_balance_ugx ?? 0)} icon="💰" accent="yellow" />
-        <DashboardStat label="Today" value={formatUgx(dashboard?.earnings.today ?? 0)} icon="📅" />
-        <DashboardStat label="This week" value={formatUgx(dashboard?.earnings.week ?? 0)} icon="📈" />
-        <DashboardStat label="Lifetime" value={formatUgx(dashboard?.profile.lifetime_earnings_ugx ?? 0)} icon="🏆" />
+        <DashboardStat label="Available balance" value={formatUgx(dashboard?.profile.available_balance_ugx ?? 0)} icon={<Coins size={18} strokeWidth={1.75} />} accent="yellow" />
+        <DashboardStat label="Today" value={formatUgx(dashboard?.earnings.today ?? 0)} icon={<CalendarDays size={18} strokeWidth={1.75} />} />
+        <DashboardStat label="This week" value={formatUgx(dashboard?.earnings.week ?? 0)} icon={<TrendingUp size={18} strokeWidth={1.75} />} />
+        <DashboardStat label="Lifetime" value={formatUgx(dashboard?.profile.lifetime_earnings_ugx ?? 0)} icon={<Trophy size={18} strokeWidth={1.75} />} />
       </div>
 
       <div className="mt-8">
