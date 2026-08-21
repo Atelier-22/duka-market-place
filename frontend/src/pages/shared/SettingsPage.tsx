@@ -55,6 +55,17 @@ const ACCENTS: { value: Accent; label: string; swatch: [string, string] }[] = [
   { value: 'sunset', label: 'Sunset', swatch: ['#B24722', '#E87435'] },
   { value: 'grape', label: 'Grape', swatch: ['#673AA8', '#9160D6'] },
   { value: 'charcoal', label: 'Charcoal', swatch: ['#3E4852', '#697784'] },
+  { value: 'rose', label: 'Rose', swatch: ['#BB3769', '#E85D91'] },
+  { value: 'amber', label: 'Amber', swatch: ['#B07410', '#E2A020'] },
+  { value: 'teal', label: 'Teal', swatch: ['#117A7A', '#20ADAD'] },
+  { value: 'indigo', label: 'Indigo', swatch: ['#4444B2', '#6A6AE0'] },
+  { value: 'crimson', label: 'Crimson', swatch: ['#AF2332', '#DB3E4F'] },
+  { value: 'lime', label: 'Lime', swatch: ['#6A9118', '#96C428'] },
+  { value: 'plum', label: 'Plum', swatch: ['#8C2D82', '#BA4EAE'] },
+  { value: 'sky', label: 'Sky', swatch: ['#1976B2', '#38AAEB'] },
+  { value: 'copper', label: 'Copper', swatch: ['#94522A', '#C47440'] },
+  { value: 'forest', label: 'Forest', swatch: ['#265E37', '#3E8C52'] },
+  { value: 'slate', label: 'Slate', swatch: ['#3E5268', '#647E9A'] },
 ];
 
 const LANGUAGES: { value: Language; label: string; note: string }[] = [

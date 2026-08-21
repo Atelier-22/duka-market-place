@@ -11,6 +11,7 @@
     "db:migrate": "psql \"$DATABASE_URL\" -f ../database/schema.sql",
     "db:seed": "psql \"$DATABASE_URL\" -f ../database/seed.sql",
     "db:migrations": "node scripts/migrate.cjs",
+    "db:import-uploads": "node scripts/import-uploads.cjs",
     "test:e2e": "node scripts/e2e-order-lifecycle.cjs",
     "test:admin": "node scripts/admin-control-centre-probe.cjs",
     "test:chat": "node scripts/chat-features-probe.cjs",

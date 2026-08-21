@@ -216,7 +216,10 @@ export function OrderMessagesPage() {
   const visible = [...messages, ...pending];
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-6rem)] max-w-2xl flex-col pb-4">
+    // `dvh` rather than `vh`: on a phone `100vh` is the height with the browser
+    // chrome hidden, so a vh-sized column is always taller than the visible page
+    // and the composer ends up under the address bar.
+    <div className="mx-auto flex h-[calc(100dvh-13rem)] min-h-[24rem] max-w-2xl flex-col pb-4 lg:h-[calc(100dvh-6rem)]">
       <div className="mb-2 flex items-center gap-2">
         <button
           onClick={() => navigate(`${base}/messages`)}

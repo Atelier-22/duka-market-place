@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { Menu, X } from 'lucide-react';
 import { BRAND } from '../../config/brand';
 import { GlassButton } from '../ui/GlassButton';
 import { useAuth } from '../../context/AuthContext';
@@ -51,8 +52,13 @@ export function PublicNavbar() {
           )}
         </div>
 
-        <button className="md:hidden" onClick={() => setOpen(!open)} aria-label="Menu">
-          <span className="text-xl text-brand-green-deep">{open ? '✕' : '☰'}</span>
+        <button
+          className="flex h-9 w-9 items-center justify-center rounded-full text-brand-green-deep md:hidden"
+          onClick={() => setOpen(!open)}
+          aria-label={open ? 'Close menu' : 'Open menu'}
+          aria-expanded={open}
+        >
+          {open ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
         </button>
       </nav>
 

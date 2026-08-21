@@ -95,6 +95,107 @@
   --app-bg: #F6F7F8;
 }
 
+/* Rose — warm pink, soft rather than loud */
+[data-accent='rose'] {
+  --brand-green-deep: 92 26 51;
+  --brand-green: 187 55 105;
+  --brand-green-fresh: 232 93 145;
+  --brand-green-mist: 253 231 240;
+  --app-bg: #FEF5F8;
+}
+
+/* Amber — honey and gold */
+[data-accent='amber'] {
+  --brand-green-deep: 90 56 8;
+  --brand-green: 176 116 16;
+  --brand-green-fresh: 226 160 32;
+  --brand-green-mist: 253 243 219;
+  --brand-yellow: 214 145 12;
+  --app-bg: #FEFAF0;
+}
+
+/* Teal — sea green, cooler than the house green */
+[data-accent='teal'] {
+  --brand-green-deep: 10 61 61;
+  --brand-green: 17 122 122;
+  --brand-green-fresh: 32 173 173;
+  --brand-green-mist: 224 245 245;
+  --app-bg: #F1FBFB;
+}
+
+/* Indigo — deep blue-violet, quiet and serious */
+[data-accent='indigo'] {
+  --brand-green-deep: 32 32 92;
+  --brand-green: 68 68 178;
+  --brand-green-fresh: 106 106 224;
+  --brand-green-mist: 231 231 252;
+  --app-bg: #F5F5FE;
+}
+
+/* Crimson — a strong, confident red */
+[data-accent='crimson'] {
+  --brand-green-deep: 92 18 25;
+  --brand-green: 175 35 50;
+  --brand-green-fresh: 219 62 79;
+  --brand-green-mist: 252 229 232;
+  --app-bg: #FEF4F5;
+}
+
+/* Lime — bright and energetic */
+[data-accent='lime'] {
+  --brand-green-deep: 54 74 12;
+  --brand-green: 106 145 24;
+  --brand-green-fresh: 150 196 40;
+  --brand-green-mist: 239 249 219;
+  --app-bg: #F9FDF0;
+}
+
+/* Plum — rich magenta-purple */
+[data-accent='plum'] {
+  --brand-green-deep: 71 22 66;
+  --brand-green: 140 45 130;
+  --brand-green-fresh: 186 78 174;
+  --brand-green-mist: 249 231 246;
+  --app-bg: #FDF5FC;
+}
+
+/* Sky — light, open blue */
+[data-accent='sky'] {
+  --brand-green-deep: 14 55 84;
+  --brand-green: 25 118 178;
+  --brand-green-fresh: 56 170 235;
+  --brand-green-mist: 224 242 252;
+  --app-bg: #F2FAFE;
+}
+
+/* Copper — burnt orange-brown, earthy */
+[data-accent='copper'] {
+  --brand-green-deep: 74 40 22;
+  --brand-green: 148 82 42;
+  --brand-green-fresh: 196 116 64;
+  --brand-green-mist: 248 235 226;
+  --brand-yellow: 218 152 48;
+  --app-bg: #FDF7F3;
+}
+
+/* Forest — darker, mossier green than the house palette */
+[data-accent='forest'] {
+  --brand-green-deep: 18 46 28;
+  --brand-green: 38 94 55;
+  --brand-green-fresh: 62 140 82;
+  --brand-green-mist: 228 242 232;
+  --app-bg: #F4FAF5;
+}
+
+/* Slate — cool blue-grey, near-neutral */
+[data-accent='slate'] {
+  --brand-green-deep: 26 35 46;
+  --brand-green: 62 82 104;
+  --brand-green-fresh: 100 126 154;
+  --brand-green-mist: 234 238 243;
+  --app-bg: #F5F7F9;
+}
+
 [data-theme='dark'] {
   color-scheme: dark;
 
@@ -116,6 +217,17 @@
 [data-theme='dark'][data-accent='sunset']   { --brand-green-deep: 252 226 210; --brand-green-mist: 48 30 22; --app-bg: #17100C; }
 [data-theme='dark'][data-accent='grape']    { --brand-green-deep: 232 219 250; --brand-green-mist: 39 28 55; --app-bg: #120E18; }
 [data-theme='dark'][data-accent='charcoal'] { --brand-green-deep: 228 232 236; --brand-green-mist: 33 37 41; --app-bg: #101214; }
+[data-theme='dark'][data-accent='rose']     { --brand-green-deep: 250 219 231; --brand-green-mist: 50 26 36; --app-bg: #170D12; }
+[data-theme='dark'][data-accent='amber']    { --brand-green-deep: 250 234 200; --brand-green-mist: 46 36 18; --app-bg: #15110A; }
+[data-theme='dark'][data-accent='teal']     { --brand-green-deep: 205 240 240; --brand-green-mist: 20 42 42; --app-bg: #0A1414; }
+[data-theme='dark'][data-accent='indigo']   { --brand-green-deep: 220 220 250; --brand-green-mist: 28 28 52; --app-bg: #0D0D18; }
+[data-theme='dark'][data-accent='crimson']  { --brand-green-deep: 250 214 218; --brand-green-mist: 48 22 26; --app-bg: #160B0D; }
+[data-theme='dark'][data-accent='lime']     { --brand-green-deep: 231 246 205; --brand-green-mist: 34 44 18; --app-bg: #10150A; }
+[data-theme='dark'][data-accent='plum']     { --brand-green-deep: 245 217 240; --brand-green-mist: 44 24 42; --app-bg: #150B14; }
+[data-theme='dark'][data-accent='sky']      { --brand-green-deep: 208 235 250; --brand-green-mist: 20 38 50; --app-bg: #0A1218; }
+[data-theme='dark'][data-accent='copper']   { --brand-green-deep: 246 227 213; --brand-green-mist: 44 30 22; --app-bg: #150F0B; }
+[data-theme='dark'][data-accent='forest']   { --brand-green-deep: 213 236 219; --brand-green-mist: 24 38 28; --app-bg: #0B120D; }
+[data-theme='dark'][data-accent='slate']    { --brand-green-deep: 224 231 238; --brand-green-mist: 30 36 44; --app-bg: #0E1114; }
 
 html, body, #root {
   height: 100%;
@@ -125,6 +237,70 @@ body {
   @apply font-sans text-brand-ink antialiased;
   background: var(--app-bg);
   transition: background 200ms ease;
+}
+
+/* ------------------------------------------------------------------------
+   The living background.
+
+   Three very soft colour washes drifting across the page on a two-minute
+   cycle, so the app is never a flat sheet of white but never distracts
+   either. The effect has to be felt more than seen: opacity is low, the
+   blur is enormous, and nothing moves fast enough to catch the eye while
+   you are reading.
+
+   Painted on a fixed ::before behind everything rather than on body, so it
+   does not scroll, does not repaint on layout, and cannot tint text.
+   Colours come from the accent variables, so it follows whatever palette
+   the person picked instead of being hard-coded green.
+   ------------------------------------------------------------------------ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -25%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background:
+    radial-gradient(38% 42% at 18% 22%, rgb(var(--brand-green-fresh) / 0.16), transparent 70%),
+    radial-gradient(34% 38% at 82% 18%, rgb(var(--brand-yellow) / 0.14), transparent 70%),
+    radial-gradient(42% 46% at 60% 88%, rgb(var(--brand-green) / 0.12), transparent 70%);
+  filter: blur(40px);
+  animation: duka-drift 120s ease-in-out infinite alternate;
+}
+
+[data-theme='dark'] body::before,
+body[data-theme='dark']::before {
+  /* Dark surfaces need less of it — the same wash reads as haze on black. */
+  opacity: 0.32;
+}
+
+@keyframes duka-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  25%  { transform: translate3d(2%, -1.5%, 0) scale(1.06); }
+  50%  { transform: translate3d(-1.5%, 2%, 0) scale(1.03); }
+  75%  { transform: translate3d(1%, 1.5%, 0) scale(1.07); }
+  100% { transform: translate3d(-2%, -1%, 0) scale(1.02); }
+}
+
+/* Room for the fixed mobile tab strip, plus the iPhone home indicator. The
+   bar only exists below lg, so the padding goes away with it. */
+.app-main {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 1024px) {
+  .app-main { padding-bottom: 0.25rem; }
+}
+
+/* Phones: stop long unbroken strings — a pasted URL, a shop name with no
+   spaces — from forcing the whole page to scroll sideways. */
+@media (max-width: 640px) {
+  h1, h2, h3, p, span, td, th, dt, dd, li { overflow-wrap: anywhere; }
+}
+
+/* iOS zooms the whole page when a focused input is under 16px. Every field
+   in the app is 15px, which is exactly the size that triggers it. */
+@media (max-width: 640px) {
+  input, select, textarea { font-size: 16px !important; }
 }
 
 /* Reduced motion respect */

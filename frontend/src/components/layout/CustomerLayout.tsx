@@ -1,28 +1,20 @@
-import { Outlet } from 'react-router-dom';
 import { ClipboardList, CreditCard, Home, MessageCircle, Package, PlusCircle, Settings, User } from 'lucide-react';
-import { AppSidebar } from './AppSidebar';
+import { AppShell } from './AppShell';
+import { NavItem } from './MobileNav';
 
-const ITEMS = [
-  { to: '/app', label: 'Dashboard', icon: Home },
-  { to: '/app/requests/new', label: 'Request something', icon: PlusCircle },
-  { to: '/app/requests', label: 'My requests', icon: ClipboardList },
+// Order matters on a phone: the first four become the bottom tabs, so they are
+// the things a customer does constantly, not the full alphabet of pages.
+const ITEMS: NavItem[] = [
+  { to: '/app', label: 'Home', icon: Home },
+  { to: '/app/requests/new', label: 'Request', icon: PlusCircle },
   { to: '/app/orders', label: 'Orders', icon: Package },
   { to: '/app/messages', label: 'Chats', icon: MessageCircle, badge: 'messages' as const },
+  { to: '/app/requests', label: 'My requests', icon: ClipboardList },
   { to: '/app/payments', label: 'Payments', icon: CreditCard },
   { to: '/app/profile', label: 'Profile', icon: User },
   { to: '/app/settings', label: 'Settings', icon: Settings },
 ];
 
 export function CustomerLayout() {
-  return (
-    <div className="min-h-screen">
-      <div className="atmosphere" />
-      <div className="mx-auto flex max-w-7xl gap-4 p-4">
-        <AppSidebar items={ITEMS} roleLabel="Customer" />
-        <main className="min-w-0 flex-1 py-1">
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  );
+  return <AppShell items={ITEMS} roleLabel="Customer" />;
 }

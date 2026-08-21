@@ -219,6 +219,37 @@ function tickState(m) {
     // origin in production and 404s.
     step('upload URLs are absolute', /^https?:\/\//.test(img.body?.url || ''), String(img.body?.url));
 
+    // ---- uploads survive a deploy ------------------------------------------
+    // The whole point of moving storage into Postgres: a container's disk is
+    // recreated on every deploy, which was silently deleting every image
+    // anyone had ever sent while the message rows kept pointing at them.
+    const storedKey = audio.body?.key;
+    const stored = await pool.query(
+      'SELECT key, mime_type, byte_size, octet_length(data) AS actual FROM uploaded_files WHERE key = $1',
+      [storedKey]
+    );
+    step('the bytes are stored in the database, not only on disk',
+      stored.rows.length === 1, String(storedKey));
+    step('the stored size matches what was sent',
+      Number(stored.rows[0]?.actual) === Number(stored.rows[0]?.byte_size)
+        && Number(stored.rows[0]?.actual) === WEBM.byteLength,
+      `${stored.rows[0]?.actual} vs ${WEBM.byteLength}`);
+    step('the content type is recorded at upload time, not guessed later',
+      stored.rows[0]?.mime_type === 'audio/webm', String(stored.rows[0]?.mime_type));
+
+    // Delete the file from the local folder and confirm it still serves. This
+    // is the deploy, simulated: disk gone, bytes still there.
+    const fs = require('fs');
+    const path = require('path');
+    const onDisk = path.resolve(__dirname, '..', process.env.UPLOAD_DIR || 'uploads', storedKey);
+    if (fs.existsSync(onDisk)) fs.unlinkSync(onDisk);
+    const afterWipe = await fetch(audio.body.url);
+    step('the file still serves after its disk copy is wiped',
+      afterWipe.status === 200, String(afterWipe.status));
+    step('and still with the right type',
+      afterWipe.headers.get('content-type') === 'audio/webm',
+      String(afterWipe.headers.get('content-type')));
+
     // ---- error messages ---------------------------------------------------
     // Every one of these used to come back as the bare string "Validation
     // failed", shown on a toast with no detail — the user could see that
@@ -278,6 +309,11 @@ function tickState(m) {
     }
     // Belt and braces if the run died before ids were collected.
     await pool.query("DELETE FROM users WHERE email LIKE 'chat-%@example.test' AND created_at > now() - interval '1 hour'");
+    // Uploads are keyed independently of any order, so they need their own
+    // sweep or every run leaves a few kilobytes behind for ever.
+    await pool.query(
+      "DELETE FROM uploaded_files WHERE folder = 'chat' AND created_at > now() - interval '1 hour' AND byte_size < 200"
+    );
   }
 
   console.log(`\n=== ${pass} passed, ${failures.length} failed ===`);

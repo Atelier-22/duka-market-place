@@ -3,7 +3,10 @@ import { api } from '../services/api';
 import { useAuth } from './AuthContext';
 
 export type Theme = 'system' | 'light' | 'dark';
-export type Accent = 'green' | 'ocean' | 'sunset' | 'grape' | 'charcoal';
+export type Accent =
+  | 'green' | 'ocean' | 'sunset' | 'grape' | 'charcoal'
+  | 'rose' | 'amber' | 'teal' | 'indigo' | 'crimson'
+  | 'lime' | 'plum' | 'sky' | 'copper' | 'forest' | 'slate';
 export type Language = 'en' | 'sw' | 'lg';
 export type Tone = 'professional' | 'friendly' | 'candid' | 'efficient' | 'encouraging';
 

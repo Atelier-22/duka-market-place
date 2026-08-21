@@ -58,7 +58,10 @@ export async function upload(req: Request, res: Response) {
   // Trust the mime type over the filename. Phone cameras and MediaRecorder
   // blobs routinely arrive with no extension or a misleading one.
   const stem = path.basename(file.originalname ?? 'upload', path.extname(file.originalname ?? ''));
-  const key = await storageService.save(file.buffer, `${stem || 'upload'}${extension}`, folderOf(req));
+  const key = await storageService.save(file.buffer, `${stem || 'upload'}${extension}`, folderOf(req), {
+    mimeType: mime,
+    uploadedBy: req.user?.id ?? null,
+  });
   const url = storageService.getUrl(key);
 
   res.status(201).json({ url, key, mimeType: mime, size: file.size });

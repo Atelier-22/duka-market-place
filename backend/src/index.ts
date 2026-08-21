@@ -2,9 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import path from 'path';
 import { env } from './config/env';
-import { errorHandler } from './middleware/errorHandler';
+import { errorHandler, asyncHandler } from './middleware/errorHandler';
+import * as fileController from './controllers/file.controller';
 
 import authRoutes from './routes/auth.routes';
 import requestRoutes from './routes/request.routes';
@@ -30,9 +30,11 @@ app.use(cors({ origin: env.corsOrigin, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
 app.use(morgan(env.nodeEnv === 'development' ? 'dev' : 'combined'));
 
-// Serves locally-stored uploads in dev (see services/storage.service.ts).
-// A production S3 driver would return CDN URLs instead of using this route.
-app.use('/uploads', express.static(path.resolve(process.cwd(), env.uploadDir)));
+// Serves uploads back from whichever driver is configured — the database by
+// default, because a container's disk does not survive a deploy and every
+// image anyone had sent was being wiped with it. Same URL shape as the old
+// static folder, so URLs already stored in message rows keep resolving.
+app.get(/^\/uploads\/(.+)$/, asyncHandler(fileController.serve));
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', env: env.nodeEnv }));
 

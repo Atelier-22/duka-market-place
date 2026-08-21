@@ -16,7 +16,14 @@ export async function getPreferences(req: Request, res: Response) {
 
 const preferencesSchema = z.object({
   theme: z.enum(['system', 'light', 'dark']).optional(),
-  accent: z.enum(['green', 'ocean', 'sunset', 'grape', 'charcoal']).optional(),
+  // Kept in step with the [data-accent] blocks in frontend/src/index.css and
+  // the ACCENTS list in SettingsPage; an accent with no CSS block silently
+  // falls back to the default palette, so the three must not drift.
+  accent: z.enum([
+    'green', 'ocean', 'sunset', 'grape', 'charcoal',
+    'rose', 'amber', 'teal', 'indigo', 'crimson',
+    'lime', 'plum', 'sky', 'copper', 'forest', 'slate',
+  ]).optional(),
   language: z.enum(['en', 'sw', 'lg']).optional(),
   tone: z.enum(['professional', 'friendly', 'candid', 'efficient', 'encouraging']).optional(),
   traits: z.array(z.string().max(30)).max(8).optional(),

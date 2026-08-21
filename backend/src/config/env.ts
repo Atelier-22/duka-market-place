@@ -21,7 +21,9 @@ export const env = {
 
   corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
 
-  storageDriver: (process.env.STORAGE_DRIVER as 'local' | 's3') ?? 'local',
+  // 'database' by default: a container's disk is wiped on every deploy, so
+  // anything written to a folder is gone the next time you ship.
+  storageDriver: (process.env.STORAGE_DRIVER as 'database' | 'local' | 's3') ?? 'database',
   uploadDir: process.env.UPLOAD_DIR ?? './uploads',
 
   /**

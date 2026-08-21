@@ -1,10 +1,12 @@
-import { Outlet } from 'react-router-dom';
 import { BadgeCheck, Home, Map, MessageCircle, Settings, ShoppingBag, User, Wallet } from 'lucide-react';
-import { AppSidebar } from './AppSidebar';
+import { AppShell } from './AppShell';
+import { NavItem } from './MobileNav';
 
-const ITEMS = [
-  { to: '/shopper', label: 'Dashboard', icon: Home },
-  { to: '/shopper/available', label: 'Available jobs', icon: Map },
+// The first four become the phone's bottom tabs — a shopper lives in available
+// jobs, their own jobs and the chat, so those come before earnings and admin.
+const ITEMS: NavItem[] = [
+  { to: '/shopper', label: 'Home', icon: Home },
+  { to: '/shopper/available', label: 'Jobs', icon: Map },
   { to: '/shopper/orders', label: 'My jobs', icon: ShoppingBag },
   { to: '/shopper/messages', label: 'Chats', icon: MessageCircle, badge: 'messages' as const },
   { to: '/shopper/earnings', label: 'Earnings', icon: Wallet },
@@ -14,15 +16,5 @@ const ITEMS = [
 ];
 
 export function ShopperLayout() {
-  return (
-    <div className="min-h-screen">
-      <div className="atmosphere" />
-      <div className="mx-auto flex max-w-7xl gap-4 p-4">
-        <AppSidebar items={ITEMS} roleLabel="Shopper" />
-        <main className="min-w-0 flex-1 py-1">
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  );
+  return <AppShell items={ITEMS} roleLabel="Shopper" />;
 }
