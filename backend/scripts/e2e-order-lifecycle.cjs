@@ -254,6 +254,32 @@ async function tableCounts() {
     token: null, body: { lat: 0.3476, lng: 32.5825 },
   });
   step('an anonymous caller cannot publish a position', outsider.status === 401, `${outsider.status}`);
+
+  // ---- pinning the delivery address ---------------------------------------
+  // Live sharing only works while the customer has the order open. A pinned
+  // address is what gives the shopper somewhere to go the rest of the time —
+  // and every address in the database was stored without coordinates.
+  const addressId = addr.body?.address?.id;
+  const beforePin = await call('GET', `/orders/${orderId}/tracking`, { token: shop });
+  step('the shopper is told the address is written down but unpinned',
+    beforePin.body?.destinationPinned === false && !!beforePin.body?.deliveryAddressLabel,
+    JSON.stringify({ pinned: beforePin.body?.destinationPinned, label: beforePin.body?.deliveryAddressLabel }));
+
+  const pinned = await call('PATCH', `/addresses/${addressId}/pin`, {
+    token: cust, body: { lat: 0.3200, lng: 32.5600 },
+  });
+  step('the customer can pin their delivery address', pinned.status === 200, `${pinned.status}`);
+
+  const afterPin = await call('GET', `/orders/${orderId}/tracking`, { token: shop });
+  step('the shopper now has a destination on the map',
+    afterPin.body?.destinationPinned === true && afterPin.body?.destination?.lat === 0.32,
+    JSON.stringify(afterPin.body?.destination));
+
+  // Someone else's address must not be pinnable.
+  const hijack = await call('PATCH', `/addresses/${addressId}/pin`, {
+    token: shop, body: { lat: 1, lng: 1 },
+  });
+  step('another user cannot pin an address they do not own', hijack.status === 404, `${hijack.status}`);
   }
 
   // ---- the extras the UI relies on ----------------------------------------

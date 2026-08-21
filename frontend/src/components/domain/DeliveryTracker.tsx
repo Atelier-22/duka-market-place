@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MapPin, Navigation, Clock, CircleAlert } from 'lucide-react';
 import { LazyLiveMap } from './LazyLiveMap';
+import { PinLocationButton } from './PinLocationButton';
 import { TrackingState } from '../../hooks/useOrderTracking';
 import { GlassCard } from '../ui/GlassCard';
 
@@ -31,10 +32,16 @@ function useCountdown(startedAt: string | null, etaMinutes: number | null) {
 export function DeliveryTracker({
   tracking,
   sharingLocation = false,
+  locationError = null,
+  onPinned,
 }: {
   tracking: TrackingState | null;
   /** Whether this browser is currently publishing the customer's position. */
   sharingLocation?: boolean;
+  /** Why it isn't, when it isn't — permission, or a rejected write. */
+  locationError?: string | null;
+  /** Refresh tracking after the address gains coordinates. */
+  onPinned?: () => void;
 }) {
   const remaining = useCountdown(tracking?.deliveryStartedAt ?? null, tracking?.deliveryEtaMinutes ?? null);
 
@@ -97,22 +104,54 @@ export function DeliveryTracker({
           Your shopper hasn't shared their location yet. The map updates as soon as they do.
         </p>
       )}
-      {tracking.destination && (
+      {tracking.deliveryAddressLabel && (
         <p className="mt-3 flex items-center gap-2 text-xs text-brand-ink/45">
           <MapPin size={13} strokeWidth={2} />
-          Delivering to {tracking.destination.label}
+          Delivering to {tracking.deliveryAddressLabel}
         </p>
       )}
-      {/* Say plainly whether the shopper can see where they are — this is the
-          customer's own location being shared, so it should never be quiet. */}
-      <p className="mt-2 flex items-center gap-2 text-xs">
-        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${sharingLocation ? 'bg-brand-green-fresh' : 'bg-brand-ink/25'}`} />
-        <span className={sharingLocation ? 'text-brand-ink/45' : 'text-brand-ink/40'}>
-          {sharingLocation
-            ? 'Your shopper can see your location on their map.'
-            : 'Turn on location so your shopper can find you.'}
-        </span>
-      </p>
+
+      {/* An unpinned address is the single reason a shopper's map comes up
+          empty, so it gets a prompt rather than a quiet status line. */}
+      {!tracking.destinationPinned && tracking.deliveryAddressId && (
+        <div className="mt-3 rounded-xl bg-brand-yellow-soft/60 px-4 py-3">
+          <p className="text-sm text-yellow-900">
+            Your shopper can't see where to bring this. "{tracking.deliveryAddressLabel}" is
+            written down, but it isn't a point on the map — pin it while you're at the address.
+          </p>
+          <div className="mt-3">
+            <PinLocationButton
+              addressId={tracking.deliveryAddressId}
+              pinned={false}
+              onPinned={onPinned}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Say plainly whether the shopper can see them right now. */}
+      {tracking.destinationPinned && (
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="flex items-center gap-2 text-xs">
+            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${sharingLocation ? 'bg-brand-green-fresh' : 'bg-brand-ink/25'}`} />
+            <span className="text-brand-ink/45">
+              {sharingLocation
+                ? 'Your shopper can also see you moving in real time.'
+                : 'Your delivery point is pinned. Allow location to also share where you are right now.'}
+            </span>
+          </p>
+          {tracking.deliveryAddressId && (
+            <PinLocationButton addressId={tracking.deliveryAddressId} pinned onPinned={onPinned} />
+          )}
+        </div>
+      )}
+
+      {locationError && (
+        <p className="mt-2 flex items-start gap-2 text-xs font-medium text-brand-red">
+          <CircleAlert size={13} strokeWidth={2} className="mt-0.5 shrink-0" />
+          {locationError}
+        </p>
+      )}
     </GlassCard>
   );
 }

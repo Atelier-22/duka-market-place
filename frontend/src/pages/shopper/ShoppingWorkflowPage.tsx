@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Bike, Camera, Check, CheckCircle2, CircleAlert, Footprints, MessageCircle, PartyPopper, X } from 'lucide-react';
+import { ArrowLeft, Bike, Camera, Check, CheckCircle2, CircleAlert, Footprints, MapPin, MessageCircle, Navigation, PartyPopper, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { Order } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -206,14 +206,51 @@ export function ShoppingWorkflowPage() {
               {tracking.customer ? ' from your customer' : ' from the delivery address'}
             </p>
           )}
+          {/* Where you are taking it, in words — this is all there is when the
+              customer has not pinned a point, and it is still worth showing. */}
+          {tracking?.deliveryAddressLabel && (
+            <p className="mt-3 flex items-center gap-2 text-xs text-brand-ink/55">
+              <MapPin size={13} strokeWidth={2} className="shrink-0" />
+              Deliver to <span className="font-medium text-brand-green-deep">{tracking.deliveryAddressLabel}</span>
+            </p>
+          )}
+
           {/* Be explicit when there is nothing to head towards, rather than
               showing a map with only the shopper's own dot on it. */}
           {!tracking?.customer && !tracking?.destination && (
-            <p className="mt-3 flex items-center gap-2 text-xs text-brand-ink/45">
-              <CircleAlert size={13} strokeWidth={2} className="shrink-0" />
-              Your customer hasn't shared their location yet — message them for
-              directions, or ask them to open the order on their phone.
-            </p>
+            <div className="mt-3 rounded-xl bg-brand-yellow-soft/60 px-4 py-3">
+              <p className="flex items-start gap-2 text-sm text-yellow-900">
+                <CircleAlert size={15} strokeWidth={2} className="mt-0.5 shrink-0" />
+                <span>
+                  Your customer hasn't put their location on the map yet — only the
+                  written address above. Ask them to open this order and tap
+                  "Pin my exact location".
+                </span>
+              </p>
+              <GlassButton
+                size="sm"
+                variant="secondary"
+                className="mt-3"
+                onClick={() => navigate(`/shopper/orders/${id}/messages`)}
+              >
+                <MessageCircle size={15} strokeWidth={2} /> Ask for directions
+              </GlassButton>
+            </div>
+          )}
+
+          {/* Once there is a point, hand it to whatever they navigate with. */}
+          {(tracking?.customer || tracking?.destination) && (
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${
+                (tracking.customer ?? tracking.destination)!.lat
+              },${(tracking.customer ?? tracking.destination)!.lng}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand-green-deep hover:underline"
+            >
+              <Navigation size={14} strokeWidth={2} />
+              Open directions
+            </a>
           )}
 
           <ShoppingDonePanel

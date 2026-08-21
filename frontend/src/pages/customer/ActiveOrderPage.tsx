@@ -30,11 +30,11 @@ export function ActiveOrderPage() {
   const [rated, setRated] = useState(false);
 
   const trackable = !!order && TRACKABLE_STATUSES.includes(order.status);
-  const { tracking } = useOrderTracking(id, trackable);
+  const { tracking, refresh: refreshTracking } = useOrderTracking(id, trackable);
   // The customer shares their position too, so the shopper can find them. A
   // typed address like "Mbalwa" is not somewhere you can navigate to, and no
   // address in this system carries coordinates unless someone pins them.
-  const { sharing: sharingLocation } = useBroadcastPosition(id, trackable);
+  const { sharing: sharingLocation, error: locationError } = useBroadcastPosition(id, trackable);
 
   function load() {
     api.get(`/orders/${id}`).then((res) => {
@@ -86,7 +86,12 @@ export function ActiveOrderPage() {
         <StatusBadge status={order.status} />
       </div>
 
-      <DeliveryTracker tracking={tracking} sharingLocation={sharingLocation} />
+      <DeliveryTracker
+        tracking={tracking}
+        sharingLocation={sharingLocation}
+        locationError={locationError}
+        onPinned={refreshTracking}
+      />
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <GlassCard padding="lg" hover={false}>

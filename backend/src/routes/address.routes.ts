@@ -7,4 +7,5 @@ const router = Router();
 router.use(requireAuth);
 router.get('/', asyncHandler(addressController.list));
 router.post('/', asyncHandler(addressController.create));
+router.patch('/:id/pin', asyncHandler(addressController.pin));
 export default router;

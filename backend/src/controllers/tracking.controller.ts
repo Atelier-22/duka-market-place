@@ -127,6 +127,11 @@ export async function getTracking(req: Request, res: Response) {
     shopper,
     customer,
     destination: dest,
+    // Sent even when the address has no coordinates, so the shopper still gets
+    // the written address and the customer's page knows which address to pin.
+    deliveryAddressId: order.delivery_address_id,
+    deliveryAddressLabel: destination?.line1 ?? null,
+    destinationPinned: !!dest,
     distanceMetres,
     etaMinutes,
     // "Almost there" threshold — drives the arriving-soon banner on the map.

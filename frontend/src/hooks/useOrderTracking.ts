@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api } from '../services/api';
+import { api, apiErrorMessage } from '../services/api';
 
 export interface TrackingState {
   trackable: boolean;
@@ -8,6 +8,10 @@ export interface TrackingState {
   /** The customer's live position, when they are sharing it. */
   customer: { lat: number; lng: number; accuracyM: number | null; recordedAt: string } | null;
   destination: { lat: number; lng: number; label: string } | null;
+  /** Present even when the address has no coordinates on it. */
+  deliveryAddressId: string | null;
+  deliveryAddressLabel: string | null;
+  destinationPinned: boolean;
   distanceMetres: number | null;
   etaMinutes: number | null;
   isNearby: boolean;
@@ -82,7 +86,15 @@ export function useBroadcastPosition(orderId: string | undefined, active: boolea
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           accuracyM: pos.coords.accuracy,
-        }).catch(() => undefined);
+        }).catch((err) => {
+          // Swallowing this is how a broken broadcast stayed invisible: the
+          // browser said "sharing", the server refused every write, and nobody
+          // found out until someone asked why the map was empty.
+          setSharing(false);
+          setError(apiErrorMessage(err));
+          // Let the next fix retry rather than waiting out the throttle.
+          lastSent.current = 0;
+        });
       },
       (err) => {
         setSharing(false);
