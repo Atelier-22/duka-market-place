@@ -23,9 +23,99 @@
     whole product so the glass language reads as intentional, not decorative.
 */
 
+/* ----------------------------------------------------------------------
+   Theme variables.
+
+   Colours are space-separated RGB channels so Tailwind can apply its own
+   alpha (`bg-brand-green/20`). Three independent axes:
+     [data-accent]  — which hue family the product wears
+     [data-theme]   — light or dark surfaces
+     (no attribute) — light + green, the original look
+
+   Accent blocks set only the four green slots; the dark block sets only
+   the surface/ink slots. They compose, so any accent works in either
+   theme without writing 2 x N palettes.
+   ---------------------------------------------------------------------- */
 :root {
   color-scheme: light;
+
+  --brand-green-deep: 11 61 46;
+  --brand-green: 19 122 76;
+  --brand-green-fresh: 31 174 107;
+  --brand-green-mist: 231 245 236;
+
+  --brand-yellow: 242 183 5;
+  --brand-yellow-soft: 252 231 166;
+  --brand-red: 214 73 59;
+  --brand-red-soft: 246 216 212;
+
+  --brand-surface: 255 255 255;
+  --brand-ink: 12 26 20;
+
+  --app-bg: #F3FBF6;
+  --glass-bg: 255 255 255;
+  --glass-bg-alpha: 0.6;
+  --glass-border-alpha: 0.55;
 }
+
+/* Ocean — deep blues, calm and trustworthy */
+[data-accent='ocean'] {
+  --brand-green-deep: 12 45 74;
+  --brand-green: 21 101 163;
+  --brand-green-fresh: 46 155 217;
+  --brand-green-mist: 226 240 250;
+  --app-bg: #F2F8FD;
+}
+
+/* Sunset — warm terracotta and amber */
+[data-accent='sunset'] {
+  --brand-green-deep: 87 33 20;
+  --brand-green: 178 71 34;
+  --brand-green-fresh: 232 116 53;
+  --brand-green-mist: 253 236 226;
+  --brand-yellow: 240 160 20;
+  --app-bg: #FEF7F2;
+}
+
+/* Grape — violets with a cool edge */
+[data-accent='grape'] {
+  --brand-green-deep: 49 26 82;
+  --brand-green: 103 58 168;
+  --brand-green-fresh: 145 96 214;
+  --brand-green-mist: 240 233 252;
+  --app-bg: #F9F5FE;
+}
+
+/* Charcoal — near-neutral, lets photography carry the colour */
+[data-accent='charcoal'] {
+  --brand-green-deep: 24 28 32;
+  --brand-green: 62 72 82;
+  --brand-green-fresh: 105 119 132;
+  --brand-green-mist: 235 238 241;
+  --app-bg: #F6F7F8;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Deep shades have to invert: on a dark surface the "deep" slot is used
+     for headings, which must now be the lightest of the family. */
+  --brand-green-deep: 209 240 224;
+  --brand-green-mist: 27 44 37;
+
+  --brand-surface: 22 28 25;
+  --brand-ink: 232 240 235;
+
+  --app-bg: #0E1512;
+  --glass-bg: 30 40 35;
+  --glass-bg-alpha: 0.66;
+  --glass-border-alpha: 0.10;
+}
+
+[data-theme='dark'][data-accent='ocean']    { --brand-green-deep: 205 231 248; --brand-green-mist: 22 38 52; --app-bg: #0C1219; }
+[data-theme='dark'][data-accent='sunset']   { --brand-green-deep: 252 226 210; --brand-green-mist: 48 30 22; --app-bg: #17100C; }
+[data-theme='dark'][data-accent='grape']    { --brand-green-deep: 232 219 250; --brand-green-mist: 39 28 55; --app-bg: #120E18; }
+[data-theme='dark'][data-accent='charcoal'] { --brand-green-deep: 228 232 236; --brand-green-mist: 33 37 41; --app-bg: #101214; }
 
 html, body, #root {
   height: 100%;
@@ -33,7 +123,8 @@ html, body, #root {
 
 body {
   @apply font-sans text-brand-ink antialiased;
-  background: #F3FBF6;
+  background: var(--app-bg);
+  transition: background 200ms ease;
 }
 
 /* Reduced motion respect */
@@ -65,10 +156,11 @@ body {
   inset: 0;
   z-index: -1;
   overflow: hidden;
+  /* Built from the accent's own hues so the backdrop follows the theme. */
   background:
-    radial-gradient(120% 90% at 15% 0%, #EAF8EF 0%, transparent 55%),
-    radial-gradient(90% 70% at 100% 10%, #FBF3D8 0%, transparent 50%),
-    linear-gradient(180deg, #F6FBF8 0%, #F1F8F3 40%, #EDF6F0 100%);
+    radial-gradient(120% 90% at 15% 0%, rgb(var(--brand-green-mist)) 0%, transparent 55%),
+    radial-gradient(90% 70% at 100% 10%, rgb(var(--brand-yellow-soft) / 0.55) 0%, transparent 50%),
+    var(--app-bg);
 }
 
 .atmosphere::before,
@@ -83,7 +175,7 @@ body {
 .atmosphere::before {
   width: 42vw;
   height: 42vw;
-  background: radial-gradient(circle, rgba(31,174,107,0.35), transparent 70%);
+  background: radial-gradient(circle, rgb(var(--brand-green-fresh) / 0.35), transparent 70%);
   top: -10%;
   left: -8%;
 }
@@ -114,13 +206,13 @@ body {
    Glass primitive — used by <GlassCard/> and any element wanting the look.
    ---------------------------------------------------------------------- */
 .glass {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgb(var(--glass-bg) / var(--glass-bg-alpha));
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid rgb(var(--glass-bg) / var(--glass-border-alpha));
   box-shadow:
     0 8px 32px 0 rgba(11, 61, 46, 0.10),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+    inset 0 1px 0 0 rgb(var(--glass-bg) / calc(var(--glass-border-alpha) + 0.05));
 }
 
 .glass-deep {

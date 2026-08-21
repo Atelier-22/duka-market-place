@@ -3,24 +3,28 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // Every brand colour resolves through a CSS variable holding space-separated
+      // RGB channels. That lets the accent picker and dark mode reskin the whole
+      // app by swapping variables, without a single class name changing.
+      // See the :root / [data-theme] / [data-accent] blocks in index.css.
       colors: {
         brand: {
           green: {
-            deep: '#0B3D2E',
-            DEFAULT: '#137A4C',
-            fresh: '#1FAE6B',
-            mist: '#E7F5EC',
+            deep: 'rgb(var(--brand-green-deep) / <alpha-value>)',
+            DEFAULT: 'rgb(var(--brand-green) / <alpha-value>)',
+            fresh: 'rgb(var(--brand-green-fresh) / <alpha-value>)',
+            mist: 'rgb(var(--brand-green-mist) / <alpha-value>)',
           },
           yellow: {
-            DEFAULT: '#F2B705',
-            soft: '#FCE7A6',
+            DEFAULT: 'rgb(var(--brand-yellow) / <alpha-value>)',
+            soft: 'rgb(var(--brand-yellow-soft) / <alpha-value>)',
           },
           red: {
-            DEFAULT: '#D6493B',
-            soft: '#F6D8D4',
+            DEFAULT: 'rgb(var(--brand-red) / <alpha-value>)',
+            soft: 'rgb(var(--brand-red-soft) / <alpha-value>)',
           },
-          white: '#FFFFFF',
-          ink: '#0C1A14',
+          white: 'rgb(var(--brand-surface) / <alpha-value>)',
+          ink: 'rgb(var(--brand-ink) / <alpha-value>)',
         },
       },
       fontFamily: {

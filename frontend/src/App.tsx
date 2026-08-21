@@ -32,6 +32,7 @@ import { ShopperVerificationPage } from './pages/shopper/ShopperVerificationPage
 import { ShopperProfilePage } from './pages/shopper/ShopperProfilePage';
 
 import { OrderMessagesPage } from './pages/shared/OrderMessagesPage';
+import { SettingsPage } from './pages/shared/SettingsPage';
 
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminCustomersPage } from './pages/admin/AdminCustomersPage';
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="/app/orders/:id/messages" element={<OrderMessagesPage />} />
             <Route path="/app/payments" element={<PaymentsPage />} />
             <Route path="/app/profile" element={<CustomerProfilePage />} />
+            <Route path="/app/settings" element={<SettingsPage />} />
           </Route>
         </Route>
 
@@ -83,6 +85,7 @@ export default function App() {
             <Route path="/shopper/earnings" element={<ShopperEarningsPage />} />
             <Route path="/shopper/verification" element={<ShopperVerificationPage />} />
             <Route path="/shopper/profile" element={<ShopperProfilePage />} />
+            <Route path="/shopper/settings" element={<SettingsPage />} />
           </Route>
         </Route>
 

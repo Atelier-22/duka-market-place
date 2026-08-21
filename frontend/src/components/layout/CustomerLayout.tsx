@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { ClipboardList, CreditCard, Home, Package, PlusCircle, User } from 'lucide-react';
+import { ClipboardList, CreditCard, Home, Package, PlusCircle, Settings, User } from 'lucide-react';
 import { AppSidebar } from './AppSidebar';
 
 const ITEMS = [
@@ -9,6 +9,7 @@ const ITEMS = [
   { to: '/app/orders', label: 'Orders', icon: Package },
   { to: '/app/payments', label: 'Payments', icon: CreditCard },
   { to: '/app/profile', label: 'Profile', icon: User },
+  { to: '/app/settings', label: 'Settings', icon: Settings },
 ];
 
 export function CustomerLayout() {

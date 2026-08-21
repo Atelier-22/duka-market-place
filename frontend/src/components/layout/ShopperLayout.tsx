@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { BadgeCheck, Home, Map, ShoppingBag, User, Wallet } from 'lucide-react';
+import { BadgeCheck, Home, Map, Settings, ShoppingBag, User, Wallet } from 'lucide-react';
 import { AppSidebar } from './AppSidebar';
 
 const ITEMS = [
@@ -9,6 +9,7 @@ const ITEMS = [
   { to: '/shopper/earnings', label: 'Earnings', icon: Wallet },
   { to: '/shopper/verification', label: 'Verification', icon: BadgeCheck },
   { to: '/shopper/profile', label: 'Profile', icon: User },
+  { to: '/shopper/settings', label: 'Settings', icon: Settings },
 ];
 
 export function ShopperLayout() {
