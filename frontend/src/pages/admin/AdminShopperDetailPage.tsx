@@ -5,6 +5,7 @@ import { LoadingState } from '../../components/ui/LoadingState';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { RatingStars } from '../../components/ui/RatingStars';
 import { ZoomableImage } from '../../components/ui/ZoomableImage';
+import { AdminUserActions } from '../../components/domain/AdminUserActions';
 import { AdminDetailShell, Empty, Field, Panel, formatDate, formatUgx } from './AdminDetailShell';
 
 const VERIFICATION_TONE: Record<string, string> = {
@@ -19,13 +20,14 @@ export function AdminShopperDetailPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     api.get(`/admin/shoppers/${id}`)
       .then((res) => setData(res.data))
       .catch(() => setError('Could not load this shopper.'))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, reloadKey]);
 
   if (loading) return <LoadingState label="Loading shopper…" />;
   if (error || !data) return <p className="p-8 text-sm text-brand-red">{error ?? 'Not found.'}</p>;
@@ -167,6 +169,13 @@ export function AdminShopperDetailPage() {
           </div>
         )}
       </Panel>
+      <AdminUserActions
+        userId={user.id}
+        name={user.full_name}
+        role={'shopper'}
+        isActive={user.is_active !== false}
+        onChanged={() => setReloadKey((k) => k + 1)}
+      />
     </AdminDetailShell>
   );
 }

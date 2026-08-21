@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as adminController from '../controllers/admin.controller';
 import * as overview from '../controllers/adminOverview.controller';
 import { requireAuth, requireRole } from '../middleware/auth';
+import * as ops from '../controllers/adminOps.controller';
 import { asyncHandler } from '../middleware/errorHandler';
 
 const router = Router();
@@ -30,5 +31,29 @@ router.get('/shoppers/:id', asyncHandler(overview.getShopperDetail));
 router.get('/orders/:id', asyncHandler(overview.getOrderDetail));
 router.post('/orders/:id/force-cancel', asyncHandler(overview.forceCancelOrder));
 router.post('/orders/:id/dispute', asyncHandler(overview.openDisputeForOrder));
+
+// Operations. Every mutating route here writes an admin_audit_log row naming
+// the admin before it reports success — see adminOps.controller.ts.
+router.post('/users/:id/suspend', asyncHandler(ops.suspendUser));
+router.post('/users/:id/reactivate', asyncHandler(ops.reactivateUser));
+router.post('/users/:id/reset-password', asyncHandler(ops.resetUserPassword));
+router.post('/users/:id/role', asyncHandler(ops.changeUserRole));
+router.post('/shoppers/:id/revoke-verification', asyncHandler(ops.revokeVerification));
+
+router.post('/disputes/:id/resolve', asyncHandler(ops.resolveDispute));
+
+router.get('/payouts', asyncHandler(ops.listPayouts));
+router.post('/payouts/:id/pay', asyncHandler(ops.payOutShopper));
+router.get('/payments', asyncHandler(ops.listPayments));
+router.post('/payments/:id/settle', asyncHandler(ops.settlePayment));
+
+router.post('/broadcast', asyncHandler(ops.broadcast));
+
+router.get('/locations', asyncHandler(ops.listLocations));
+router.post('/locations', asyncHandler(ops.createLocation));
+router.post('/locations/:id/toggle', asyncHandler(ops.toggleLocation));
+
+router.get('/analytics', asyncHandler(ops.analytics));
+router.get('/audit', asyncHandler(ops.auditLog));
 
 export default router;

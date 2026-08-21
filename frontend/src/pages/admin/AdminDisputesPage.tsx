@@ -17,10 +17,19 @@ export function AdminDisputesPage() {
   }
   useEffect(load, []);
 
-  async function resolve(id: string, status: string, finalOrderStatus?: string) {
+  /**
+   * Routed through the admin endpoint rather than the generic one, so the
+   * decision is written to the audit log against whoever made it and both
+   * sides of the order are told the outcome — not just whoever complained.
+   */
+  async function resolve(id: string, outcome: string, finalOrderStatus?: string) {
+    const note = window.prompt('Why? Both the customer and the shopper will be shown this.');
+    if (!note?.trim()) return;
     try {
-      await api.post(`/disputes/${id}/resolve`, { status, finalOrderStatus });
-      push('Dispute resolved', 'success');
+      await api.post(`/admin/disputes/${id}/resolve`, {
+        outcome, note: note.trim(), finalOrderStatus,
+      });
+      push('Dispute decided — both sides have been told', 'success');
       load();
     } catch (err) {
       push(apiErrorMessage(err), 'error');
@@ -45,11 +54,22 @@ export function AdminDisputesPage() {
                 </div>
                 <p className="mt-2 text-sm text-brand-ink/60">{d.description}</p>
                 <p className="mt-2 text-xs text-brand-ink/40">Order #{d.order_id.slice(0, 8)} · Order status: {d.order_status}</p>
-                {d.status === 'open' && (
+                {d.resolution_note && (
+                  <p className="mt-2 rounded-lg bg-brand-green-mist/60 p-3 text-xs text-brand-ink/70">
+                    {d.resolution_note}
+                  </p>
+                )}
+                {['open', 'under_review'].includes(d.status) && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     <GlassButton size="sm" onClick={() => resolve(d.id, 'resolved_customer', 'refunded')}>Side with customer (refund)</GlassButton>
                     <GlassButton size="sm" onClick={() => resolve(d.id, 'resolved_shopper', 'completed')}>Side with shopper (complete)</GlassButton>
+                    <GlassButton size="sm" variant="secondary" onClick={() => resolve(d.id, 'resolved_split')}>Settle between them</GlassButton>
                     <GlassButton size="sm" variant="secondary" onClick={() => resolve(d.id, 'closed')}>Close without action</GlassButton>
+                    {d.status === 'open' && (
+                      <GlassButton size="sm" variant="ghost" onClick={() => resolve(d.id, 'under_review')}>
+                        Mark under review
+                      </GlassButton>
+                    )}
                   </div>
                 )}
               </GlassCard>

@@ -1,5 +1,6 @@
 import {
-  BadgeCheck, FileText, LayoutDashboard, Package, Percent, Scale, Settings, ShoppingBag, Users,
+  BadgeCheck, ChartLine, FileText, LayoutDashboard, Package, Percent, Scale,
+  Settings, ShoppingBag, Users, Wallet, Wrench,
 } from 'lucide-react';
 import { AppShell } from './AppShell';
 import { NavItem } from './MobileNav';
@@ -10,6 +11,9 @@ const ITEMS: NavItem[] = [
   { to: '/admin/customers', label: 'Customers', icon: Users },
   { to: '/admin/shoppers', label: 'Shoppers', icon: ShoppingBag },
   { to: '/admin/verifications', label: 'Verification', icon: BadgeCheck },
+  { to: '/admin/finance', label: 'Finance', icon: Wallet },
+  { to: '/admin/analytics', label: 'Analytics', icon: ChartLine },
+  { to: '/admin/operations', label: 'Operations', icon: Wrench },
   { to: '/admin/requests', label: 'Requests', icon: FileText },
   { to: '/admin/disputes', label: 'Disputes', icon: Scale },
   // Fees is the platform's pricing, not the admin's own preferences — it had

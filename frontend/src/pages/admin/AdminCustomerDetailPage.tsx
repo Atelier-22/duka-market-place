@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { AdminUserActions } from '../../components/domain/AdminUserActions';
 import { AdminDetailShell, Empty, Field, Panel, formatDate, formatUgx } from './AdminDetailShell';
 
 export function AdminCustomerDetailPage() {
@@ -10,13 +11,14 @@ export function AdminCustomerDetailPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     api.get(`/admin/customers/${id}`)
       .then((res) => setData(res.data))
       .catch(() => setError('Could not load this customer.'))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, reloadKey]);
 
   if (loading) return <LoadingState label="Loading customer…" />;
   if (error || !data) return <p className="p-8 text-sm text-brand-red">{error ?? 'Not found.'}</p>;
@@ -116,6 +118,13 @@ export function AdminCustomerDetailPage() {
           </div>
         )}
       </Panel>
+      <AdminUserActions
+        userId={user.id}
+        name={user.full_name}
+        role={'customer'}
+        isActive={user.is_active !== false}
+        onChanged={() => setReloadKey((k) => k + 1)}
+      />
     </AdminDetailShell>
   );
 }

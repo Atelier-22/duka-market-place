@@ -46,6 +46,9 @@ import { AdminRequestsPage } from './pages/admin/AdminRequestsPage';
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
 import { AdminDisputesPage } from './pages/admin/AdminDisputesPage';
 import { AdminFeesPage } from './pages/admin/AdminFeesPage';
+import { AdminAnalyticsPage } from './pages/admin/AdminAnalyticsPage';
+import { AdminFinancePage } from './pages/admin/AdminFinancePage';
+import { AdminOpsPage } from './pages/admin/AdminOpsPage';
 
 export default function App() {
   return (
@@ -108,6 +111,9 @@ export default function App() {
             <Route path="/admin/orders" element={<AdminOrdersPage />} />
             <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
             <Route path="/admin/disputes" element={<AdminDisputesPage />} />
+            <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+            <Route path="/admin/finance" element={<AdminFinancePage />} />
+            <Route path="/admin/operations" element={<AdminOpsPage />} />
             <Route path="/admin/fees" element={<AdminFeesPage />} />
             {/* The same SettingsPage the customer and shopper dashboards use —
                 an admin is a person with an account like anyone else. */}
