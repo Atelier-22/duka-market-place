@@ -297,26 +297,56 @@ body[data-theme='dark']::before {
 }
 
 /* ----------------------------------------------------------------------
-   Liquid glass — for the top bar, which sits over the page rather than
-   being part of it.
+   Liquid glass — the floating top bar.
 
-   Much lighter than .glass: a heavier blur so what is behind genuinely
-   refracts, almost no fill so the colour reads through, and a bright hairline
-   along the top edge where light would catch. No shadow — a shadow would
-   separate it from the page, and the point is that it does not.
+   Nearly no fill: the page and its drifting colour should read straight
+   through, so the bar registers as a lens over the page rather than a strip
+   laid on top of it. What sells that is the blur and the saturation boost,
+   not opacity — pushing the fill up to make it "look like glass" is what
+   turns it back into a slab.
+
+   The rim is doing the work instead: a bright hairline along the top edge
+   where light would catch, a darker one along the bottom where it falls
+   away, and a soft drop shadow so it reads as floating above the page.
    ---------------------------------------------------------------------- */
 .glass-liquid {
-  background: rgb(var(--glass-bg) / 0.28);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border-bottom: 1px solid rgb(var(--glass-bg) / 0.35);
-  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.35);
+  background: rgb(var(--glass-bg) / 0.14);
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  border: 1px solid rgb(255 255 255 / 0.45);
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.55),
+    inset 0 -1px 0 0 rgb(11 61 46 / 0.05),
+    0 10px 30px -12px rgb(11 61 46 / 0.22);
 }
 
 [data-theme='dark'] .glass-liquid {
-  background: rgb(var(--glass-bg) / 0.34);
-  border-bottom-color: rgb(255 255 255 / 0.08);
-  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.06);
+  background: rgb(var(--glass-bg) / 0.22);
+  border-color: rgb(255 255 255 / 0.10);
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.10),
+    0 10px 30px -12px rgb(0 0 0 / 0.55);
+}
+
+/* ----------------------------------------------------------------------
+   The things ON the glass — the logo and the avatar.
+
+   A bar this transparent will sometimes have a photo or a map scrolling
+   under it, and neither the mark nor a face can be allowed to disappear
+   into that. Each sits on its own small, much more opaque pill, so the bar
+   stays a lens while its contents stay legible against anything.
+   ---------------------------------------------------------------------- */
+.glass-chip {
+  background: rgb(var(--glass-bg) / 0.78);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  border: 1px solid rgb(255 255 255 / 0.55);
+  box-shadow: 0 2px 10px -4px rgb(11 61 46 / 0.25);
+}
+
+[data-theme='dark'] .glass-chip {
+  background: rgb(var(--glass-bg) / 0.82);
+  border-color: rgb(255 255 255 / 0.12);
 }
 
 /* Room for the fixed mobile tab strip, plus the iPhone home indicator. The

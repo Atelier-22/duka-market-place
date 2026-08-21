@@ -80,11 +80,21 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
   const item = 'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-brand-ink/75 transition-colors hover:bg-brand-green-mist disabled:opacity-50';
 
   return (
-    // `glass-liquid` rather than `glass`: this bar sits over the page and the
-    // colour behind it should read through, not be frosted into a slab.
-    <header className="glass-liquid sticky top-0 z-40 mb-3 flex items-center justify-between gap-3 rounded-b-2xl px-4 py-2">
-      <Link to={home} aria-label="Duka home">
-        <DukaLockup markSize={28} roleLabel={roleLabel} />
+    // Floating: inset from every edge and fully rounded, so it reads as a bar
+    // resting above the page rather than one welded to the top of it. `top-2`
+    // keeps that gap while it is stuck during a scroll.
+    <header
+      className="glass-liquid sticky top-2 z-40 mx-2 mb-4 flex items-center justify-between gap-3 rounded-2xl px-2 py-2 sm:mx-3 sm:px-2.5"
+      style={{ marginTop: 'max(0.5rem, env(safe-area-inset-top))' }}
+    >
+      {/* On its own chip: the bar is deliberately close to invisible, and the
+          logo must not go with it when a photo or a map scrolls underneath. */}
+      <Link
+        to={home}
+        aria-label="Duka home"
+        className="glass-chip rounded-xl px-3 py-1.5 transition-transform active:scale-[0.98]"
+      >
+        <DukaLockup markSize={26} roleLabel={roleLabel} />
       </Link>
 
       <div className="relative shrink-0">
@@ -94,7 +104,7 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
           onClick={() => setOpen((o) => !o)}
           aria-label="Your profile picture"
           aria-expanded={open}
-          className="block rounded-full ring-2 ring-white/50 transition-transform active:scale-95"
+          className="block rounded-full ring-2 ring-white/80 shadow-[0_2px_12px_-2px_rgba(11,61,46,0.35)] transition-transform active:scale-95"
         >
           {user?.avatarUrl ? (
             <img src={user.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
