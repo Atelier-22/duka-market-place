@@ -9,7 +9,8 @@ import type { MapPoint } from './LiveMap';
 const LiveMap = lazy(() => import('./LiveMap').then((m) => ({ default: m.LiveMap })));
 
 interface LazyLiveMapProps {
-  shopper: MapPoint | null;
+  you: MapPoint | null;
+  them: MapPoint | null;
   destination: MapPoint | null;
   className?: string;
 }

@@ -13,7 +13,7 @@ import { PricingBreakdown } from '../../components/domain/PricingBreakdown';
 import { DeliveryTracker } from '../../components/domain/DeliveryTracker';
 import { RatingStars } from '../../components/ui/RatingStars';
 import { useToast } from '../../components/ui/Toast';
-import { useOrderTracking } from '../../hooks/useOrderTracking';
+import { useBroadcastPosition, useOrderTracking } from '../../hooks/useOrderTracking';
 
 /** Statuses during which the live map is worth showing the customer. */
 const TRACKABLE_STATUSES = ['shopper_assigned', 'shopping', 'item_found', 'awaiting_customer_approval', 'purchased', 'out_for_delivery'];
@@ -29,7 +29,12 @@ export function ActiveOrderPage() {
   const [stars, setStars] = useState(5);
   const [rated, setRated] = useState(false);
 
-  const { tracking } = useOrderTracking(id, !!order && TRACKABLE_STATUSES.includes(order.status));
+  const trackable = !!order && TRACKABLE_STATUSES.includes(order.status);
+  const { tracking } = useOrderTracking(id, trackable);
+  // The customer shares their position too, so the shopper can find them. A
+  // typed address like "Mbalwa" is not somewhere you can navigate to, and no
+  // address in this system carries coordinates unless someone pins them.
+  const { sharing: sharingLocation } = useBroadcastPosition(id, trackable);
 
   function load() {
     api.get(`/orders/${id}`).then((res) => {
@@ -81,7 +86,7 @@ export function ActiveOrderPage() {
         <StatusBadge status={order.status} />
       </div>
 
-      <DeliveryTracker tracking={tracking} />
+      <DeliveryTracker tracking={tracking} sharingLocation={sharingLocation} />
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <GlassCard padding="lg" hover={false}>

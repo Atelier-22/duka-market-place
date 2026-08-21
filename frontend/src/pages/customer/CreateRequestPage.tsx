@@ -63,14 +63,42 @@ export function CreateRequestPage() {
     true,
   ][step];
 
+  /**
+   * Ask the browser where we are, if it will say.
+   *
+   * A typed line like "Mbalwa" is not somewhere a shopper can navigate to, and
+   * every address in the database was stored without coordinates — which is why
+   * delivery pins never appeared on anyone's map. This attaches them at the one
+   * moment the customer is most likely to be standing at the address. It is
+   * best-effort: a refused prompt saves the address anyway.
+   */
+  function currentCoords(): Promise<{ lat: number; lng: number } | null> {
+    if (!('geolocation' in navigator)) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 8_000, maximumAge: 60_000 }
+      );
+    });
+  }
+
   async function handleAddAddress() {
     if (!newAddressLine.trim()) return;
     setAddingAddress(true);
     try {
-      const res = await api.post('/addresses', { line1: newAddressLine, isDefault: addresses.length === 0 });
+      const coords = await currentCoords();
+      const res = await api.post('/addresses', {
+        line1: newAddressLine,
+        isDefault: addresses.length === 0,
+        ...(coords ?? {}),
+      });
       setAddresses((a) => [...a, res.data.address]);
       setAddressId(res.data.address.id);
       setNewAddressLine('');
+      if (!coords) {
+        push('Address saved. Allow location access to pin it on the map for your shopper.', 'info');
+      }
     } catch (err) {
       push(apiErrorMessage(err), 'error');
     } finally {

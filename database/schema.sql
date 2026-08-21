@@ -387,16 +387,20 @@ CREATE TABLE deliveries (
 
 -- Position trail for a shopper on an active order. The customer's map reads
 -- the most recent row; older rows keep the route for support/disputes.
-CREATE TABLE shopper_locations (
+-- Live position reports for an order. Both sides may report: the shopper so
+-- the customer can watch them approach, and the customer so the shopper can
+-- find them — a typed street name is not a location in Kampala.
+CREATE TABLE order_locations (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id      UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  shopper_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  party         VARCHAR(16) NOT NULL DEFAULT 'shopper' CHECK (party IN ('shopper', 'customer')),
   lat           NUMERIC(9,6) NOT NULL,
   lng           NUMERIC(9,6) NOT NULL,
   accuracy_m    NUMERIC(8,2),
   recorded_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_shopper_locations_order ON shopper_locations(order_id, recorded_at DESC);
+CREATE INDEX idx_order_locations_latest ON order_locations(order_id, party, recorded_at DESC);
 
 CREATE TABLE ratings (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),

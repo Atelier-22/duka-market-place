@@ -5,6 +5,8 @@ export interface TrackingState {
   trackable: boolean;
   status: string;
   shopper: { lat: number; lng: number; accuracyM: number | null; recordedAt: string } | null;
+  /** The customer's live position, when they are sharing it. */
+  customer: { lat: number; lng: number; accuracyM: number | null; recordedAt: string } | null;
   destination: { lat: number; lng: number; label: string } | null;
   distanceMetres: number | null;
   etaMinutes: number | null;

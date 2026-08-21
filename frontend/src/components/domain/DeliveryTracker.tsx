@@ -28,7 +28,14 @@ function useCountdown(startedAt: string | null, etaMinutes: number | null) {
  * and how long the countdown has left. Shown only while the order is actually
  * in flight.
  */
-export function DeliveryTracker({ tracking }: { tracking: TrackingState | null }) {
+export function DeliveryTracker({
+  tracking,
+  sharingLocation = false,
+}: {
+  tracking: TrackingState | null;
+  /** Whether this browser is currently publishing the customer's position. */
+  sharingLocation?: boolean;
+}) {
   const remaining = useCountdown(tracking?.deliveryStartedAt ?? null, tracking?.deliveryEtaMinutes ?? null);
 
   if (!tracking || !tracking.trackable) return null;
@@ -78,7 +85,8 @@ export function DeliveryTracker({ tracking }: { tracking: TrackingState | null }
 
       <div className="mt-4 overflow-hidden rounded-xl2 border border-brand-green/10">
         <LazyLiveMap
-          shopper={tracking.shopper ? { lat: tracking.shopper.lat, lng: tracking.shopper.lng, label: 'Your shopper' } : null}
+          you={tracking.customer ? { lat: tracking.customer.lat, lng: tracking.customer.lng, label: 'You' } : null}
+          them={tracking.shopper ? { lat: tracking.shopper.lat, lng: tracking.shopper.lng, label: 'Your shopper' } : null}
           destination={tracking.destination}
         />
       </div>
@@ -95,6 +103,16 @@ export function DeliveryTracker({ tracking }: { tracking: TrackingState | null }
           Delivering to {tracking.destination.label}
         </p>
       )}
+      {/* Say plainly whether the shopper can see where they are — this is the
+          customer's own location being shared, so it should never be quiet. */}
+      <p className="mt-2 flex items-center gap-2 text-xs">
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${sharingLocation ? 'bg-brand-green-fresh' : 'bg-brand-ink/25'}`} />
+        <span className={sharingLocation ? 'text-brand-ink/45' : 'text-brand-ink/40'}>
+          {sharingLocation
+            ? 'Your shopper can see your location on their map.'
+            : 'Turn on location so your shopper can find you.'}
+        </span>
+      </p>
     </GlassCard>
   );
 }

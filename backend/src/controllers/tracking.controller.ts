@@ -35,20 +35,26 @@ export async function postPosition(req: Request, res: Response) {
   const input = positionSchema.parse(req.body);
   const order = await loadParticipantOrder(req.params.id, req.user!.id, req.user!.role);
 
-  if (order.shopper_id !== req.user!.id) {
-    throw new ApiError(403, 'Only the assigned shopper can report a position');
+  // Both sides may report. The shopper so the customer can watch them approach,
+  // and the customer so the shopper can actually find them — "Mbalwa" is not a
+  // location, and no address in this system has ever carried coordinates.
+  const party = order.shopper_id === req.user!.id ? 'shopper'
+    : order.customer_id === req.user!.id ? 'customer'
+    : null;
+  if (!party) {
+    throw new ApiError(403, 'Only the two people on this order can report a position');
   }
   if (!TRACKABLE.includes(order.status)) {
     throw new ApiError(409, 'This order is not currently trackable');
   }
 
   await query(
-    `INSERT INTO shopper_locations (order_id, shopper_id, lat, lng, accuracy_m)
-     VALUES ($1,$2,$3,$4,$5)`,
-    [order.id, req.user!.id, input.lat, input.lng, input.accuracyM ?? null]
+    `INSERT INTO order_locations (order_id, user_id, party, lat, lng, accuracy_m)
+     VALUES ($1,$2,$3,$4,$5,$6)`,
+    [order.id, req.user!.id, party, input.lat, input.lng, input.accuracyM ?? null]
   );
 
-  res.status(201).json({ ok: true });
+  res.status(201).json({ ok: true, party });
 }
 
 interface LatLng { lat: number; lng: number }
@@ -68,12 +74,26 @@ function haversineMetres(a: LatLng, b: LatLng): number {
 /** Rough city-traffic speed for a boda/walking mix, in metres per minute. */
 const TRAVEL_METRES_PER_MINUTE = 300;
 
+interface PositionRow { lat: string; lng: string; accuracy_m: string | null; recorded_at: string; party: string }
+
+function toPoint(row: PositionRow | undefined) {
+  if (!row) return null;
+  return {
+    lat: Number(row.lat),
+    lng: Number(row.lng),
+    accuracyM: row.accuracy_m ? Number(row.accuracy_m) : null,
+    recordedAt: row.recorded_at,
+  };
+}
+
 export async function getTracking(req: Request, res: Response) {
   const order = await loadParticipantOrder(req.params.id, req.user!.id, req.user!.role);
 
-  const position = await queryOne<{ lat: string; lng: string; accuracy_m: string | null; recorded_at: string }>(
-    `SELECT lat, lng, accuracy_m, recorded_at FROM shopper_locations
-      WHERE order_id = $1 ORDER BY recorded_at DESC LIMIT 1`,
+  // Latest report from each side in one query rather than two round trips.
+  const positions = await query<PositionRow>(
+    `SELECT DISTINCT ON (party) party, lat, lng, accuracy_m, recorded_at
+       FROM order_locations WHERE order_id = $1
+      ORDER BY party, recorded_at DESC`,
     [order.id]
   );
 
@@ -82,18 +102,22 @@ export async function getTracking(req: Request, res: Response) {
     [order.delivery_address_id]
   );
 
-  const shopper = position
-    ? { lat: Number(position.lat), lng: Number(position.lng), accuracyM: position.accuracy_m ? Number(position.accuracy_m) : null, recordedAt: position.recorded_at }
-    : null;
+  const shopper = toPoint(positions.find((p) => p.party === 'shopper'));
+  const customer = toPoint(positions.find((p) => p.party === 'customer'));
 
   const dest = destination?.lat && destination?.lng
     ? { lat: Number(destination.lat), lng: Number(destination.lng), label: destination.line1 }
     : null;
 
+  // Where the shopper is actually heading: the customer's live position if they
+  // are sharing it, otherwise the pin on their saved address. A live position
+  // is the better target — people are not always standing at their address.
+  const target = customer ?? dest;
+
   let distanceMetres: number | null = null;
   let etaMinutes: number | null = null;
-  if (shopper && dest) {
-    distanceMetres = Math.round(haversineMetres(shopper, dest));
+  if (shopper && target) {
+    distanceMetres = Math.round(haversineMetres(shopper, target));
     etaMinutes = Math.max(1, Math.round(distanceMetres / TRAVEL_METRES_PER_MINUTE));
   }
 
@@ -101,6 +125,7 @@ export async function getTracking(req: Request, res: Response) {
     trackable: TRACKABLE.includes(order.status),
     status: order.status,
     shopper,
+    customer,
     destination: dest,
     distanceMetres,
     etaMinutes,

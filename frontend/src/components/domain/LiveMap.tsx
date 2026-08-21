@@ -9,7 +9,12 @@ export interface MapPoint {
 }
 
 interface LiveMapProps {
-  shopper: MapPoint | null;
+  /** The viewer's own position — a quiet dot, not the thing they came to see. */
+  you: MapPoint | null;
+  /** The other person on this order: the shopper if you are the customer, the
+   *  customer if you are the shopper. This is the marker that matters. */
+  them: MapPoint | null;
+  /** The saved delivery address, when it has coordinates. */
   destination: MapPoint | null;
   className?: string;
 }
@@ -23,10 +28,11 @@ interface LiveMapProps {
  * Tiles come from OpenStreetMap, which needs no API key. Swapping to Mapbox or
  * Google later is a one-line change of the tile URL.
  */
-export function LiveMap({ shopper, destination, className = '' }: LiveMapProps) {
+export function LiveMap({ you, them, destination, className = '' }: LiveMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const shopperMarker = useRef<L.Marker | null>(null);
+  const themMarker = useRef<L.Marker | null>(null);
+  const youMarker = useRef<L.Marker | null>(null);
   const destMarker = useRef<L.Marker | null>(null);
   const routeLine = useRef<L.Polyline | null>(null);
   /** Stop auto-fitting once the user has panned; nothing worse than a map that fights you. */
@@ -57,28 +63,15 @@ export function LiveMap({ shopper, destination, className = '' }: LiveMapProps) 
     const map = mapRef.current;
     if (!map) return;
 
-    if (shopper) {
-      const pos: L.LatLngExpression = [shopper.lat, shopper.lng];
-      if (shopperMarker.current) {
-        shopperMarker.current.setLatLng(pos);
-      } else {
-        shopperMarker.current = L.marker(pos, { icon: shopperIcon }).addTo(map);
-      }
-      shopperMarker.current.bindTooltip(shopper.label ?? 'Your shopper', { direction: 'top', offset: [0, -12] });
-    }
+    themMarker.current = place(map, themMarker.current, them, otherPartyIcon, 'Them');
+    youMarker.current = place(map, youMarker.current, you, youIcon, 'You');
+    destMarker.current = place(map, destMarker.current, destination, destinationIcon, 'Delivery address');
 
-    if (destination) {
-      const pos: L.LatLngExpression = [destination.lat, destination.lng];
-      if (destMarker.current) {
-        destMarker.current.setLatLng(pos);
-      } else {
-        destMarker.current = L.marker(pos, { icon: destinationIcon }).addTo(map);
-      }
-      destMarker.current.bindTooltip(destination.label ?? 'Delivery address', { direction: 'top', offset: [0, -12] });
-    }
-
-    if (shopper && destination) {
-      const line: L.LatLngExpression[] = [[shopper.lat, shopper.lng], [destination.lat, destination.lng]];
+    // The line connects you to whoever you are trying to reach — their live
+    // position if they are sharing one, otherwise the delivery pin.
+    const target = them ?? destination;
+    if (you && target) {
+      const line: L.LatLngExpression[] = [[you.lat, you.lng], [target.lat, target.lng]];
       if (routeLine.current) {
         routeLine.current.setLatLngs(line);
       } else {
@@ -89,14 +82,33 @@ export function LiveMap({ shopper, destination, className = '' }: LiveMapProps) 
       if (!userMoved.current) {
         map.fitBounds(L.latLngBounds(line as L.LatLngTuple[]), { padding: [40, 40], maxZoom: 16 });
       }
-    } else if (shopper && !userMoved.current) {
-      map.setView([shopper.lat, shopper.lng], 15);
-    } else if (destination && !userMoved.current) {
-      map.setView([destination.lat, destination.lng], 15);
+    } else if (!userMoved.current) {
+      // Centre on the counterparty before yourself: their position is the
+      // question the map exists to answer.
+      const focus = them ?? destination ?? you;
+      if (focus) map.setView([focus.lat, focus.lng], 15);
     }
-  }, [shopper, destination]);
+  }, [you, them, destination]);
 
   return <div ref={containerRef} className={`h-72 w-full rounded-xl2 ${className}`} />;
+}
+
+/** Add or move a marker, removing it if the point has gone away. */
+function place(
+  map: L.Map,
+  marker: L.Marker | null,
+  point: MapPoint | null,
+  icon: L.DivIcon,
+  fallbackLabel: string
+): L.Marker | null {
+  if (!point) {
+    if (marker) map.removeLayer(marker);
+    return null;
+  }
+  const pos: L.LatLngExpression = [point.lat, point.lng];
+  const next = marker ? marker.setLatLng(pos) : L.marker(pos, { icon }).addTo(map);
+  next.bindTooltip(point.label ?? fallbackLabel, { direction: 'top', offset: [0, -12] });
+  return next;
 }
 
 /**
@@ -104,7 +116,9 @@ export function LiveMap({ shopper, destination, className = '' }: LiveMapProps) 
  * the defaults are loaded by a relative URL that breaks under a bundler, and
  * these match the brand palette.
  */
-const shopperIcon = L.divIcon({
+
+/** The other person: pulsing, because it is the thing you are watching. */
+const otherPartyIcon = L.divIcon({
   className: '',
   html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:28px;height:28px">
     <span style="position:absolute;inset:0;border-radius:9999px;background:#16a34a;opacity:.25;animation:duka-ping 1.8s cubic-bezier(0,0,.2,1) infinite"></span>
@@ -112,6 +126,16 @@ const shopperIcon = L.divIcon({
   </div>`,
   iconSize: [28, 28],
   iconAnchor: [14, 14],
+});
+
+/** You: quiet and static, so it never competes with the marker that matters. */
+const youIcon = L.divIcon({
+  className: '',
+  html: `<div style="display:flex;align-items:center;justify-content:center;width:18px;height:18px">
+    <span style="width:12px;height:12px;border-radius:9999px;background:#334155;border:3px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.35)"></span>
+  </div>`,
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
 });
 
 const destinationIcon = L.divIcon({

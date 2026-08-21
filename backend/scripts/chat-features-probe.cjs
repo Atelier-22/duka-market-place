@@ -219,6 +219,33 @@ function tickState(m) {
     // origin in production and 404s.
     step('upload URLs are absolute', /^https?:\/\//.test(img.body?.url || ''), String(img.body?.url));
 
+    // ---- error messages ---------------------------------------------------
+    // Every one of these used to come back as the bare string "Validation
+    // failed", shown on a toast with no detail — the user could see that
+    // something was wrong and had no way to find out what.
+    const empty = await call('POST', `/orders/${orderId}/messages`, { token: cust, body: {} });
+    step('an empty message says what is missing',
+      empty.status === 400 && /text or an attachment/i.test(empty.body?.error ?? ''),
+      `${empty.status} ${empty.body?.error}`);
+
+    const badDuration = await call('POST', `/orders/${orderId}/messages`, {
+      token: cust,
+      body: { attachmentUrl: audio.body?.url, attachmentType: 'audio', attachmentDurationMs: null },
+    });
+    step('a bad field names the field',
+      badDuration.status === 400 && /duration/i.test(badDuration.body?.error ?? ''),
+      `${badDuration.status} ${badDuration.body?.error}`);
+
+    const blobUrl = await call('POST', `/orders/${orderId}/messages`, {
+      token: cust,
+      body: { attachmentUrl: 'blob:http://localhost:5173/abc', attachmentType: 'audio' },
+    });
+    step('a local blob URL is refused with a reason',
+      blobUrl.status === 400 && /uploaded file/i.test(blobUrl.body?.error ?? ''),
+      `${blobUrl.status} ${blobUrl.body?.error}`);
+    step('no error is left as the bare string "Validation failed"',
+      ![empty, badDuration, blobUrl].some((r) => r.body?.error === 'Validation failed'));
+
     // ---- upload guard -----------------------------------------------------
     const bad = await uploadBlob(cust, Buffer.from('not a media file'), 'text/plain', 'evil.txt');
     step('unsupported file types are rejected', bad.status === 400, `${bad.status}`);
@@ -238,7 +265,7 @@ function tickState(m) {
     // Unwind in dependency order — orders do not cascade from users.
     if (orderId) {
       for (const t of ['messages', 'order_status_history', 'order_items', 'evidence', 'receipts',
-        'payments', 'ratings', 'disputes', 'earnings', 'shopper_locations']) {
+        'payments', 'ratings', 'disputes', 'earnings', 'order_locations']) {
         try { await pool.query(`DELETE FROM "${t}" WHERE order_id = ANY($1)`, [[orderId]]); } catch { /* not keyed on order_id */ }
       }
       await pool.query('DELETE FROM orders WHERE id = $1', [orderId]);

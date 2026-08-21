@@ -57,5 +57,8 @@ export function apiErrorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {
     return err.response?.data?.error ?? err.message;
   }
+  // A plain Error thrown by our own code carries a message written for the
+  // user; swallowing it into "something went wrong" throws that away.
+  if (err instanceof Error && err.message) return err.message;
   return 'Something went wrong. Please try again.';
 }

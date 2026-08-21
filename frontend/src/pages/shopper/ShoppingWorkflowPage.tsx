@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Bike, Camera, Check, CheckCircle2, Footprints, MessageCircle, PartyPopper, X } from 'lucide-react';
+import { ArrowLeft, Bike, Camera, Check, CheckCircle2, CircleAlert, Footprints, MessageCircle, PartyPopper, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { Order } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -188,16 +188,31 @@ export function ShoppingWorkflowPage() {
           </div>
           {locationError && <p className="mt-2 text-xs font-medium text-brand-red">{locationError}</p>}
           <div className="mt-3 overflow-hidden rounded-xl2 border border-brand-green/10">
+            {/* The shopper's map is about the customer, not about them. Their
+                own dot is secondary; the pulsing marker is where they are
+                heading — the customer's live position if shared, otherwise
+                the pin on the delivery address. */}
             <LazyLiveMap
-              shopper={tracking?.shopper ? { lat: tracking.shopper.lat, lng: tracking.shopper.lng, label: 'You' } : null}
+              you={tracking?.shopper ? { lat: tracking.shopper.lat, lng: tracking.shopper.lng, label: 'You' } : null}
+              them={tracking?.customer ? { lat: tracking.customer.lat, lng: tracking.customer.lng, label: 'Your customer' } : null}
               destination={tracking?.destination ?? null}
             />
           </div>
           {tracking?.distanceMetres !== null && tracking?.distanceMetres !== undefined && (
             <p className="mt-3 text-xs text-brand-ink/45">
               {tracking.distanceMetres < 1000
-                ? `${tracking.distanceMetres} m from the delivery address`
-                : `${(tracking.distanceMetres / 1000).toFixed(1)} km from the delivery address`}
+                ? `${tracking.distanceMetres} m`
+                : `${(tracking.distanceMetres / 1000).toFixed(1)} km`}
+              {tracking.customer ? ' from your customer' : ' from the delivery address'}
+            </p>
+          )}
+          {/* Be explicit when there is nothing to head towards, rather than
+              showing a map with only the shopper's own dot on it. */}
+          {!tracking?.customer && !tracking?.destination && (
+            <p className="mt-3 flex items-center gap-2 text-xs text-brand-ink/45">
+              <CircleAlert size={13} strokeWidth={2} className="shrink-0" />
+              Your customer hasn't shared their location yet — message them for
+              directions, or ask them to open the order on their phone.
             </p>
           )}
 

@@ -34,7 +34,11 @@ export interface Recording {
 /** Voice notes longer than this are almost always an accident. */
 const MAX_MS = 3 * 60_000;
 
-export function useVoiceRecorder() {
+/**
+ * @param onAutoStop called with the finished note when the length cap ends the
+ *   recording on its own, so a long note is delivered rather than discarded.
+ */
+export function useVoiceRecorder(onAutoStop?: (recording: Recording) => void) {
   const [recording, setRecording] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +50,10 @@ export function useVoiceRecorder() {
   // Set when the user cancels, so `stop()`'s resolver knows to discard.
   const cancelledRef = useRef(false);
   const resolveRef = useRef<((r: Recording | null) => void) | null>(null);
+  // Held in a ref so `start`'s handlers always see the latest callback without
+  // the effect that owns the recorder re-running mid-recording.
+  const onAutoStopRef = useRef(onAutoStop);
+  onAutoStopRef.current = onAutoStop;
 
   const teardown = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -87,18 +95,23 @@ export function useVoiceRecorder() {
         teardown();
         const resolve = resolveRef.current;
         resolveRef.current = null;
-        if (!resolve) return;
+
         // Cancelled, or so short it was a mis-tap rather than a message.
-        if (cancelledRef.current || blob.size === 0 || durationMs < 400) {
-          resolve(null);
-          return;
-        }
-        resolve({
-          blob,
-          durationMs,
-          previewUrl: URL.createObjectURL(blob),
-          filename: `voice-note.${extensionFor(type)}`,
-        });
+        const usable = !cancelledRef.current && blob.size > 0 && durationMs >= 400;
+        const recording: Recording | null = usable
+          ? {
+              blob,
+              durationMs,
+              previewUrl: URL.createObjectURL(blob),
+              filename: `voice-note.${extensionFor(type)}`,
+            }
+          : null;
+
+        // The length cap stops the recorder itself, with nobody waiting on a
+        // promise — without this the note was silently thrown away at three
+        // minutes. Hand it to the caller instead.
+        if (resolve) resolve(recording);
+        else if (recording) onAutoStopRef.current?.(recording);
       };
 
       recorderRef.current = recorder;

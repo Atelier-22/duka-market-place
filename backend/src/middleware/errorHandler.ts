@@ -27,9 +27,31 @@ function pgUniqueViolationMessage(err: unknown): string | null {
   return 'That record already exists';
 }
 
+/**
+ * Turn a Zod failure into something a person can act on.
+ *
+ * "Validation failed" is what every one of these used to say, on a toast with
+ * no detail — the user could see that something was wrong and had no way to
+ * find out what. The `details` payload always carried the real reason; it was
+ * simply never shown. This lifts the first concrete problem into the message.
+ */
+function zodMessage(err: ZodError): string {
+  const flat = err.flatten();
+  // A .refine() on the whole object (e.g. "must have text or an attachment")
+  // lands in formErrors and is usually the most useful thing to say.
+  if (flat.formErrors.length > 0) return flat.formErrors[0];
+
+  const [field, messages] = Object.entries(flat.fieldErrors)[0] ?? [];
+  if (field && messages?.length) {
+    const label = field.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
+    return `${label}: ${messages[0]}`;
+  }
+  return 'Validation failed';
+}
+
 export function errorHandler(err: unknown, req: Request, res: Response, next: NextFunction) {
   if (err instanceof ZodError) {
-    return res.status(400).json({ error: 'Validation failed', details: err.flatten() });
+    return res.status(400).json({ error: zodMessage(err), details: err.flatten() });
   }
 
   const duplicate = pgUniqueViolationMessage(err);

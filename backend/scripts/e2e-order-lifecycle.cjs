@@ -228,10 +228,32 @@ async function tableCounts() {
   });
   step('shopper can publish a position', pos.status === 201, `${pos.status} ${JSON.stringify(pos.body)}`);
 
+  // The customer reports a position too. Without this the shopper's map had
+  // nothing on it but the shopper — every saved address in the database has a
+  // NULL lat/lng, so the delivery pin never existed either.
   const custPos = await call('POST', `/orders/${orderId}/location`, {
-    token: cust, body: { lat: 0.3476, lng: 32.5825 },
+    token: cust, body: { lat: 0.3300, lng: 32.5700 },
   });
-  step('customer cannot publish a position', custPos.status >= 400, `${custPos.status}`);
+  step('customer can publish a position too', custPos.status === 201, `${custPos.status} ${JSON.stringify(custPos.body)}`);
+  step('a position is tagged with the party that sent it', custPos.body?.party === 'customer',
+    String(custPos.body?.party));
+
+  const both = await call('GET', `/orders/${orderId}/tracking`, { token: shop });
+  step('the shopper can see where the customer is',
+    both.body?.customer?.lat === 0.33 && both.body?.customer?.lng === 32.57,
+    JSON.stringify(both.body?.customer));
+  step('the customer can still see where the shopper is',
+    both.body?.shopper?.lat === 0.3476, JSON.stringify(both.body?.shopper));
+  // Kampala centre to that point is roughly 2.4 km — the check is that the
+  // distance is now measured to the customer, not to a NULL address.
+  step('distance is measured to the customer, not the empty address',
+    both.body?.distanceMetres > 1000 && both.body?.distanceMetres < 5000,
+    String(both.body?.distanceMetres));
+
+  const outsider = await call('POST', `/orders/${orderId}/location`, {
+    token: null, body: { lat: 0.3476, lng: 32.5825 },
+  });
+  step('an anonymous caller cannot publish a position', outsider.status === 401, `${outsider.status}`);
   }
 
   // ---- the extras the UI relies on ----------------------------------------
@@ -328,7 +350,7 @@ async function tableCounts() {
   // orders/requests do not cascade from users, so unwind in dependency order.
   const ids = [custId, shopId];
   const orderIds = (await pool.query('SELECT id FROM orders WHERE customer_id = ANY($1) OR shopper_id = ANY($1)', [ids])).rows.map((r) => r.id);
-  for (const t of ['ratings','messages','receipts','order_items','order_status_history','payments','transactions','shopper_earnings','deliveries','disputes','shopper_locations']) {
+  for (const t of ['ratings','messages','receipts','order_items','order_status_history','payments','transactions','shopper_earnings','deliveries','disputes','order_locations']) {
     try { await pool.query('DELETE FROM "' + t + '" WHERE order_id = ANY($1)', [orderIds]); } catch (e) { /* table may not key on order_id */ }
   }
   await pool.query('DELETE FROM orders WHERE id = ANY($1)', [orderIds]);
@@ -346,7 +368,7 @@ async function tableCounts() {
     ['shopping_requests', 'SELECT count(*)::int n FROM shopping_requests WHERE customer_id = ANY($1)'],
     ['shopper_offers', 'SELECT count(*)::int n FROM shopper_offers WHERE shopper_id = ANY($1)'],
     ['notifications', 'SELECT count(*)::int n FROM notifications WHERE user_id = ANY($1)'],
-    ['shopper_locations', 'SELECT count(*)::int n FROM shopper_locations WHERE shopper_id = ANY($1)'],
+    ['order_locations', 'SELECT count(*)::int n FROM order_locations WHERE user_id = ANY($1)'],
     ['ratings', 'SELECT count(*)::int n FROM ratings WHERE rated_by = ANY($1) OR rated_user = ANY($1)'],
     ['addresses', 'SELECT count(*)::int n FROM addresses WHERE user_id = ANY($1)'],
   ]) {

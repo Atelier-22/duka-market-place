@@ -12,7 +12,7 @@ import { LoadingState } from '../../components/ui/LoadingState';
 import { useToast } from '../../components/ui/Toast';
 import { useAuth } from '../../context/AuthContext';
 import { useConversations } from '../../hooks/useConversations';
-import { formatDuration, useVoiceRecorder, voiceRecordingSupported } from '../../hooks/useVoiceRecorder';
+import { Recording, formatDuration, useVoiceRecorder, voiceRecordingSupported } from '../../hooks/useVoiceRecorder';
 
 /** How often an open thread checks for the other side's replies and presence. */
 const POLL_MS = 5_000;
@@ -31,6 +31,12 @@ interface PendingVoice {
 
 function initials(name: string): string {
   return name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
+}
+
+/** The server accepts 0–10 minutes as an integer; anything else is dropped. */
+function safeDurationMs(ms: number): number | undefined {
+  if (!Number.isFinite(ms)) return undefined;
+  return Math.min(10 * 60_000, Math.max(0, Math.round(ms)));
 }
 
 export function OrderMessagesPage() {
@@ -52,7 +58,19 @@ export function OrderMessagesPage() {
   const [pending, setPending] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const recorder = useVoiceRecorder();
+  /**
+   * Start uploading straight away and hold the note as a preview. Shared by
+   * the stop button and by the length cap stopping the recorder itself.
+   */
+  const holdRecording = useCallback((result: Recording) => {
+    const upload = uploadBlob(result.blob, result.filename);
+    // Attach a handler now so a failed upload cannot surface as an unhandled
+    // rejection; `handleSend` awaits the same promise and reports it there.
+    upload.catch(() => undefined);
+    setVoice({ previewUrl: result.previewUrl, durationMs: result.durationMs, upload });
+  }, []);
+
+  const recorder = useVoiceRecorder(holdRecording);
 
   // Reuse the inbox to name the person at the top without another endpoint.
   const { conversations } = useConversations();
@@ -119,14 +137,7 @@ export function OrderMessagesPage() {
    * while the upload runs in the background. Nothing here waits on the network.
    */
   function finishRecording() {
-    void recorder.stop().then((result) => {
-      if (!result) return;
-      const upload = uploadBlob(result.blob, result.filename);
-      // Attach a handler now so a failed upload cannot surface as an unhandled
-      // rejection; `handleSend` awaits the same promise and reports it there.
-      upload.catch(() => undefined);
-      setVoice({ previewUrl: result.previewUrl, durationMs: result.durationMs, upload });
-    });
+    void recorder.stop().then((result) => { if (result) holdRecording(result); });
   }
 
   function discardVoice() {
@@ -163,11 +174,23 @@ export function OrderMessagesPage() {
     try {
       // Usually already finished — the upload started when recording stopped.
       const uploadedUrl = note ? await note.upload : image;
+
+      // Never let a local preview URL reach the server: `blob:` is meaningless
+      // outside this tab and the server rightly rejects it.
+      if (uploadedUrl && uploadedUrl.startsWith('blob:')) {
+        throw new Error('That attachment did not finish uploading — try again.');
+      }
+      if (!text.trim() && !uploadedUrl) {
+        throw new Error('That attachment did not finish uploading — try again.');
+      }
+
       await api.post(`/orders/${id}/messages`, {
         body: text.trim() || undefined,
         attachmentUrl: uploadedUrl || undefined,
         attachmentType: note ? 'audio' : image ? 'image' : undefined,
-        attachmentDurationMs: note ? Math.round(note.durationMs) : undefined,
+        // Must be a finite integer inside the server's range. A NaN here would
+        // serialise to JSON `null` and come back as an unexplained 400.
+        attachmentDurationMs: note ? safeDurationMs(note.durationMs) : undefined,
       });
       setPending((current) => current.filter((m) => m.id !== localId));
       if (note) URL.revokeObjectURL(note.previewUrl);
