@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { AppTopBar } from './AppTopBar';
@@ -22,11 +23,34 @@ interface AppShellProps {
  * about why a 256px sidebar makes a 375px screen unusable.
  */
 export function AppShell({ items, roleLabel, maxWidth = 'max-w-7xl' }: AppShellProps) {
+  /**
+   * The sidebar needs to know how tall the top bar is.
+   *
+   * The bar is sticky, so it takes up flow space and pushes the sidebar down by
+   * its own height — a sidebar sized to the full viewport then hangs off the
+   * bottom of the screen, taking the log-out button with it. Measured rather
+   * than guessed, because the bar grows with the lockup and the role label.
+   */
+  const barRef = useRef<HTMLDivElement>(null);
+  const [barHeight, setBarHeight] = useState(92);
+
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const measure = () => setBarHeight(el.getBoundingClientRect().height);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" style={{ ['--duka-topbar' as string]: `${Math.round(barHeight)}px` }}>
       <div className="atmosphere" />
       {/* Logo left, your picture right, on a phone and on a desktop alike. */}
-      <AppTopBar roleLabel={roleLabel} />
+      <div ref={barRef}>
+        <AppTopBar roleLabel={roleLabel} />
+      </div>
       <MobileNav items={items} />
 
       {/* Asks about location once, then not again for a week. */}

@@ -46,9 +46,16 @@ export function AppSidebar({ items }: AppSidebarProps) {
   return (
     <aside
       className={[
-        'glass sticky top-4 mb-4 flex h-[calc(100vh-2rem)] shrink-0 flex-col rounded-xl3 transition-[width] duration-200 ease-out',
+        // `overflow-hidden` so the scrolling nav below cannot spill past the
+        // rounded corners; the height and offset both subtract the top bar, so
+        // the footer stays on screen however many nav items there are.
+        'glass sticky mb-4 flex shrink-0 flex-col overflow-hidden rounded-xl3 transition-[width] duration-200 ease-out',
         collapsed ? 'w-[68px] p-3' : 'w-64 p-5',
       ].join(' ')}
+      style={{
+        top: 'calc(var(--duka-topbar, 92px) + 0.5rem)',
+        height: 'calc(100dvh - var(--duka-topbar, 92px) - 1.5rem)',
+      }}
     >
       {/* The toggle sits on its own row so the lockup below it can be centred
           rather than shunted off-axis by a control beside it. */}
@@ -70,7 +77,15 @@ export function AppSidebar({ items }: AppSidebarProps) {
 
       {/* No logo here any more — the top bar carries it, and showing it twice
           on a desktop was just the same mark in two places. */}
-      <nav className={`mt-4 flex flex-1 flex-col gap-1 ${collapsed ? 'items-center' : ''}`}>
+      {/* The only part that scrolls. Twelve items in the admin console
+          overflowed and pushed the account block and Log out off the bottom of
+          the screen, where they could not be reached at all. `min-h-0` is what
+          lets a flex child actually shrink enough to scroll. */}
+      <nav
+        className={`mt-4 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-0.5 ${
+          collapsed ? 'items-center' : ''
+        }`}
+      >
         {items.map((item) => {
           const Icon = item.icon;
           const count = item.badge === 'messages' ? totalUnread : 0;
@@ -106,7 +121,7 @@ export function AppSidebar({ items }: AppSidebarProps) {
         })}
       </nav>
 
-      <div className={`mt-auto border-t border-brand-green/10 pt-4 ${collapsed ? 'flex flex-col items-center' : ''}`}>
+      <div className={`mt-3 shrink-0 border-t border-brand-green/10 pt-3 ${collapsed ? 'flex flex-col items-center' : ''}`}>
         {!collapsed && (
           <>
             <p className="truncate px-1 text-sm font-medium text-brand-ink">{user?.fullName}</p>
