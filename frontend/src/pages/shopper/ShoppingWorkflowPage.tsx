@@ -12,6 +12,7 @@ import { OrderTimeline } from '../../components/domain/OrderTimeline';
 import { LazyLiveMap } from '../../components/domain/LazyLiveMap';
 import { ShoppingDonePanel } from '../../components/domain/ShoppingDonePanel';
 import { ImageUpload } from '../../components/ui/ImageUpload';
+import { RatingStars } from '../../components/ui/RatingStars';
 import { useToast } from '../../components/ui/Toast';
 import { useBroadcastPosition, useOrderTracking } from '../../hooks/useOrderTracking';
 
@@ -40,6 +41,21 @@ export function ShoppingWorkflowPage() {
   const [itemPhotoUrl, setItemPhotoUrl] = useState('');
   const [shopName, setShopName] = useState('');
   const [receiptUrl, setReceiptUrl] = useState('');
+  const [stars, setStars] = useState(5);
+  const [rated, setRated] = useState(false);
+
+  async function submitRating() {
+    setActing(true);
+    try {
+      await api.post(`/ratings/order/${id}`, { stars });
+      setRated(true);
+      push('Rating saved', 'success');
+    } catch (err) {
+      push(apiErrorMessage(err), 'error');
+    } finally {
+      setActing(false);
+    }
+  }
 
   function load() {
     api.get(`/orders/${id}`).then((res) => setOrder(res.data.order)).finally(() => setLoading(false));
@@ -285,7 +301,23 @@ export function ShoppingWorkflowPage() {
 
         {order.status === 'completed' && (
           <GlassCard glow="yellow" hover={false}>
-            <p className="flex items-center gap-2 font-medium text-brand-green-deep"><CheckCircle2 size={17} strokeWidth={2} /> Job complete — earnings released to your balance.</p>
+            <p className="flex items-center gap-2 font-medium text-brand-green-deep">
+              <CheckCircle2 size={17} strokeWidth={2} /> Job complete — earnings released to your balance.
+            </p>
+
+            {/* Rating runs both ways: the shopper rates the customer too. */}
+            {rated ? (
+              <p className="mt-4 text-sm text-brand-ink/55">Thanks — your rating was saved.</p>
+            ) : (
+              <div className="mt-4 border-t border-brand-green/10 pt-4">
+                <p className="text-sm font-medium text-brand-ink">How was this customer?</p>
+                <p className="mt-0.5 text-xs text-brand-ink/45">Ratings help other shoppers know what to expect.</p>
+                <div className="mt-2"><RatingStars value={stars} interactive size="md" onChange={setStars} /></div>
+                <GlassButton size="sm" className="mt-3" disabled={acting} onClick={submitRating}>
+                  {acting ? 'Saving…' : 'Submit rating'}
+                </GlassButton>
+              </div>
+            )}
           </GlassCard>
         )}
       </div>

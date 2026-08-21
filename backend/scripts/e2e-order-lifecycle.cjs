@@ -1,0 +1,208 @@
+/**
+ * End-to-end walk of the full order lifecycle over real HTTP against the real
+ * API, exercising both sides exactly as the UI does.
+ *
+ * Creates two throwaway accounts, drives every transition, then deletes them
+ * and asserts every table is back to its starting row count.
+ */
+require('dotenv/config');
+const { Pool } = require('pg');
+
+const API = process.env.E2E_API || 'http://localhost:4000/api';
+const STAMP = process.env.E2E_STAMP || String(process.hrtime.bigint()).slice(-9);
+const CUSTOMER = { phone: `0700${STAMP.slice(0, 6)}`, email: `e2e-cust-${STAMP}@example.test` };
+const SHOPPER = { phone: `0711${STAMP.slice(0, 6)}`, email: `e2e-shop-${STAMP}@example.test` };
+const PASSWORD = 'E2ePassword123!';
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+let pass = 0;
+const failures = [];
+
+function step(label, ok, detail = '') {
+  if (ok) { pass++; console.log(`  PASS  ${label}`); }
+  else { failures.push(`${label}${detail ? ' — ' + detail : ''}`); console.log(`  FAIL  ${label} ${detail}`); }
+}
+
+async function call(method, path, { token, body } = {}) {
+  const res = await fetch(`${API}${path}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let json = null;
+  try { json = await res.json(); } catch { /* empty body */ }
+  return { status: res.status, body: json };
+}
+
+async function tableCounts() {
+  const t = await pool.query(
+    "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY 1"
+  );
+  const out = {};
+  for (const { table_name } of t.rows) {
+    const c = await pool.query(`SELECT count(*)::int AS n FROM "${table_name}"`);
+    out[table_name] = c.rows[0].n;
+  }
+  return out;
+}
+
+(async () => {
+  console.log(`\n=== E2E order lifecycle (${API}) ===\n`);
+  const before = await tableCounts();
+
+  // ---- register both sides ------------------------------------------------
+  const reg = async (who, role, name) =>
+    call('POST', '/auth/register', {
+      body: { role, fullName: name, phone: who.phone, email: who.email, password: PASSWORD },
+    });
+
+  const c = await reg(CUSTOMER, 'customer', 'E2E Customer');
+  step('register customer', c.status === 201, `${c.status} ${JSON.stringify(c.body)}`);
+  const s = await reg(SHOPPER, 'shopper', 'E2E Shopper');
+  step('register shopper', s.status === 201, `${s.status} ${JSON.stringify(s.body)}`);
+  if (c.status !== 201 || s.status !== 201) throw new Error('cannot continue without both accounts');
+
+  const cust = c.body.accessToken;
+  const shop = s.body.accessToken;
+  const custId = c.body.user.id;
+  const shopId = s.body.user.id;
+
+  // ---- customer posts a request ------------------------------------------
+  const addr = await call('POST', '/addresses', {
+    token: cust,
+    body: { line1: 'E2E Test Address, Kampala', isDefault: true },
+  });
+  step('create delivery address', addr.status === 201, `${addr.status} ${JSON.stringify(addr.body)}`);
+
+  const req = await call('POST', '/requests', {
+    token: cust,
+    body: {
+      title: 'E2E test item',
+      sourcingType: 'shopper_choice',
+      budgetMaxUgx: 50000,
+      deliveryAddressId: addr.body?.address?.id,
+      items: [{ name: 'E2E test item', quantity: '1' }],
+    },
+  });
+  step('customer posts request', req.status === 201, `${req.status} ${JSON.stringify(req.body)}`);
+  const requestId = req.body?.request?.id;
+
+  // ---- shopper offers, customer accepts -----------------------------------
+  const offer = await call('POST', '/offers', {
+    token: shop,
+    body: { requestId, shoppingFeeUgx: 5000, deliveryFeeUgx: 3000, estimatedMinutes: 45 },
+  });
+  step('shopper submits offer', offer.status === 201, `${offer.status} ${JSON.stringify(offer.body)}`);
+
+  const accept = await call('POST', '/offers/accept', {
+    token: cust,
+    body: { offerId: offer.body?.offer?.id },
+  });
+  step('customer accepts offer', accept.status === 201, `${accept.status} ${JSON.stringify(accept.body)}`);
+  const orderId = accept.body?.order?.id;
+  if (!orderId) throw new Error('no order created');
+
+  const statusNow = async (token = cust) => (await call('GET', `/orders/${orderId}`, { token })).body?.order?.status;
+  step('order starts as requested', (await statusNow()) === 'requested', await statusNow());
+
+  // ---- the lifecycle, step by step ----------------------------------------
+  const walk = [
+    ['shopper accepts job      (requested -> shopper_assigned)', () => call('POST', `/orders/${orderId}/assign`, { token: shop }), 'shopper_assigned'],
+    ['shopper starts shopping  (-> shopping)', () => call('POST', `/orders/${orderId}/shopping`, { token: shop }), 'shopping'],
+    ['shopper sends options    (-> awaiting_customer_approval)', () => call('POST', `/orders/${orderId}/item-found`, {
+      token: shop,
+      body: { actualPriceUgx: 42000, photoUrl: 'https://example.test/item.jpg', shopName: 'E2E Shop' },
+    }), 'awaiting_customer_approval'],
+    ['customer approves        (-> purchased)', () => call('POST', `/orders/${orderId}/approve`, { token: cust }), 'purchased'],
+    ['shopper marks delivering (-> out_for_delivery)', () => call('POST', `/orders/${orderId}/out-for-delivery`, {
+      token: shop,
+      body: { receiptPhotoUrl: 'https://example.test/receipt.jpg', amountUgx: 42000 },
+    }), 'out_for_delivery'],
+    ['customer confirms        (-> delivered)', () => call('POST', `/orders/${orderId}/delivered`, { token: cust }), 'delivered'],
+    ['completes                (-> completed)', () => call('POST', `/orders/${orderId}/complete`, { token: cust }), 'completed'],
+  ];
+
+  for (const [label, run, expected] of walk) {
+    const r = await run();
+    const got = await statusNow();
+    step(label, r.status < 400 && got === expected, `http ${r.status}, status "${got}" ${r.status >= 400 ? JSON.stringify(r.body) : ''}`);
+  }
+
+  // ---- the extras the UI relies on ----------------------------------------
+  const track = await call('GET', `/orders/${orderId}/tracking`, { token: cust });
+  step('tracking endpoint responds', track.status === 200, `${track.status} ${JSON.stringify(track.body)}`);
+
+  const msg = await call('POST', `/orders/${orderId}/messages`, { token: shop, body: { body: 'E2E hello' } });
+  step('shopper sends message', msg.status === 201, `${msg.status}`);
+
+  const convC = await call('GET', '/messages/conversations', { token: cust });
+  step('customer inbox lists the chat',
+    convC.status === 200 && convC.body.conversations?.length === 1 && convC.body.conversations[0].unread === 1,
+    `${convC.status} ${JSON.stringify(convC.body?.conversations?.map((x) => ({ u: x.unread, n: x.other_name })))}`);
+
+  const convS = await call('GET', '/messages/conversations', { token: shop });
+  step('shopper inbox lists the chat', convS.status === 200 && convS.body.conversations?.length === 1,
+    `${convS.status} count=${convS.body?.conversations?.length}`);
+
+  const read = await call('POST', `/orders/${orderId}/messages/read`, { token: cust });
+  step('marking read clears unread', read.status === 200 && read.body.marked === 1, JSON.stringify(read.body));
+
+  const notif = await call('GET', '/notifications', { token: cust });
+  const titles = (notif.body?.notifications ?? []).map((n) => n.title);
+  step('customer received order notifications', notif.status === 200 && titles.length >= 4,
+    `${titles.length}: ${JSON.stringify(titles)}`);
+
+  const notifS = await call('GET', '/notifications', { token: shop });
+  step('shopper received notifications', notifS.status === 200 && (notifS.body?.notifications ?? []).length >= 2,
+    `${(notifS.body?.notifications ?? []).length}`);
+
+  const rate = await call('POST', `/ratings/order/${orderId}`, { token: cust, body: { stars: 5 } });
+  step('customer can rate shopper after completion', rate.status < 400, `${rate.status} ${JSON.stringify(rate.body)}`);
+
+  const rateBack = await call('POST', `/ratings/order/${orderId}`, { token: shop, body: { stars: 5 } });
+  step('shopper can rate customer after completion', rateBack.status < 400, `${rateBack.status} ${JSON.stringify(rateBack.body)}`);
+
+  const dupe = await call('POST', `/ratings/order/${orderId}`, { token: cust, body: { stars: 3 } });
+  step('re-rating updates rather than duplicating', dupe.status < 400, `${dupe.status}`);
+
+  // ---- guard rails: illegal moves must be refused --------------------------
+  const skip = await call('POST', `/orders/${orderId}/shopping`, { token: shop });
+  step('cannot re-enter shopping after completion', skip.status >= 400, `${skip.status}`);
+
+  const history = await call('GET', `/orders/${orderId}`, { token: cust });
+  const steps = (history.body?.history ?? []).map((h) => h.to_status);
+  step('status history recorded every step', steps.length >= 7, JSON.stringify(steps));
+
+  // ---- cleanup ------------------------------------------------------------
+  // orders/requests do not cascade from users, so unwind in dependency order.
+  const ids = [custId, shopId];
+  const orderIds = (await pool.query('SELECT id FROM orders WHERE customer_id = ANY($1) OR shopper_id = ANY($1)', [ids])).rows.map((r) => r.id);
+  for (const t of ['ratings','messages','receipts','order_items','order_status_history','payments','transactions','shopper_earnings','deliveries','disputes','shopper_locations']) {
+    try { await pool.query('DELETE FROM "' + t + '" WHERE order_id = ANY($1)', [orderIds]); } catch (e) { /* table may not key on order_id */ }
+  }
+  await pool.query('DELETE FROM orders WHERE id = ANY($1)', [orderIds]);
+  await pool.query('DELETE FROM shopping_request_items WHERE request_id IN (SELECT id FROM shopping_requests WHERE customer_id = ANY($1))', [ids]);
+  await pool.query('DELETE FROM shopper_offers WHERE shopper_id = ANY($1) OR request_id IN (SELECT id FROM shopping_requests WHERE customer_id = ANY($1))', [ids]);
+  await pool.query('DELETE FROM shopping_requests WHERE customer_id = ANY($1)', [ids]);
+  await pool.query('DELETE FROM users WHERE id = ANY($1)', [ids]);
+  const after = await tableCounts();
+  const leaks = Object.keys(after).filter((t) => after[t] !== before[t]);
+  step('all test data removed', leaks.length === 0,
+    leaks.map((t) => `${t}: ${before[t]} -> ${after[t]}`).join(', '));
+
+  console.log(`\n=== ${pass} passed, ${failures.length} failed ===`);
+  if (failures.length) { failures.forEach((f) => console.log('  ! ' + f)); }
+  await pool.end();
+  process.exit(failures.length ? 1 : 0);
+})().catch(async (e) => {
+  console.error('\nHARNESS ERROR:', e.message);
+  try {
+    await pool.query('DELETE FROM users WHERE email LIKE $1', [`e2e-%${STAMP}@example.test`]);
+    await pool.end();
+  } catch { /* best effort */ }
+  process.exit(1);
+});

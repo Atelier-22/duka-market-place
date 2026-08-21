@@ -152,6 +152,42 @@ export async function notifyOfferAccepted(input: { shopperId: string; orderId: s
   });
 }
 
+/**
+ * The shopper ticked "done shopping, delivering now". This is deliberately
+ * separate from the out_for_delivery status notification: the clock can start
+ * before the receipt is uploaded, and telling the customer their order is
+ * "on the way" when the order has not reached that status yet would be a lie.
+ */
+export async function notifyDeliveryStarted(input: {
+  customerId: string;
+  orderId: string;
+  etaMinutes: number;
+  actorId: string;
+}) {
+  if (input.customerId === input.actorId) return;
+  await notify({
+    userId: input.customerId,
+    title: 'Your shopper has finished shopping and is setting off',
+    body: `Estimated arrival in about ${input.etaMinutes} minutes`,
+    link: orderLink('customer', input.orderId),
+  });
+}
+
+export async function notifyDeliveryScheduled(input: {
+  customerId: string;
+  orderId: string;
+  when: string;
+  actorId: string;
+}) {
+  if (input.customerId === input.actorId) return;
+  await notify({
+    userId: input.customerId,
+    title: 'Your delivery has been scheduled',
+    body: `Your shopper will deliver at ${new Date(input.when).toLocaleString('en-UG', { dateStyle: 'medium', timeStyle: 'short' })}`,
+    link: orderLink('customer', input.orderId),
+  });
+}
+
 export async function notifyNewRating(input: {
   userId: string;
   stars: number;

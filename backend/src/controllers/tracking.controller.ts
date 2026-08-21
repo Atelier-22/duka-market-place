@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { query, queryOne } from '../db/pool';
 import { findOrderById } from '../models/order.model';
 import { ApiError } from '../middleware/errorHandler';
-import { notifyOrderStatus } from '../services/notification.service';
+import { notifyDeliveryScheduled, notifyDeliveryStarted } from '../services/notification.service';
 
 /**
  * Live delivery tracking. The shopper's browser posts its position while an
@@ -147,7 +147,19 @@ export async function markShoppingDone(req: Request, res: Response) {
   );
 
   if (input.startDeliveryNow) {
-    await notifyOrderStatus(order, 'out_for_delivery', req.user!.id);
+    await notifyDeliveryStarted({
+      customerId: order.customer_id,
+      orderId: order.id,
+      etaMinutes: input.etaMinutes ?? 30,
+      actorId: req.user!.id,
+    });
+  } else if (input.deferredTo) {
+    await notifyDeliveryScheduled({
+      customerId: order.customer_id,
+      orderId: order.id,
+      when: input.deferredTo,
+      actorId: req.user!.id,
+    });
   }
 
   res.json({ order: updated });
