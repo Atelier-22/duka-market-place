@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { mediaUrl } from '../utils/validators';
 import { query, queryOne } from '../db/pool';
+import { MAX_ACTIVE_JOBS, listActiveJobsForShopper } from '../models/order.model';
 import { ApiError } from '../middleware/errorHandler';
 
 export async function getDashboard(req: Request, res: Response) {
@@ -18,11 +19,10 @@ export async function getDashboard(req: Request, res: Response) {
      WHERE shopper_id = $1 AND released_at >= date_trunc('week', now())`,
     [shopperId]
   );
-  const activeOrder = await queryOne(
-    `SELECT * FROM orders WHERE shopper_id = $1 AND status NOT IN ('completed','cancelled','refunded')
-     ORDER BY created_at DESC LIMIT 1`,
-    [shopperId]
-  );
+  // Every job in flight, oldest first, each carrying the customer's name — a
+  // shopper thinks in terms of who they are shopping for, not order ids.
+  const activeOrders = await listActiveJobsForShopper(shopperId);
+
   const availableCount = await queryOne<{ count: string }>(
     `SELECT COUNT(*) AS count FROM shopping_requests WHERE status = 'open'`
   );
@@ -30,7 +30,9 @@ export async function getDashboard(req: Request, res: Response) {
   res.json({
     profile,
     earnings: { today: Number(today?.total ?? 0), week: Number(week?.total ?? 0) },
-    activeOrder,
+    activeOrders,
+    activeJobLimit: MAX_ACTIVE_JOBS,
+    atCapacity: activeOrders.length >= MAX_ACTIVE_JOBS,
     availableJobsCount: Number(availableCount?.count ?? 0),
   });
 }

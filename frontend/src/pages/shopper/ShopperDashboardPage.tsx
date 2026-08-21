@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, CheckCircle2, Coins, Star, TrendingUp, X } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Coins, Star, TrendingUp } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { DashboardStat } from '../../components/domain/DashboardStat';
 import { NotificationBell } from '../../components/domain/NotificationBell';
-import { StatusBadge } from '../../components/ui/StatusBadge';
+import { ActiveJobCard } from '../../components/domain/ActiveJobCard';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { useToast } from '../../components/ui/Toast';
 import { useAuth } from '../../context/AuthContext';
@@ -21,11 +21,12 @@ export function ShopperDashboardPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [togglingOnline, setTogglingOnline] = useState(false);
-  const [deciding, setDeciding] = useState(false);
+  /** The order id currently being accepted/declined — several may be waiting. */
+  const [deciding, setDeciding] = useState<string | null>(null);
 
   /** Accept or decline a job the customer assigned but the shopper hasn't answered. */
   async function decide(orderId: string, accept: boolean) {
-    setDeciding(true);
+    setDeciding(orderId);
     try {
       if (accept) {
         await api.post(`/orders/${orderId}/assign`);
@@ -38,7 +39,7 @@ export function ShopperDashboardPage() {
     } catch (err) {
       push(apiErrorMessage(err), 'error');
     } finally {
-      setDeciding(false);
+      setDeciding(null);
     }
   }
 
@@ -58,6 +59,10 @@ export function ShopperDashboardPage() {
   }
 
   if (loading || !data) return <LoadingState label="Loading your dashboard…" />;
+
+  const activeJobs: any[] = data.activeOrders ?? [];
+  const limit: number = data.activeJobLimit ?? 5;
+  const atCapacity: boolean = data.atCapacity ?? activeJobs.length >= limit;
 
   return (
     <div className="flex flex-col gap-6 pb-10">
@@ -102,47 +107,48 @@ export function ShopperDashboardPage() {
         <DashboardStat label="Completed jobs" value={String(data.profile.completed_jobs)} icon={<CheckCircle2 size={18} strokeWidth={1.75} />} />
       </div>
 
-      {data.activeOrder ? (
-        <GlassCard glow={data.activeOrder.status === 'requested' ? 'yellow' : 'green'} padding="lg">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">
-              {data.activeOrder.status === 'requested' ? 'Waiting for your answer' : 'Active job'}
-            </p>
-            <StatusBadge status={data.activeOrder.status} />
+      {activeJobs.length > 0 ? (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-display text-lg font-medium text-brand-green-deep">
+              Your jobs
+              {/* Slots used, so the cap is never a surprise at the moment
+                  someone tries to take a sixth. */}
+              <span className="ml-2 text-sm font-normal text-brand-ink/40">
+                {activeJobs.length} of {limit}
+              </span>
+            </h2>
+            {!atCapacity && (
+              <Link to="/shopper/available" className="text-sm font-medium text-brand-green-deep hover:underline">
+                Take another job <ArrowRight size={14} strokeWidth={2} className="inline" />
+              </Link>
+            )}
           </div>
-          <p className="mt-2 font-display text-lg font-medium text-brand-green-deep">
-            Order #{data.activeOrder.id.slice(0, 8)}
-          </p>
 
-          {/* An unaccepted job needs a decision, not a "continue" — make that the
-              obvious next action rather than hiding it a page deep. */}
-          {data.activeOrder.status === 'requested' ? (
-            <>
-              <p className="mt-1 text-sm text-brand-ink/60">
-                A customer picked you for this job. Accept it or let it go back to other shoppers.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <GlassButton size="sm" disabled={deciding} onClick={() => decide(data.activeOrder.id, true)}>
-                  {deciding ? 'Working…' : <><Check size={15} strokeWidth={2} /> Accept job</>}
-                </GlassButton>
-                <GlassButton size="sm" variant="danger" disabled={deciding} onClick={() => decide(data.activeOrder.id, false)}>
-                  <X size={15} strokeWidth={2} /> Decline
-                </GlassButton>
-                <Link to={`/shopper/orders/${data.activeOrder.id}`}>
-                  <GlassButton size="sm" variant="secondary">View details</GlassButton>
-                </Link>
-              </div>
-            </>
-          ) : (
-            <Link to={`/shopper/orders/${data.activeOrder.id}`} className="mt-4 inline-block">
-              <GlassButton size="sm">Continue job <ArrowRight size={15} strokeWidth={2} /></GlassButton>
-            </Link>
+          {atCapacity && (
+            <p className="rounded-xl bg-brand-yellow-soft/60 px-4 py-3 text-sm text-yellow-800">
+              You're carrying the maximum of {limit} jobs. Finish or hand one back before taking another.
+            </p>
           )}
-        </GlassCard>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {activeJobs.map((job: any, i: number) => (
+              <ActiveJobCard
+                key={job.id}
+                job={job}
+                index={i + 1}
+                deciding={deciding === job.id}
+                onDecide={decide}
+              />
+            ))}
+          </div>
+        </div>
       ) : (
         <GlassCard padding="lg" hover={false}>
           <p className="font-medium text-brand-green-deep">No active job right now</p>
-          <p className="mt-1 text-sm text-brand-ink/60">Browse available requests near you and accept one to get started.</p>
+          <p className="mt-1 text-sm text-brand-ink/60">
+            Browse available requests near you and accept one to get started — you can run up to {limit} at a time.
+          </p>
           <Link to="/shopper/available" className="mt-4 inline-block">
             <GlassButton size="sm">Browse available requests <ArrowRight size={15} strokeWidth={2} /></GlassButton>
           </Link>

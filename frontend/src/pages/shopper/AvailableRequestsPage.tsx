@@ -26,8 +26,19 @@ export function AvailableRequestsPage() {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const [capacity, setCapacity] = useState<{ count: number; limit: number; atCapacity: boolean } | null>(null);
+
   function load() {
     api.get('/requests/available').then((res) => setRequests(res.data.requests)).finally(() => setLoading(false));
+    // Reuses the dashboard payload rather than adding an endpoint just to
+    // answer "how many jobs am I already carrying".
+    api.get('/shoppers/dashboard')
+      .then((res) => setCapacity({
+        count: res.data.activeOrders?.length ?? 0,
+        limit: res.data.activeJobLimit ?? 5,
+        atCapacity: !!res.data.atCapacity,
+      }))
+      .catch(() => undefined);
   }
   useEffect(load, []);
 
@@ -55,7 +66,19 @@ export function AvailableRequestsPage() {
   return (
     <div className="pb-10">
       <h1 className="font-display text-2xl font-medium text-brand-green-deep">Available requests</h1>
-      <p className="mt-1 text-sm text-brand-ink/50">Requests near you, waiting for a shopper.</p>
+      <p className="mt-1 text-sm text-brand-ink/50">
+        Requests near you, waiting for a shopper.
+        {capacity && ` You're carrying ${capacity.count} of ${capacity.limit} jobs.`}
+      </p>
+
+      {/* Say so here rather than letting them write an offer that will be
+          refused when the customer tries to accept it. */}
+      {capacity?.atCapacity && (
+        <p className="mt-4 rounded-xl bg-brand-yellow-soft/60 px-4 py-3 text-sm text-yellow-800">
+          You already have the maximum of {capacity.limit} jobs. You can still browse, but finish
+          or hand one back before offering on another.
+        </p>
+      )}
 
       <div className="mt-6">
         {loading ? (

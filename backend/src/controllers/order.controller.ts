@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { mediaUrl } from '../utils/validators';
-import { findOrderById, listOrdersForUser, updateOrderStatus, getOrderStatusHistory } from '../models/order.model';
+import {
+  MAX_ACTIVE_JOBS, countActiveJobs, findOrderById, listOrdersForUser,
+  updateOrderStatus, getOrderStatusHistory,
+} from '../models/order.model';
 import { assertValidTransition } from '../utils/orderStateMachine';
 import { computePricing } from '../services/pricing.service';
 import { notifyOrderStatus } from '../services/notification.service';
@@ -49,6 +52,16 @@ async function transition(req: Request, res: Response, to: OrderStatus, note?: s
 // set automatically by offer.controller.acceptOffer, exposed here for the
 // "shopper taps Accept directly on an open request with no prior offer" path)
 export async function markAssigned(req: Request, res: Response) {
+  // Taking on a job is where the cap belongs — the order already exists and
+  // already names this shopper, so it is excluded from its own count.
+  const order = await loadOrderOrThrow(req.params.id);
+  if (order.shopper_id === req.user!.id) {
+    const carrying = await countActiveJobs(req.user!.id, order.id);
+    if (carrying >= MAX_ACTIVE_JOBS) {
+      throw new ApiError(409,
+        `You already have ${MAX_ACTIVE_JOBS} jobs on the go — finish or hand one back before taking another`);
+    }
+  }
   await transition(req, res, 'shopper_assigned');
 }
 

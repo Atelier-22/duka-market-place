@@ -54,6 +54,53 @@ export async function createOrder(input: {
   return row;
 }
 
+/**
+ * How many jobs a shopper may carry at once.
+ *
+ * Shoppers genuinely run several errands on one trip — three customers in the
+ * same market is normal — and holding them to one job at a time made the app
+ * slower than how they already work. Five is the cap because past that nobody
+ * keeps the orders straight, and every one of them is somebody waiting.
+ */
+export const MAX_ACTIVE_JOBS = 5;
+
+/** Statuses that occupy one of a shopper's job slots. */
+export const ACTIVE_JOB_STATUSES = [
+  'requested', 'shopper_assigned', 'shopping', 'item_found',
+  'awaiting_customer_approval', 'purchased', 'out_for_delivery', 'delivered', 'disputed',
+] as const;
+
+/**
+ * Jobs currently occupying a slot. `excludeOrderId` is for the case where the
+ * order being acted on is already one of them — accepting the fifth job must
+ * not count that job against itself.
+ */
+export async function countActiveJobs(shopperId: string, excludeOrderId?: string): Promise<number> {
+  const row = await queryOne<{ n: number }>(
+    `SELECT count(*)::int AS n FROM orders
+      WHERE shopper_id = $1 AND status = ANY($2) AND ($3::uuid IS NULL OR id <> $3::uuid)`,
+    [shopperId, ACTIVE_JOB_STATUSES as unknown as string[], excludeOrderId ?? null]
+  );
+  return row?.n ?? 0;
+}
+
+/** Every job a shopper is currently carrying, with who it is for. */
+export async function listActiveJobsForShopper(shopperId: string) {
+  return query(
+    `SELECT o.*,
+            c.full_name  AS customer_name,
+            c.avatar_url AS customer_avatar,
+            c.phone      AS customer_phone,
+            r.title      AS request_title
+       FROM orders o
+       JOIN users c ON c.id = o.customer_id
+       LEFT JOIN shopping_requests r ON r.id = o.request_id
+      WHERE o.shopper_id = $1 AND o.status = ANY($2)
+      ORDER BY o.created_at ASC`,
+    [shopperId, ACTIVE_JOB_STATUSES as unknown as string[]]
+  );
+}
+
 export async function findOrderById(id: string): Promise<OrderRow | null> {
   return queryOne<OrderRow>('SELECT * FROM orders WHERE id = $1', [id]);
 }

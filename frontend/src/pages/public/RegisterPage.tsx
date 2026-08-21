@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
+import { PasswordInput } from '../../components/ui/PasswordInput';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 
@@ -63,7 +64,7 @@ export function RegisterPage() {
           <Input label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
           <Input label="Phone number" type="tel" placeholder="0700 000 000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
           <Input label="Email (optional)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Input label="Password" type="password" hint="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <PasswordInput label="Password" hint="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} required />
           {error && <p className="text-sm font-medium text-brand-red">{error}</p>}
           <GlassButton type="submit" disabled={loading} fullWidth>
             {loading ? 'Creating account…' : `Sign up as a ${role}`}

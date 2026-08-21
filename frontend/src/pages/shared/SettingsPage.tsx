@@ -9,6 +9,7 @@ import { Accent, Language, Theme, Tone, usePreferences } from '../../context/Pre
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
+import { PasswordInput } from '../../components/ui/PasswordInput';
 import { ImageUpload } from '../../components/ui/ImageUpload';
 import { useToast } from '../../components/ui/Toast';
 
@@ -407,15 +408,13 @@ export function SettingsPage() {
           {shown.some((s) => s.id === 'security') && (
             <SectionCard title="Security and login" description="Change the password you use to sign in.">
               <div className="flex max-w-sm flex-col gap-4">
-                <Input
+                <PasswordInput
                   label="Current password"
-                  type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                 />
-                <Input
+                <PasswordInput
                   label="New password"
-                  type="password"
                   hint="At least 8 characters"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
