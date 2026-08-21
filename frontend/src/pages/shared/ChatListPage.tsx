@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ImageIcon, MessageCircle, Search } from 'lucide-react';
+import { ImageIcon, MessageCircle, Mic, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Conversation, useConversations } from '../../hooks/useConversations';
+import { PresenceDot } from '../../components/domain/PresenceDot';
+import { MessageReceipt, tickStateFor } from '../../components/domain/MessageTicks';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -25,10 +27,15 @@ function whenLabel(iso: string | null): string {
   return then.toLocaleDateString('en-UG', { day: 'numeric', month: 'short' });
 }
 
+function attachmentLabel(c: Conversation): string {
+  if (!c.last_attachment) return '';
+  return c.last_attachment_type === 'audio' ? 'Voice note' : 'Photo';
+}
+
 function preview(c: Conversation, myId: string | undefined): string {
   if (!c.last_at) return 'No messages yet';
   const mine = c.last_sender_id === myId;
-  const text = c.last_body?.trim() || (c.last_attachment ? 'Photo' : '');
+  const text = c.last_body?.trim() || attachmentLabel(c);
   return `${mine ? 'You: ' : ''}${text}`;
 }
 
@@ -97,17 +104,20 @@ export function ChatListPage() {
                 to={`${base}/orders/${c.order_id}/messages`}
                 className="flex items-center gap-3 border-b border-brand-green/8 px-1 py-3 transition-colors last:border-0 hover:bg-brand-green-mist/50"
               >
-                {c.other_avatar ? (
-                  <img
-                    src={c.other_avatar}
-                    alt=""
-                    className="h-12 w-12 shrink-0 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-sm font-semibold text-white">
-                    {initials(c.other_name)}
-                  </span>
-                )}
+                <div className="relative shrink-0">
+                  {c.other_avatar ? (
+                    <img
+                      src={c.other_avatar}
+                      alt=""
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-sm font-semibold text-white">
+                      {initials(c.other_name)}
+                    </span>
+                  )}
+                  <PresenceDot online={c.other_online} variant="avatar" />
+                </div>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
@@ -115,8 +125,15 @@ export function ChatListPage() {
                     <span className="shrink-0 text-[11px] text-brand-ink/40">{whenLabel(c.last_at)}</span>
                   </div>
                   <div className="mt-0.5 flex items-center gap-1.5">
+                    {/* Your own last message carries its receipt here, the way
+                        the preview row does in any messaging app. */}
+                    {c.last_at && c.last_sender_id === user?.id && (
+                      <MessageReceipt state={tickStateFor({ delivered_at: c.last_delivered_at, read_at: c.last_read_at })} />
+                    )}
                     {c.last_attachment && !c.last_body && (
-                      <ImageIcon size={13} strokeWidth={2} className="shrink-0 text-brand-ink/35" />
+                      c.last_attachment_type === 'audio'
+                        ? <Mic size={13} strokeWidth={2} className="shrink-0 text-brand-ink/35" />
+                        : <ImageIcon size={13} strokeWidth={2} className="shrink-0 text-brand-ink/35" />
                     )}
                     <p className={`truncate text-sm ${c.unread > 0 ? 'font-medium text-brand-ink/75' : 'text-brand-ink/45'}`}>
                       {preview(c, user?.id)}

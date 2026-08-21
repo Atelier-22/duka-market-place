@@ -10,11 +10,17 @@ export interface Conversation {
   other_avatar: string | null;
   other_role: 'customer' | 'shopper' | 'admin';
   other_phone: string | null;
+  /** True when they have used the app in the last 90 seconds. */
+  other_online: boolean;
+  other_last_seen_at: string | null;
   request_title: string | null;
   last_body: string | null;
   last_attachment: string | null;
+  last_attachment_type: 'image' | 'audio' | 'file' | null;
   last_at: string | null;
   last_sender_id: string | null;
+  last_delivered_at: string | null;
+  last_read_at: string | null;
   unread: number;
 }
 

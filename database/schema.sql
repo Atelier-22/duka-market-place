@@ -60,6 +60,10 @@ CREATE TABLE users (
   phone_verified_at TIMESTAMPTZ,
   email_verified_at TIMESTAMPTZ,
   last_login_at     TIMESTAMPTZ,
+  -- Touched on every authenticated request; "online" in chat means this is
+  -- within the last minute. Distinct from shopper_profiles.is_online, which is
+  -- a deliberate "available for jobs" switch.
+  last_seen_at      TIMESTAMPTZ,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
 
@@ -74,6 +78,7 @@ CREATE TABLE users (
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_phone ON users(phone);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_last_seen ON users(last_seen_at);
 
 CREATE TABLE customer_profiles (
   user_id           UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -296,10 +301,18 @@ CREATE TABLE messages (
   sender_id     UUID NOT NULL REFERENCES users(id),
   body          TEXT,
   attachment_url TEXT,
+  -- 'image' renders inline and opens in the zoom viewer; 'audio' is a voice
+  -- note and needs a player, so the duration is captured at record time.
+  attachment_type VARCHAR(16) CHECK (attachment_type IS NULL OR attachment_type IN ('image', 'audio', 'file')),
+  attachment_duration_ms INTEGER,
+  -- Two distinct facts, two columns: delivered = it reached their device
+  -- (two ticks), read = they opened the thread (two green ticks).
+  delivered_at  TIMESTAMPTZ,
   read_at       TIMESTAMPTZ,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_messages_order ON messages(order_id, created_at);
+CREATE INDEX idx_messages_undelivered ON messages(order_id, sender_id) WHERE delivered_at IS NULL;
 
 -- ----------------------------------------------------------------------------
 -- PAYMENTS, FEES, TRANSACTIONS, EARNINGS

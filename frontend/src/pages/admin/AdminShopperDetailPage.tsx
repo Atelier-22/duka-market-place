@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { RatingStars } from '../../components/ui/RatingStars';
+import { ZoomableImage } from '../../components/ui/ZoomableImage';
 import { AdminDetailShell, Empty, Field, Panel, formatDate, formatUgx } from './AdminDetailShell';
 
 const VERIFICATION_TONE: Record<string, string> = {
@@ -74,9 +75,13 @@ export function AdminShopperDetailPage() {
                   </span>
                 </div>
                 {v.document_url && (
-                  <a href={v.document_url} target="_blank" rel="noreferrer" className="mt-2 block">
-                    <img src={v.document_url} alt="" className="h-32 w-full rounded-lg object-cover" />
-                  </a>
+                  <ZoomableImage
+                    src={v.document_url}
+                    alt={v.document_type.replace(/_/g, ' ')}
+                    caption={`${user.full_name} · ${v.document_type.replace(/_/g, ' ')}`}
+                    wrapperClassName="mt-2 w-full rounded-lg"
+                    className="h-32 w-full rounded-lg object-cover"
+                  />
                 )}
                 <p className="mt-2 text-xs text-brand-ink/45">Submitted {formatDate(v.created_at)}</p>
                 {v.rejection_reason && <p className="mt-1 text-xs text-brand-red">{v.rejection_reason}</p>}

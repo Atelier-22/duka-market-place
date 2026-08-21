@@ -9,6 +9,8 @@ import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { OrderTimeline } from '../../components/domain/OrderTimeline';
 import { PricingBreakdown } from '../../components/domain/PricingBreakdown';
+import { VoiceNotePlayer } from '../../components/domain/VoiceNotePlayer';
+import { ZoomableImage } from '../../components/ui/ZoomableImage';
 import { useToast } from '../../components/ui/Toast';
 import { OrderStatus } from '../../types';
 import { AdminDetailShell, Empty, Field, Panel, formatDate, formatUgx } from './AdminDetailShell';
@@ -161,7 +163,15 @@ export function AdminOrderDetailPage() {
           <div className="grid gap-3 sm:grid-cols-3">
             {items.map((it: any) => (
               <div key={it.id} className={`rounded-xl2 border p-3 ${it.is_selected ? 'border-brand-green-fresh bg-brand-green-mist' : 'border-brand-green/15'}`}>
-                {it.photo_url && <img src={it.photo_url} alt="" className="mb-2 h-28 w-full rounded-lg object-cover" />}
+                {it.photo_url && (
+                  <ZoomableImage
+                    src={it.photo_url}
+                    alt={it.name}
+                    caption={`${it.name}${it.shop_name ? ` · ${it.shop_name}` : ''}`}
+                    wrapperClassName="mb-2 w-full rounded-lg"
+                    className="h-28 w-full rounded-lg object-cover"
+                  />
+                )}
                 <p className="text-sm font-medium text-brand-green-deep">{it.name}</p>
                 <p className="text-xs text-brand-ink/50">{formatUgx(it.price_ugx)}{it.shop_name ? ` · ${it.shop_name}` : ''}</p>
               </div>
@@ -174,12 +184,20 @@ export function AdminOrderDetailPage() {
         {evidence.length === 0 && receipts.length === 0 ? <Empty>Nothing uploaded.</Empty> : (
           <div className="grid gap-3 sm:grid-cols-3">
             {evidence.map((e: any) => (
-              <a key={e.id} href={e.file_url} target="_blank" rel="noreferrer" className="block rounded-xl2 border border-brand-green/15 p-2 hover:bg-brand-green-mist/40">
-                <img src={e.file_url} alt="" className="h-28 w-full rounded-lg object-cover" />
+              // Evidence is the thing a dispute turns on, so it opens in the
+              // zoom viewer (and can be downloaded) rather than a new tab.
+              <div key={e.id} className="rounded-xl2 border border-brand-green/15 p-2">
+                <ZoomableImage
+                  src={e.file_url}
+                  alt={e.type.replace(/_/g, ' ')}
+                  caption={`${e.type.replace(/_/g, ' ')} · ${e.uploaded_by_name}`}
+                  wrapperClassName="w-full rounded-lg"
+                  className="h-28 w-full rounded-lg object-cover"
+                />
                 <p className="mt-2 text-xs font-medium text-brand-green-deep">{e.type.replace(/_/g, ' ')}</p>
                 <p className="text-[11px] text-brand-ink/45">{e.uploaded_by_name} · {formatDate(e.created_at)}</p>
                 {e.caption && <p className="text-[11px] text-brand-ink/55">{e.caption}</p>}
-              </a>
+              </div>
             ))}
             {receipts.map((r: any) => (
               <div key={r.id} className="rounded-xl2 border border-brand-green/15 p-3">
@@ -199,10 +217,21 @@ export function AdminOrderDetailPage() {
               <div key={m.id} className={`max-w-[80%] rounded-xl2 px-3 py-2 ${m.sender_role === 'shopper' ? 'self-start bg-brand-green-mist' : 'self-end bg-brand-white/80 border border-brand-green/10'}`}>
                 <p className="text-[11px] font-semibold text-brand-ink/50">{m.sender_name} · {m.sender_role}</p>
                 {m.body && <p className="mt-0.5 text-sm text-brand-ink/80">{m.body}</p>}
-                {m.attachment_url && (
-                  <a href={m.attachment_url} target="_blank" rel="noreferrer">
-                    <img src={m.attachment_url} alt="" className="mt-2 max-h-40 rounded-lg object-cover" />
-                  </a>
+                {/* A voice note is as much a part of the record as a photo —
+                    playable here so a dispute can actually be adjudicated. */}
+                {m.attachment_url && m.attachment_type === 'audio' && (
+                  <div className="mt-2">
+                    <VoiceNotePlayer src={m.attachment_url} durationMs={m.attachment_duration_ms} tone="other" />
+                  </div>
+                )}
+                {m.attachment_url && m.attachment_type !== 'audio' && (
+                  <ZoomableImage
+                    src={m.attachment_url}
+                    alt={`Attachment from ${m.sender_name}`}
+                    caption={`${m.sender_name} · ${formatDate(m.created_at)}`}
+                    wrapperClassName="mt-2 rounded-lg"
+                    className="max-h-40 rounded-lg object-cover"
+                  />
                 )}
                 <p className="mt-1 text-[10px] text-brand-ink/35">{formatDate(m.created_at)}</p>
               </div>

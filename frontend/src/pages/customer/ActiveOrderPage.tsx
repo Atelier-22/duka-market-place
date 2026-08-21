@@ -6,6 +6,7 @@ import { Order } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { ZoomableImage } from '../../components/ui/ZoomableImage';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { OrderTimeline } from '../../components/domain/OrderTimeline';
 import { PricingBreakdown } from '../../components/domain/PricingBreakdown';
@@ -104,7 +105,17 @@ export function ActiveOrderPage() {
               <div className="flex flex-col gap-2">
                 {items.map((it) => (
                   <div key={it.id} className="flex items-center gap-3 rounded-lg bg-brand-green-mist/60 p-2">
-                    {it.photo_url && <img src={it.photo_url} className="h-12 w-12 rounded-lg object-cover" alt={it.name} />}
+                    {/* You are being asked to approve a purchase from a 48px
+                        thumbnail — it has to be openable. */}
+                    {it.photo_url && (
+                      <ZoomableImage
+                        src={it.photo_url}
+                        alt={it.name}
+                        caption={`${it.name}${it.shop_name ? ` · ${it.shop_name}` : ''}`}
+                        wrapperClassName="h-12 w-12 shrink-0 rounded-lg"
+                        className="h-12 w-12 rounded-lg object-cover"
+                      />
+                    )}
                     <div className="flex-1 text-sm">
                       <p className="font-medium text-brand-ink">{it.name}</p>
                       <p className="text-brand-ink/50">{new Intl.NumberFormat('en-UG').format(it.price_ugx)} UGX · {it.shop_name}</p>

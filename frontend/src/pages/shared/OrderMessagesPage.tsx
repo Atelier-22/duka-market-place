@@ -1,17 +1,27 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ImagePlus, Phone, Send, X } from 'lucide-react';
+import { ArrowLeft, ImagePlus, Mic, Phone, Send, Square, Trash2, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { ChatMessage } from '../../components/domain/ChatMessage';
+import { VoiceNotePlayer } from '../../components/domain/VoiceNotePlayer';
+import { PresenceDot, lastSeenLabel } from '../../components/domain/PresenceDot';
+import { tickStateFor } from '../../components/domain/MessageTicks';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { useToast } from '../../components/ui/Toast';
 import { useAuth } from '../../context/AuthContext';
 import { useConversations } from '../../hooks/useConversations';
+import { formatDuration, useVoiceRecorder, voiceRecordingSupported } from '../../hooks/useVoiceRecorder';
 
-/** How often an open thread checks for the other side's replies. */
+/** How often an open thread checks for the other side's replies and presence. */
 const POLL_MS = 5_000;
+
+interface PendingVoice {
+  url: string;
+  previewUrl: string;
+  durationMs: number;
+}
 
 function initials(name: string): string {
   return name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
@@ -23,13 +33,19 @@ export function OrderMessagesPage() {
   const { user } = useAuth();
   const { push } = useToast();
   const [messages, setMessages] = useState<any[]>([]);
+  const [presence, setPresence] = useState<{ online: boolean; lastSeenAt: string | null }>({
+    online: false,
+    lastSeenAt: null,
+  });
   const [body, setBody] = useState('');
   const [attachment, setAttachment] = useState('');
+  const [voice, setVoice] = useState<PendingVoice | null>(null);
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const recorder = useVoiceRecorder();
 
   // Reuse the inbox to name the person at the top without another endpoint.
   const { conversations } = useConversations();
@@ -39,7 +55,10 @@ export function OrderMessagesPage() {
 
   const load = useCallback(() => {
     api.get(`/orders/${id}/messages`)
-      .then((res) => setMessages(res.data.messages))
+      .then((res) => {
+        setMessages(res.data.messages);
+        if (res.data.presence) setPresence(res.data.presence);
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -57,15 +76,22 @@ export function OrderMessagesPage() {
 
   useEffect(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages.length]);
 
+  // The preview blob is only ever referenced by this page.
+  useEffect(() => () => { if (voice) URL.revokeObjectURL(voice.previewUrl); }, [voice]);
+
+  async function uploadBlob(file: Blob, filename: string): Promise<string> {
+    const form = new FormData();
+    form.append('file', file, filename);
+    const res = await api.post('/uploads?folder=chat', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data.url;
+  }
+
   async function handleFile(file: File) {
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await api.post('/uploads?folder=chat', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setAttachment(res.data.url);
+      setAttachment(await uploadBlob(file, file.name));
     } catch (err) {
       push(apiErrorMessage(err), 'error');
     } finally {
@@ -73,24 +99,56 @@ export function OrderMessagesPage() {
     }
   }
 
+  async function startRecording() {
+    const ok = await recorder.start();
+    if (!ok && recorder.error) push(recorder.error, 'error');
+  }
+
+  /** Stop, upload, and hold the note as a preview so it can be heard first. */
+  async function finishRecording() {
+    const result = await recorder.stop();
+    if (!result) return;
+    setUploading(true);
+    try {
+      const url = await uploadBlob(result.blob, result.filename);
+      setVoice({ url, previewUrl: result.previewUrl, durationMs: result.durationMs });
+    } catch (err) {
+      URL.revokeObjectURL(result.previewUrl);
+      push(apiErrorMessage(err), 'error');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function discardVoice() {
+    if (voice) URL.revokeObjectURL(voice.previewUrl);
+    setVoice(null);
+  }
+
   async function handleSend(e: FormEvent) {
     e.preventDefault();
-    if (!body.trim() && !attachment) return;
+    if (!body.trim() && !attachment && !voice) return;
     const text = body;
     const image = attachment;
+    const note = voice;
     setBody('');
     setAttachment('');
+    setVoice(null);
     setSending(true);
     try {
       await api.post(`/orders/${id}/messages`, {
         body: text.trim() || undefined,
-        attachmentUrl: image || undefined,
+        attachmentUrl: note?.url ?? image ?? undefined,
+        attachmentType: note ? 'audio' : image ? 'image' : undefined,
+        attachmentDurationMs: note ? Math.round(note.durationMs) : undefined,
       });
+      if (note) URL.revokeObjectURL(note.previewUrl);
       load();
     } catch (err) {
       // Put the draft back rather than silently losing what they typed.
       setBody(text);
       setAttachment(image);
+      setVoice(note);
       push(apiErrorMessage(err), 'error');
     } finally {
       setSending(false);
@@ -98,6 +156,8 @@ export function OrderMessagesPage() {
   }
 
   const name = conversation?.other_name ?? 'Conversation';
+  const canSend = Boolean(body.trim() || attachment || voice);
+  const composerDisabled = recorder.recording;
 
   return (
     <div className="mx-auto flex h-[calc(100vh-6rem)] max-w-2xl flex-col pb-4">
@@ -111,19 +171,28 @@ export function OrderMessagesPage() {
       </div>
 
       <GlassCard hover={false} padding="md" className="flex flex-1 flex-col overflow-hidden">
-        {/* Thread header — who you are talking to, and a way back to the order */}
+        {/* Thread header — who you are talking to, whether they are there, and a way back to the order */}
         <div className="flex items-center gap-3 border-b border-brand-green/10 pb-3">
-          {conversation?.other_avatar ? (
-            <img src={conversation.other_avatar} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
-          ) : (
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-xs font-semibold text-white">
-              {initials(name)}
-            </span>
-          )}
+          <div className="relative shrink-0">
+            {conversation?.other_avatar ? (
+              <img src={conversation.other_avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+            ) : (
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-xs font-semibold text-white">
+                {initials(name)}
+              </span>
+            )}
+            <PresenceDot online={presence.online} variant="avatar" />
+          </div>
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold text-brand-green-deep">{name}</p>
-            <p className="truncate text-xs text-brand-ink/45">
-              {conversation?.request_title ?? `Order #${id?.slice(0, 8)}`}
+            <p className="flex items-center gap-1.5 truncate text-xs">
+              <PresenceDot online={presence.online} />
+              <span className={presence.online ? 'font-medium text-brand-green-fresh' : 'text-brand-ink/45'}>
+                {presence.online ? 'Online' : lastSeenLabel(presence.lastSeenAt)}
+              </span>
+              <span className="truncate text-brand-ink/35">
+                · {conversation?.request_title ?? `Order #${id?.slice(0, 8)}`}
+              </span>
             </p>
           </div>
           {conversation?.other_phone && (
@@ -155,9 +224,12 @@ export function OrderMessagesPage() {
                   key={m.id}
                   body={m.body}
                   attachmentUrl={m.attachment_url}
+                  attachmentType={m.attachment_type}
+                  attachmentDurationMs={m.attachment_duration_ms}
                   isOwn={m.sender_id === user?.id}
                   senderName={m.sender_name}
                   createdAt={m.created_at}
+                  tickState={tickStateFor(m)}
                 />
               ))}
               <div ref={bottomRef} />
@@ -180,40 +252,95 @@ export function OrderMessagesPage() {
           </div>
         )}
 
-        <form onSubmit={handleSend} className="mt-3 flex items-center gap-2 border-t border-brand-green/10 pt-3">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleFile(f);
-              e.target.value = '';
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-            title="Send a photo"
-            aria-label="Send a photo"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-green/15 text-brand-green-deep transition-colors hover:bg-brand-green-mist disabled:opacity-50"
-          >
-            <ImagePlus size={17} strokeWidth={1.75} />
-          </button>
+        {voice && (
+          <div className="mt-3 flex items-center gap-3 rounded-xl bg-brand-green-mist/60 p-2">
+            {/* Play it back before committing — a voice note you cannot check
+                first is worse than typing, which is the whole point of it. */}
+            <VoiceNotePlayer src={voice.previewUrl} durationMs={voice.durationMs} tone="other" />
+            <button
+              type="button"
+              onClick={discardVoice}
+              aria-label="Discard voice note"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-brand-ink/45 hover:bg-brand-white hover:text-brand-red"
+            >
+              <X size={14} strokeWidth={2} />
+            </button>
+          </div>
+        )}
 
-          <input
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder={uploading ? 'Uploading photo…' : 'Type a message…'}
-            className="min-w-0 flex-1 rounded-full border border-brand-green/15 bg-brand-white/70 px-4 py-2.5 text-sm text-brand-ink outline-none transition-colors placeholder:text-brand-ink/35 focus:border-brand-green-fresh"
-          />
+        {recorder.recording ? (
+          <div className="mt-3 flex items-center gap-3 border-t border-brand-green/10 pt-3">
+            <button
+              type="button"
+              onClick={recorder.cancel}
+              aria-label="Cancel recording"
+              title="Cancel"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-red/25 text-brand-red transition-colors hover:bg-brand-red/10"
+            >
+              <Trash2 size={16} strokeWidth={1.75} />
+            </button>
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-brand-red/8 px-4 py-2.5">
+              <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-brand-red" />
+              <span className="text-sm font-medium tabular-nums text-brand-ink/70">
+                {formatDuration(recorder.elapsedMs)}
+              </span>
+              <span className="truncate text-xs text-brand-ink/40">
+                Recording — speak in any language, then tap the square to stop
+              </span>
+            </div>
+            <GlassButton type="button" size="sm" onClick={finishRecording}>
+              <Square size={14} strokeWidth={2.5} />
+            </GlassButton>
+          </div>
+        ) : (
+          <form onSubmit={handleSend} className="mt-3 flex items-center gap-2 border-t border-brand-green/10 pt-3">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFile(f);
+                e.target.value = '';
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading || composerDisabled}
+              title="Send a photo"
+              aria-label="Send a photo"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-green/15 text-brand-green-deep transition-colors hover:bg-brand-green-mist disabled:opacity-50"
+            >
+              <ImagePlus size={17} strokeWidth={1.75} />
+            </button>
 
-          <GlassButton type="submit" size="sm" disabled={sending || uploading || (!body.trim() && !attachment)}>
-            <Send size={15} strokeWidth={2} />
-          </GlassButton>
-        </form>
+            {voiceRecordingSupported() && (
+              <button
+                type="button"
+                onClick={startRecording}
+                disabled={uploading || sending}
+                title="Record a voice note"
+                aria-label="Record a voice note"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-green/15 text-brand-green-deep transition-colors hover:bg-brand-green-mist disabled:opacity-50"
+              >
+                <Mic size={17} strokeWidth={1.75} />
+              </button>
+            )}
+
+            <input
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder={uploading ? 'Uploading…' : 'Type a message…'}
+              className="min-w-0 flex-1 rounded-full border border-brand-green/15 bg-brand-white/70 px-4 py-2.5 text-sm text-brand-ink outline-none transition-colors placeholder:text-brand-ink/35 focus:border-brand-green-fresh"
+            />
+
+            <GlassButton type="submit" size="sm" disabled={sending || uploading || !canSend}>
+              <Send size={15} strokeWidth={2} />
+            </GlassButton>
+          </form>
+        )}
       </GlassCard>
     </div>
   );

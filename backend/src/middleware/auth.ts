@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { verifyAccessToken } from '../utils/auth';
+import { touchPresence } from '../services/presence.service';
 import { UserRole } from '../types';
 
 declare global {
@@ -19,6 +20,9 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
     const payload = verifyAccessToken(header.slice('Bearer '.length));
     req.user = { id: payload.sub, role: payload.role, linked: payload.linked ?? [] };
+    // Every authenticated request is a sign of life. Throttled internally and
+    // never awaited — this must not add latency to the route it fronts.
+    touchPresence(payload.sub);
     next();
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });

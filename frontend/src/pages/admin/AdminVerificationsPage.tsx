@@ -4,6 +4,7 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { ZoomableImage } from '../../components/ui/ZoomableImage';
 import { useToast } from '../../components/ui/Toast';
 
 export function AdminVerificationsPage() {
@@ -40,7 +41,15 @@ export function AdminVerificationsPage() {
               <GlassCard key={v.id} hover={false}>
                 <p className="font-medium text-brand-green-deep">{v.full_name}</p>
                 <p className="text-xs text-brand-ink/50">{v.phone} · {v.document_type}</p>
-                <img src={v.document_url} alt="Verification document" className="mt-3 max-h-48 w-full rounded-lg object-cover" />
+                {/* An ID has to be readable to be approved — this opens the
+                    zoom viewer rather than making the reviewer squint. */}
+                <ZoomableImage
+                  src={v.document_url}
+                  alt="Verification document"
+                  caption={`${v.full_name} · ${v.document_type}`}
+                  wrapperClassName="mt-3 w-full rounded-lg"
+                  className="max-h-48 w-full rounded-lg object-cover"
+                />
                 <div className="mt-3 flex gap-2">
                   <GlassButton size="sm" onClick={() => review(v.id, 'approved')}>Approve</GlassButton>
                   <GlassButton size="sm" variant="danger" onClick={() => review(v.id, 'rejected')}>Reject</GlassButton>
