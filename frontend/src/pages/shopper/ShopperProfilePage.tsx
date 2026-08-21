@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
@@ -8,11 +9,13 @@ import { useToast } from '../../components/ui/Toast';
 import { useAuth } from '../../context/AuthContext';
 
 export function ShopperProfilePage() {
-  const { user } = useAuth();
+  const { user, switchRole } = useAuth();
   const { push } = useToast();
+  const navigate = useNavigate();
   const [bio, setBio] = useState('');
   const [operatingArea, setOperatingArea] = useState('');
   const [saving, setSaving] = useState(false);
+  const [switching, setSwitching] = useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -23,6 +26,19 @@ export function ShopperProfilePage() {
       push(apiErrorMessage(err), 'error');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSwitchToCustomer() {
+    setSwitching(true);
+    try {
+      await switchRole('customer');
+      push('You are now in customer mode', 'success');
+      navigate('/app');
+    } catch (err) {
+      push(err instanceof Error ? err.message : 'Could not switch role', 'error');
+    } finally {
+      setSwitching(false);
     }
   }
 
@@ -39,6 +55,22 @@ export function ShopperProfilePage() {
             {saving ? 'Saving…' : 'Save changes'}
           </GlassButton>
         </div>
+      </GlassCard>
+
+      <GlassCard padding="lg" hover={false} className="mt-6">
+        <p className="font-display text-lg font-medium text-brand-green-deep">Need something yourself?</p>
+        <p className="mt-1.5 text-sm text-brand-ink/60">
+          The same account can post shopping requests. Switch to customer mode to have
+          someone else do the running around — you can switch back any time.
+        </p>
+        <GlassButton
+          className="mt-4"
+          variant="secondary"
+          disabled={switching}
+          onClick={handleSwitchToCustomer}
+        >
+          {switching ? 'Switching…' : '🛒 Switch to customer mode'}
+        </GlassButton>
       </GlassCard>
     </div>
   );

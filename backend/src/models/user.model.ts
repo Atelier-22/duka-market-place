@@ -48,6 +48,29 @@ export async function createUser(input: {
   return row;
 }
 
+export async function ensureCustomerProfile(userId: string): Promise<void> {
+  await query(
+    'INSERT INTO customer_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING',
+    [userId]
+  );
+}
+
+export async function ensureShopperProfile(userId: string): Promise<void> {
+  await query(
+    'INSERT INTO shopper_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING',
+    [userId]
+  );
+}
+
+export async function updateUserRole(userId: string, role: UserRole): Promise<UserRow> {
+  const row = await queryOne<UserRow>(
+    'UPDATE users SET role = $2 WHERE id = $1 RETURNING *',
+    [userId, role]
+  );
+  if (!row) throw new Error('Failed to update user role');
+  return row;
+}
+
 export function toPublicUser(row: UserRow) {
   return {
     id: row.id,

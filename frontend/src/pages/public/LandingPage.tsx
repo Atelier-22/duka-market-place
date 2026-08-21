@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
+import { HeroCarousel } from '../../components/domain/HeroCarousel';
 import { BRAND } from '../../config/brand';
 
 const HOW_IT_WORKS = [
@@ -84,6 +85,11 @@ export function LandingPage() {
             </GlassCard>
           </div>
         </div>
+      </section>
+
+      {/* CAROUSEL */}
+      <section className="mx-auto mt-32 max-w-6xl px-4">
+        <HeroCarousel />
       </section>
 
       {/* HOW IT WORKS */}

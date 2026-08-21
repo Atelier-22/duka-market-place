@@ -1,6 +1,15 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { createUser, findUserByPhone, findUserByEmail, findUserById, toPublicUser } from '../models/user.model';
+import {
+  createUser,
+  findUserByPhone,
+  findUserByEmail,
+  findUserById,
+  ensureCustomerProfile,
+  ensureShopperProfile,
+  updateUserRole,
+  toPublicUser,
+} from '../models/user.model';
 import { hashPassword, verifyPassword, signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/auth';
 import { ApiError } from '../middleware/errorHandler';
 
@@ -17,6 +26,13 @@ export async function register(req: Request, res: Response) {
 
   const existing = await findUserByPhone(input.phone);
   if (existing) throw new ApiError(409, 'An account with this phone number already exists');
+
+  if (input.email) {
+    const existingEmail = await findUserByEmail(input.email);
+    if (existingEmail) {
+      throw new ApiError(409, 'An account with this email already exists — try logging in instead');
+    }
+  }
 
   const passwordHash = await hashPassword(input.password);
   const user = await createUser({
@@ -73,4 +89,31 @@ export async function me(req: Request, res: Response) {
   const user = await findUserById(req.user!.id);
   if (!user) throw new ApiError(404, 'User not found');
   res.json({ user: toPublicUser(user) });
+}
+
+const switchRoleSchema = z.object({ role: z.enum(['customer', 'shopper']) });
+
+/**
+ * One Duka account can act as both a customer and a shopper. Switching flips
+ * the role on the user row, lazily creating the side of the profile that
+ * doesn't exist yet, and re-issues tokens so the new role is in the JWT.
+ */
+export async function switchRole(req: Request, res: Response) {
+  const { role } = switchRoleSchema.parse(req.body);
+
+  const user = await findUserById(req.user!.id);
+  if (!user) throw new ApiError(404, 'User not found');
+
+  if (role === 'customer') {
+    await ensureCustomerProfile(user.id);
+  } else {
+    await ensureShopperProfile(user.id);
+  }
+
+  const updated = await updateUserRole(user.id, role);
+
+  const accessToken = signAccessToken(updated.id, updated.role);
+  const refreshToken = signRefreshToken(updated.id, updated.role);
+
+  res.json({ user: toPublicUser(updated), accessToken, refreshToken });
 }

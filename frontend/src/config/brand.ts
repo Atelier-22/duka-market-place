@@ -5,7 +5,7 @@
  */
 export const BRAND = {
   name: 'Duka',
-  tagline: "Tell us what you need. We'll find someone nearby to get it.",
+  tagline: 'Duka — shopping for you.',
   supportPhone: '+256 700 000 000',
   supportEmail: 'support@duka.app',
   country: 'Uganda',

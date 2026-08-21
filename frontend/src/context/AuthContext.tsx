@@ -7,6 +7,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (phone: string, password: string) => Promise<void>;
   register: (input: { role: UserRole; fullName: string; phone: string; email?: string; password: string }) => Promise<void>;
+  switchRole: (role: UserRole) => Promise<void>;
   logout: () => void;
 }
 
@@ -59,6 +60,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function switchRole(role: UserRole) {
+    try {
+      const res = await api.post('/auth/switch-role', { role });
+      localStorage.setItem('duka_access_token', res.data.accessToken);
+      localStorage.setItem('duka_refresh_token', res.data.refreshToken);
+      setUser(res.data.user);
+    } catch (err) {
+      throw new Error(apiErrorMessage(err));
+    }
+  }
+
   function logout() {
     localStorage.removeItem('duka_access_token');
     localStorage.removeItem('duka_refresh_token');
@@ -66,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, switchRole, logout }}>
       {children}
     </AuthContext.Provider>
   );
