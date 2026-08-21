@@ -133,9 +133,13 @@ async function tableCounts() {
       body: { actualPriceUgx: 42000, photoUrl: 'https://example.test/item.jpg', shopName: 'E2E Shop' },
     }), 'awaiting_customer_approval'],
     ['customer approves        (-> purchased)', () => call('POST', `/orders/${orderId}/approve`, { token: cust }), 'purchased'],
-    ['shopper marks delivering (-> out_for_delivery)', () => call('POST', `/orders/${orderId}/out-for-delivery`, {
+    // Deliberately sends NO amountUgx. That field used to be required, and the
+    // shopper's page sourced it from form state belonging to the earlier
+    // "item found" step — so after any reload the receipt was rejected with a
+    // message about the photo. The price is on the order; the server uses it.
+    ['shopper marks delivering (-> out_for_delivery, no amount sent)', () => call('POST', `/orders/${orderId}/out-for-delivery`, {
       token: shop,
-      body: { receiptPhotoUrl: 'https://example.test/receipt.jpg', amountUgx: 42000 },
+      body: { receiptPhotoUrl: 'https://example.test/receipt.jpg' },
     }), 'out_for_delivery'],
     ['customer confirms        (-> delivered)', () => call('POST', `/orders/${orderId}/delivered`, { token: cust }), 'delivered'],
     ['completes                (-> completed)', () => call('POST', `/orders/${orderId}/complete`, { token: cust }), 'completed'],
@@ -147,12 +151,46 @@ async function tableCounts() {
     step(label, r.status < 400 && got === expected, `http ${r.status}, status "${got}" ${r.status >= 400 ? JSON.stringify(r.body) : ''}`);
     // The delivery panel only exists while the order is in flight, so its
     // checks have to run here rather than after the walk completes.
-    if (expected === 'purchased') await deliveryClockChecks();
+    if (expected === 'purchased') { await deliveryClockChecks(); await moneyChecks(); }
   }
 
   await afterWalkChecks();
 
   // ---- delivery clock: both buttons on the shopper's panel ----------------
+  /**
+   * The arithmetic, end to end.
+   *
+   * `pg` returns BIGINT as a string, and every money column here is BIGINT, so
+   * `a + b` concatenated instead of adding: a real order was stored and quoted
+   * to the customer as 10,000,050,005,000,500 UGX. These assertions compare
+   * against exact expected figures rather than "looks like a number", because
+   * the bug produced something that was still a number.
+   */
+  async function moneyChecks() {
+    const ITEM = 42000, SHOPPING = 5000, DELIVERY = 3000;
+    const PLATFORM = 500;                                   // 10% of the shopping fee
+    const TOTAL = ITEM + SHOPPING + DELIVERY + PLATFORM;    // 50500
+    const PAYOUT = SHOPPING + DELIVERY - PLATFORM;          // 7500
+
+    const o = (await call('GET', `/orders/${orderId}`, { token: cust })).body?.order;
+    step('item price is a number, not a string', typeof o?.item_price_ugx === 'number',
+      `${typeof o?.item_price_ugx} ${o?.item_price_ugx}`);
+    step(`platform fee is ${PLATFORM}`, Number(o?.platform_fee_ugx) === PLATFORM, String(o?.platform_fee_ugx));
+    step(`total is ${TOTAL}, not concatenated`, Number(o?.total_amount_ugx) === TOTAL, String(o?.total_amount_ugx));
+    step('total equals the sum of its own line items',
+      Number(o?.total_amount_ugx) === Number(o?.item_price_ugx) + Number(o?.shopping_fee_ugx)
+        + Number(o?.delivery_fee_ugx) + Number(o?.platform_fee_ugx),
+      `${o?.total_amount_ugx}`);
+
+    const pay = await pool.query('SELECT amount_ugx FROM payments WHERE order_id = $1', [orderId]);
+    step(`payment row is raised for ${TOTAL}`, Number(pay.rows[0]?.amount_ugx) === TOTAL,
+      String(pay.rows[0]?.amount_ugx));
+
+    // Guard the payout too — the shopper is paid from it.
+    step(`shopper payout would be ${PAYOUT}`,
+      SHOPPING + DELIVERY - PLATFORM === PAYOUT, String(PAYOUT));
+  }
+
   async function deliveryClockChecks() {
   const doneNow = await call('POST', `/orders/${orderId}/shopping-done`, {
     token: shop, body: { startDeliveryNow: true, etaMinutes: 25 },
@@ -198,6 +236,18 @@ async function tableCounts() {
 
   // ---- the extras the UI relies on ----------------------------------------
   async function afterWalkChecks() {
+  // Completion released the shopper's earnings and charged the customer —
+  // both derived from the same arithmetic that was concatenating strings.
+  const earn = await pool.query('SELECT amount_ugx FROM shopper_earnings WHERE order_id = $1', [orderId]);
+  step('shopper earnings released as 7500', Number(earn.rows[0]?.amount_ugx) === 7500,
+    String(earn.rows[0]?.amount_ugx));
+  const spent = await pool.query('SELECT total_spent_ugx FROM customer_profiles WHERE user_id = $1', [custId]);
+  step('customer lifetime spend advanced by 50500', Number(spent.rows[0]?.total_spent_ugx) === 50500,
+    String(spent.rows[0]?.total_spent_ugx));
+  const bal = await pool.query('SELECT available_balance_ugx, lifetime_earnings_ugx FROM shopper_profiles WHERE user_id = $1', [shopId]);
+  step('shopper balance advanced by 7500', Number(bal.rows[0]?.available_balance_ugx) === 7500,
+    String(bal.rows[0]?.available_balance_ugx));
+
   const track = await call('GET', `/orders/${orderId}/tracking`, { token: cust });
   step('tracking endpoint responds', track.status === 200, `${track.status} ${JSON.stringify(track.body)}`);
 

@@ -18,9 +18,15 @@ import { formatDuration, useVoiceRecorder, voiceRecordingSupported } from '../..
 const POLL_MS = 5_000;
 
 interface PendingVoice {
-  url: string;
   previewUrl: string;
   durationMs: number;
+  /**
+   * The upload, started the instant recording stops and resolved only when the
+   * note is actually sent. Waiting for it before showing the preview meant
+   * staring at "Uploading…" on mobile data; this way the upload runs while you
+   * listen back, and by the time you tap send it is usually already done.
+   */
+  upload: Promise<string>;
 }
 
 function initials(name: string): string {
@@ -41,8 +47,9 @@ export function OrderMessagesPage() {
   const [attachment, setAttachment] = useState('');
   const [voice, setVoice] = useState<PendingVoice | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  /** Sent-but-not-yet-acknowledged messages, rendered after the real ones. */
+  const [pending, setPending] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const recorder = useVoiceRecorder();
@@ -74,7 +81,10 @@ export function OrderMessagesPage() {
     api.post(`/orders/${id}/messages/read`).catch(() => undefined);
   }, [id, messages.length]);
 
-  useEffect(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages.length]);
+  // Follows optimistic sends too, so your own message scrolls into view the
+  // instant you send it rather than when the server answers.
+  useEffect(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }),
+    [messages.length, pending.length]);
 
   // The preview blob is only ever referenced by this page.
   useEffect(() => () => { if (voice) URL.revokeObjectURL(voice.previewUrl); }, [voice]);
@@ -104,20 +114,19 @@ export function OrderMessagesPage() {
     if (!ok && recorder.error) push(recorder.error, 'error');
   }
 
-  /** Stop, upload, and hold the note as a preview so it can be heard first. */
-  async function finishRecording() {
-    const result = await recorder.stop();
-    if (!result) return;
-    setUploading(true);
-    try {
-      const url = await uploadBlob(result.blob, result.filename);
-      setVoice({ url, previewUrl: result.previewUrl, durationMs: result.durationMs });
-    } catch (err) {
-      URL.revokeObjectURL(result.previewUrl);
-      push(apiErrorMessage(err), 'error');
-    } finally {
-      setUploading(false);
-    }
+  /**
+   * Stop recording and show the note immediately, playable from the local blob,
+   * while the upload runs in the background. Nothing here waits on the network.
+   */
+  function finishRecording() {
+    void recorder.stop().then((result) => {
+      if (!result) return;
+      const upload = uploadBlob(result.blob, result.filename);
+      // Attach a handler now so a failed upload cannot surface as an unhandled
+      // rejection; `handleSend` awaits the same promise and reports it there.
+      upload.catch(() => undefined);
+      setVoice({ previewUrl: result.previewUrl, durationMs: result.durationMs, upload });
+    });
   }
 
   function discardVoice() {
@@ -134,30 +143,49 @@ export function OrderMessagesPage() {
     setBody('');
     setAttachment('');
     setVoice(null);
-    setSending(true);
+
+    // Show it in the thread straight away, playing from the local blob, with a
+    // clock instead of a tick until the server has it. Waiting for the round
+    // trip before anything appeared is what made sending feel slow.
+    const localId = `pending-${Date.now()}`;
+    setPending((current) => [...current, {
+      id: localId,
+      body: text.trim() || null,
+      attachment_url: note ? note.previewUrl : image || null,
+      attachment_type: note ? 'audio' : image ? 'image' : null,
+      attachment_duration_ms: note ? Math.round(note.durationMs) : null,
+      sender_id: user?.id,
+      sender_name: user?.fullName ?? 'You',
+      created_at: new Date().toISOString(),
+      pending: true,
+    }]);
+
     try {
+      // Usually already finished — the upload started when recording stopped.
+      const uploadedUrl = note ? await note.upload : image;
       await api.post(`/orders/${id}/messages`, {
         body: text.trim() || undefined,
-        attachmentUrl: note?.url ?? image ?? undefined,
+        attachmentUrl: uploadedUrl || undefined,
         attachmentType: note ? 'audio' : image ? 'image' : undefined,
         attachmentDurationMs: note ? Math.round(note.durationMs) : undefined,
       });
+      setPending((current) => current.filter((m) => m.id !== localId));
       if (note) URL.revokeObjectURL(note.previewUrl);
       load();
     } catch (err) {
       // Put the draft back rather than silently losing what they typed.
+      setPending((current) => current.filter((m) => m.id !== localId));
       setBody(text);
       setAttachment(image);
       setVoice(note);
       push(apiErrorMessage(err), 'error');
-    } finally {
-      setSending(false);
     }
   }
 
   const name = conversation?.other_name ?? 'Conversation';
   const canSend = Boolean(body.trim() || attachment || voice);
   const composerDisabled = recorder.recording;
+  const visible = [...messages, ...pending];
 
   return (
     <div className="mx-auto flex h-[calc(100vh-6rem)] max-w-2xl flex-col pb-4">
@@ -215,11 +243,11 @@ export function OrderMessagesPage() {
         <div className="flex-1 overflow-y-auto pr-1 pt-3">
           {loading ? (
             <LoadingState />
-          ) : messages.length === 0 ? (
+          ) : visible.length === 0 ? (
             <p className="py-16 text-center text-sm text-brand-ink/40">No messages yet — say hello.</p>
           ) : (
             <div className="flex flex-col gap-3">
-              {messages.map((m) => (
+              {visible.map((m) => (
                 <ChatMessage
                   key={m.id}
                   body={m.body}
@@ -320,7 +348,7 @@ export function OrderMessagesPage() {
               <button
                 type="button"
                 onClick={startRecording}
-                disabled={uploading || sending}
+                disabled={uploading}
                 title="Record a voice note"
                 aria-label="Record a voice note"
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-green/15 text-brand-green-deep transition-colors hover:bg-brand-green-mist disabled:opacity-50"
@@ -336,7 +364,10 @@ export function OrderMessagesPage() {
               className="min-w-0 flex-1 rounded-full border border-brand-green/15 bg-brand-white/70 px-4 py-2.5 text-sm text-brand-ink outline-none transition-colors placeholder:text-brand-ink/35 focus:border-brand-green-fresh"
             />
 
-            <GlassButton type="submit" size="sm" disabled={sending || uploading || !canSend}>
+            {/* Never disabled while a send is in flight — the message is
+                already in the thread and the composer is free for the next
+                one, which is the point of sending optimistically. */}
+            <GlassButton type="submit" size="sm" disabled={uploading || !canSend}>
               <Send size={15} strokeWidth={2} />
             </GlassButton>
           </form>

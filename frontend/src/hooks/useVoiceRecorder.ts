@@ -69,7 +69,13 @@ export function useVoiceRecorder() {
         audio: { echoCancellation: true, noiseSuppression: true },
       });
       const mimeType = pickMimeType();
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      const recorder = new MediaRecorder(stream, {
+        ...(mimeType ? { mimeType } : {}),
+        // Speech, not music. The browser default is around 128 kbps, which
+        // makes a 30-second note roughly 500 KB and slow to send on mobile
+        // data; Opus at 24 kbps is clear for voice and about a fifth of that.
+        audioBitsPerSecond: 24_000,
+      });
       chunksRef.current = [];
       cancelledRef.current = false;
 

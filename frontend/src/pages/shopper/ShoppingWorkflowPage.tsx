@@ -63,6 +63,12 @@ export function ShoppingWorkflowPage() {
   useEffect(load, [id]);
 
   const broadcasting = !!order && BROADCAST_STATUSES.includes(order.status);
+
+  /**
+   * The price the customer approved, read off the order rather than off form
+   * state, so it survives a reload and coming back to the job later.
+   */
+  const recordedPrice = order?.item_price_ugx == null ? null : Number(order.item_price_ugx);
   const { sharing, error: locationError } = useBroadcastPosition(id, broadcasting);
   const { tracking, refresh: refreshTracking } = useOrderTracking(id, broadcasting);
 
@@ -131,15 +137,20 @@ export function ShoppingWorkflowPage() {
   }
 
   async function submitOutForDelivery() {
-    if (!receiptUrl || !actualPrice) {
+    if (!receiptUrl) {
       push('Upload a receipt photo first', 'error');
       return;
     }
     setActing(true);
     try {
+      // The amount comes from the order, not from `actualPrice`. That field
+      // belongs to the earlier "item found" step, so it is empty on any reload
+      // — which made this button reject a perfectly good receipt with a
+      // message about the photo. The price the customer approved is on the
+      // order; the server falls back to it when this is omitted.
       const res = await api.post(`/orders/${id}/out-for-delivery`, {
         receiptPhotoUrl: receiptUrl,
-        amountUgx: Number(actualPrice),
+        amountUgx: recordedPrice ?? undefined,
       });
       setOrder(res.data.order);
       push('Marked as out for delivery', 'success');
@@ -249,7 +260,7 @@ export function ShoppingWorkflowPage() {
           <GlassCard hover={false}>
             <p className="font-medium text-brand-green-deep">Waiting for customer approval</p>
             <p className="mt-1 text-sm text-brand-ink/60">
-              We've sent your photo and price ({actualPrice ? `${Number(actualPrice).toLocaleString()} UGX` : 'recorded price'}) to the customer. You'll be notified once they approve.
+              We've sent your photo and price ({recordedPrice !== null ? `${recordedPrice.toLocaleString('en-UG')} UGX` : 'the recorded price'}) to the customer. You'll be notified once they approve.
             </p>
           </GlassCard>
         )}

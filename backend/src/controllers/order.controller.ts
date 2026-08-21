@@ -123,7 +123,14 @@ export async function approvePurchase(req: Request, res: Response) {
   res.json({ order: updated, pricing });
 }
 
-const receiptSchema = z.object({ receiptPhotoUrl: mediaUrl, amountUgx: z.number().int().positive() });
+// The amount is optional: by this point the customer has already approved a
+// price and it is on the order. Requiring the client to send it again meant a
+// shopper who reloaded the page — losing the form state from the earlier step —
+// could not file a receipt at all.
+const receiptSchema = z.object({
+  receiptPhotoUrl: mediaUrl,
+  amountUgx: z.number().int().positive().optional(),
+});
 
 // shopper: purchased -> out_for_delivery, with receipt evidence
 export async function markOutForDelivery(req: Request, res: Response) {
@@ -132,13 +139,18 @@ export async function markOutForDelivery(req: Request, res: Response) {
   assertParticipant(order, req.user!.id, req.user!.role);
   assertValidTransition(order.status, 'out_for_delivery', req.user!.role);
 
+  const receiptAmount = input.amountUgx ?? Number(order.item_price_ugx ?? 0);
+  if (!receiptAmount) {
+    throw new ApiError(409, 'No purchase price has been recorded for this order yet');
+  }
+
   const evidence = await queryOne<{ id: string }>(
     `INSERT INTO evidence (order_id, uploaded_by, type, file_url) VALUES ($1,$2,'receipt',$3) RETURNING id`,
     [order.id, req.user!.id, input.receiptPhotoUrl]
   );
   await query(
     `INSERT INTO receipts (order_id, evidence_id, amount_ugx) VALUES ($1,$2,$3)`,
-    [order.id, evidence?.id ?? null, input.amountUgx]
+    [order.id, evidence?.id ?? null, receiptAmount]
   );
 
   const updated = await updateOrderStatus(order.id, 'out_for_delivery', req.user!.id, {
