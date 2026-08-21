@@ -8,5 +8,6 @@ const router = Router({ mergeParams: true });
 router.use(requireAuth);
 router.get('/:orderId/messages', asyncHandler(messageController.list));
 router.post('/:orderId/messages', asyncHandler(messageController.send));
+router.post('/:orderId/messages/read', asyncHandler(messageController.markRead));
 
 export default router;

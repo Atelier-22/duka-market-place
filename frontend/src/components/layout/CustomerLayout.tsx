@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { ClipboardList, CreditCard, Home, Package, PlusCircle, Settings, User } from 'lucide-react';
+import { ClipboardList, CreditCard, Home, MessageCircle, Package, PlusCircle, Settings, User } from 'lucide-react';
 import { AppSidebar } from './AppSidebar';
 
 const ITEMS = [
@@ -7,6 +7,7 @@ const ITEMS = [
   { to: '/app/requests/new', label: 'Request something', icon: PlusCircle },
   { to: '/app/requests', label: 'My requests', icon: ClipboardList },
   { to: '/app/orders', label: 'Orders', icon: Package },
+  { to: '/app/messages', label: 'Chats', icon: MessageCircle, badge: 'messages' as const },
   { to: '/app/payments', label: 'Payments', icon: CreditCard },
   { to: '/app/profile', label: 'Profile', icon: User },
   { to: '/app/settings', label: 'Settings', icon: Settings },

@@ -4,11 +4,14 @@ import { LogOut, LucideIcon, PanelLeft } from 'lucide-react';
 import { BRAND } from '../../config/brand';
 import { useAuth } from '../../context/AuthContext';
 import { AccountToggle } from './AccountToggle';
+import { useConversations } from '../../hooks/useConversations';
 
 interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
+  /** Which live counter, if any, this item shows as a badge. */
+  badge?: 'messages';
 }
 
 interface AppSidebarProps {
@@ -20,6 +23,8 @@ const STORAGE_KEY = 'duka_sidebar_collapsed';
 
 export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
   const { user, logout } = useAuth();
+  // Drives the unread badge on the Chats item.
+  const { totalUnread } = useConversations(!!user);
   const navigate = useNavigate();
 
   // Remembered per device. Reading localStorage can throw in a private window,
@@ -78,6 +83,7 @@ export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
       <nav className={`mt-8 flex flex-1 flex-col gap-1 ${collapsed ? 'items-center' : ''}`}>
         {items.map((item) => {
           const Icon = item.icon;
+          const count = item.badge === 'messages' ? totalUnread : 0;
           return (
             <NavLink
               key={item.to}
@@ -85,7 +91,7 @@ export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
               title={collapsed ? item.label : undefined}
               className={({ isActive }) =>
                 [
-                  'flex items-center rounded-xl text-sm font-medium transition-colors',
+                  'relative flex items-center rounded-xl text-sm font-medium transition-colors',
                   collapsed ? 'h-10 w-10 justify-center' : 'w-full gap-3 px-3 py-2.5',
                   isActive
                     ? 'bg-gradient-to-br from-brand-green to-brand-green-fresh text-white shadow-glass'
@@ -95,6 +101,16 @@ export function AppSidebar({ items, roleLabel }: AppSidebarProps) {
             >
               <Icon size={18} strokeWidth={1.75} className="shrink-0" />
               {!collapsed && item.label}
+              {count > 0 && (
+                <span
+                  className={[
+                    'flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand-red px-1 text-[10px] font-bold text-white',
+                    collapsed ? 'absolute -right-0.5 -top-0.5' : 'ml-auto',
+                  ].join(' ')}
+                >
+                  {count > 9 ? '9+' : count}
+                </span>
+              )}
             </NavLink>
           );
         })}

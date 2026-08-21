@@ -1,11 +1,12 @@
 import { Outlet } from 'react-router-dom';
-import { BadgeCheck, Home, Map, Settings, ShoppingBag, User, Wallet } from 'lucide-react';
+import { BadgeCheck, Home, Map, MessageCircle, Settings, ShoppingBag, User, Wallet } from 'lucide-react';
 import { AppSidebar } from './AppSidebar';
 
 const ITEMS = [
   { to: '/shopper', label: 'Dashboard', icon: Home },
   { to: '/shopper/available', label: 'Available jobs', icon: Map },
   { to: '/shopper/orders', label: 'My jobs', icon: ShoppingBag },
+  { to: '/shopper/messages', label: 'Chats', icon: MessageCircle, badge: 'messages' as const },
   { to: '/shopper/earnings', label: 'Earnings', icon: Wallet },
   { to: '/shopper/verification', label: 'Verification', icon: BadgeCheck },
   { to: '/shopper/profile', label: 'Profile', icon: User },

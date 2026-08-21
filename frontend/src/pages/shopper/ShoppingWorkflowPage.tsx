@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Bike, Camera, CheckCircle2, Footprints, MessageCircle, PartyPopper } from 'lucide-react';
+import { ArrowLeft, Bike, Camera, Check, CheckCircle2, Footprints, MessageCircle, PartyPopper, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { Order } from '../../types';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -49,6 +49,37 @@ export function ShoppingWorkflowPage() {
   const broadcasting = !!order && BROADCAST_STATUSES.includes(order.status);
   const { sharing, error: locationError } = useBroadcastPosition(id, broadcasting);
   const { tracking, refresh: refreshTracking } = useOrderTracking(id, broadcasting);
+
+  /**
+   * A customer accepting an offer creates the order as `requested` — the
+   * shopper still has to say yes. Without these two buttons the job simply
+   * sat there with no way to move it forward.
+   */
+  async function acceptJob() {
+    setActing(true);
+    try {
+      const res = await api.post(`/orders/${id}/assign`);
+      setOrder(res.data.order);
+      push('Job accepted — the customer has been told', 'success');
+    } catch (err) {
+      push(apiErrorMessage(err), 'error');
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function declineJob() {
+    setActing(true);
+    try {
+      await api.post(`/orders/${id}/cancel`, { reason: 'Shopper declined the job' });
+      push('Job declined', 'success');
+      navigate('/shopper/available');
+    } catch (err) {
+      push(apiErrorMessage(err), 'error');
+    } finally {
+      setActing(false);
+    }
+  }
 
   async function goShopping() {
     setActing(true);
@@ -156,6 +187,23 @@ export function ShoppingWorkflowPage() {
       )}
 
       <div className="mt-6">
+        {order.status === 'requested' && (
+          <GlassCard glow="yellow" hover={false}>
+            <p className="font-medium text-brand-green-deep">This job is waiting for your answer</p>
+            <p className="mt-1 text-sm text-brand-ink/60">
+              The customer picked you. Accept to take it on, or decline so it goes back to other shoppers.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <GlassButton disabled={acting} onClick={acceptJob}>
+                {acting ? 'Accepting…' : <><Check size={17} strokeWidth={2} /> Accept job</>}
+              </GlassButton>
+              <GlassButton variant="danger" disabled={acting} onClick={declineJob}>
+                <X size={17} strokeWidth={2} /> Decline
+              </GlassButton>
+            </div>
+          </GlassCard>
+        )}
+
         {order.status === 'shopper_assigned' && (
           <GlassCard glow="green" hover={false}>
             <p className="font-medium text-brand-green-deep">On your way?</p>

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Coins, Star, TrendingUp } from 'lucide-react';
-import { api } from '../../services/api';
+import { ArrowRight, Check, CheckCircle2, Coins, Star, TrendingUp, X } from 'lucide-react';
+import { api, apiErrorMessage } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { DashboardStat } from '../../components/domain/DashboardStat';
 import { NotificationBell } from '../../components/domain/NotificationBell';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { LoadingState } from '../../components/ui/LoadingState';
+import { useToast } from '../../components/ui/Toast';
 import { useAuth } from '../../context/AuthContext';
 
 function formatUgx(n: number) {
@@ -16,9 +17,30 @@ function formatUgx(n: number) {
 
 export function ShopperDashboardPage() {
   const { user } = useAuth();
+  const { push } = useToast();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [togglingOnline, setTogglingOnline] = useState(false);
+  const [deciding, setDeciding] = useState(false);
+
+  /** Accept or decline a job the customer assigned but the shopper hasn't answered. */
+  async function decide(orderId: string, accept: boolean) {
+    setDeciding(true);
+    try {
+      if (accept) {
+        await api.post(`/orders/${orderId}/assign`);
+        push('Job accepted', 'success');
+      } else {
+        await api.post(`/orders/${orderId}/cancel`, { reason: 'Shopper declined the job' });
+        push('Job declined', 'success');
+      }
+      load();
+    } catch (err) {
+      push(apiErrorMessage(err), 'error');
+    } finally {
+      setDeciding(false);
+    }
+  }
 
   function load() {
     api.get('/shoppers/dashboard').then((res) => setData(res.data)).finally(() => setLoading(false));
@@ -81,17 +103,41 @@ export function ShopperDashboardPage() {
       </div>
 
       {data.activeOrder ? (
-        <GlassCard glow="green" padding="lg">
+        <GlassCard glow={data.activeOrder.status === 'requested' ? 'yellow' : 'green'} padding="lg">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Active job</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">
+              {data.activeOrder.status === 'requested' ? 'Waiting for your answer' : 'Active job'}
+            </p>
             <StatusBadge status={data.activeOrder.status} />
           </div>
           <p className="mt-2 font-display text-lg font-medium text-brand-green-deep">
             Order #{data.activeOrder.id.slice(0, 8)}
           </p>
-          <Link to={`/shopper/orders/${data.activeOrder.id}`} className="mt-4 inline-block">
-            <GlassButton size="sm">Continue job <ArrowRight size={15} strokeWidth={2} /></GlassButton>
-          </Link>
+
+          {/* An unaccepted job needs a decision, not a "continue" — make that the
+              obvious next action rather than hiding it a page deep. */}
+          {data.activeOrder.status === 'requested' ? (
+            <>
+              <p className="mt-1 text-sm text-brand-ink/60">
+                A customer picked you for this job. Accept it or let it go back to other shoppers.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <GlassButton size="sm" disabled={deciding} onClick={() => decide(data.activeOrder.id, true)}>
+                  {deciding ? 'Working…' : <><Check size={15} strokeWidth={2} /> Accept job</>}
+                </GlassButton>
+                <GlassButton size="sm" variant="danger" disabled={deciding} onClick={() => decide(data.activeOrder.id, false)}>
+                  <X size={15} strokeWidth={2} /> Decline
+                </GlassButton>
+                <Link to={`/shopper/orders/${data.activeOrder.id}`}>
+                  <GlassButton size="sm" variant="secondary">View details</GlassButton>
+                </Link>
+              </div>
+            </>
+          ) : (
+            <Link to={`/shopper/orders/${data.activeOrder.id}`} className="mt-4 inline-block">
+              <GlassButton size="sm">Continue job <ArrowRight size={15} strokeWidth={2} /></GlassButton>
+            </Link>
+          )}
         </GlassCard>
       ) : (
         <GlassCard padding="lg" hover={false}>
