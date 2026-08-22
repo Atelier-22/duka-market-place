@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import * as adminController from '../controllers/admin.controller';
 import * as overview from '../controllers/adminOverview.controller';
-import { requireAuth, requireRole } from '../middleware/auth';
+import { requireAuth, requireRole, requireSuperAdmin } from '../middleware/auth';
 import * as ops from '../controllers/adminOps.controller';
+import * as staff from '../controllers/staff.controller';
 import { asyncHandler } from '../middleware/errorHandler';
 
 const router = Router();
@@ -55,5 +56,16 @@ router.post('/locations/:id/toggle', asyncHandler(ops.toggleLocation));
 
 router.get('/analytics', asyncHandler(ops.analytics));
 router.get('/audit', asyncHandler(ops.auditLog));
+
+// Staff management and the whole-platform view. Behind a second, narrower gate:
+// an ordinary admin gets 403 on every one of these, so they cannot list the
+// staff table, add to it, or learn that a layer above them exists.
+router.get('/staff', requireSuperAdmin, asyncHandler(staff.listStaffAccounts));
+router.post('/staff', requireSuperAdmin, asyncHandler(staff.createStaffAccount));
+router.post('/staff/:id/suspend', requireSuperAdmin, asyncHandler(staff.suspendStaff));
+router.post('/staff/:id/reactivate', requireSuperAdmin, asyncHandler(staff.reactivateStaff));
+router.post('/staff/:id/reset-password', requireSuperAdmin, asyncHandler(staff.resetStaffPassword));
+router.delete('/staff/:id', requireSuperAdmin, asyncHandler(staff.removeStaff));
+router.get('/god-view', requireSuperAdmin, asyncHandler(staff.godView));
 
 export default router;

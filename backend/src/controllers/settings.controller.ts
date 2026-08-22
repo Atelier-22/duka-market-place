@@ -8,6 +8,7 @@ import {
 } from '../models/user.model';
 import { queryOne, query } from '../db/pool';
 import { hashPassword, verifyPassword } from '../utils/auth';
+import { findStaffById, toPublicStaff } from '../models/staff.model';
 import { ApiError } from '../middleware/errorHandler';
 
 export async function getPreferences(req: Request, res: Response) {
@@ -71,6 +72,27 @@ const profileSchema = z.object({
  * checked against the same-role constraint before it is written.
  */
 export async function updateProfile(req: Request, res: Response) {
+  // Staff are not rows in `users`; their profile lives in `staff`, and writing
+  // the other table would silently do nothing.
+  if (req.user!.kind === 'staff') {
+    const input = profileSchema.parse(req.body);
+    const updated = await queryOne(
+      `UPDATE staff SET
+         full_name  = COALESCE($2, full_name),
+         email      = COALESCE($3, email),
+         phone      = COALESCE($4, phone),
+         avatar_url = $5,
+         updated_at = now()
+       WHERE id = $1 RETURNING *`,
+      [
+        req.user!.id, input.fullName, input.email, input.phone,
+        input.avatarUrl === undefined ? null : input.avatarUrl,
+      ]
+    );
+    if (!updated) throw new ApiError(404, 'Staff account not found');
+    return res.json({ user: toPublicStaff(updated as never) });
+  }
+
   const input = profileSchema.parse(req.body);
   const user = await findUserById(req.user!.id);
   if (!user) throw new ApiError(404, 'User not found');
@@ -127,6 +149,23 @@ const passwordSchema = z.object({
 });
 
 export async function changePassword(req: Request, res: Response) {
+  if (req.user!.kind === 'staff') {
+    const input = passwordSchema.parse(req.body);
+    const me = await findStaffById(req.user!.id);
+    if (!me) throw new ApiError(404, 'Staff account not found');
+    if (!(await verifyPassword(input.currentPassword, me.password_hash))) {
+      throw new ApiError(401, 'Your current password is not right');
+    }
+    if (await verifyPassword(input.newPassword, me.password_hash)) {
+      throw new ApiError(400, 'The new password must be different from the current one');
+    }
+    await query(
+      'UPDATE staff SET password_hash = $2, must_change_password = FALSE, updated_at = now() WHERE id = $1',
+      [me.id, await hashPassword(input.newPassword)]
+    );
+    return res.json({ ok: true });
+  }
+
   const input = passwordSchema.parse(req.body);
   const user = await findUserById(req.user!.id);
   if (!user) throw new ApiError(404, 'User not found');

@@ -16,6 +16,7 @@ import {
   normalizeEmail,
 } from '../models/user.model';
 import { hashPassword, verifyPassword, signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/auth';
+import { findStaffById, findStaffByPhone, toPublicStaff, touchStaffLogin } from '../models/staff.model';
 import { ApiError } from '../middleware/errorHandler';
 
 const registerSchema = z.object({
@@ -109,6 +110,23 @@ const loginSchema = z.object({
 export async function login(req: Request, res: Response) {
   const input = loginSchema.parse(req.body);
 
+  // Staff first, and silently: they live in a separate table, so a staff phone
+  // never appears among the user candidates below. Same endpoint and same
+  // failure message either way — a wrong password must not reveal whether the
+  // number belongs to a staff account, which is how you would otherwise probe
+  // for one.
+  const staff = await findStaffByPhone(input.phone);
+  if (staff && (await verifyPassword(input.password, staff.password_hash))) {
+    if (!staff.is_active) throw new ApiError(403, 'This account has been suspended');
+    await touchStaffLogin(staff.id);
+    return res.json({
+      user: toPublicStaff(staff),
+      linkedAccounts: [],
+      accessToken: signAccessToken(staff.id, staff.role, [], 'staff'),
+      refreshToken: signRefreshToken(staff.id, staff.role, [], 'staff'),
+    });
+  }
+
   // Phone is unique per role, not globally, so this can return both the
   // customer and the shopper account. The password decides which are ours.
   const candidates = await findUsersByPhone(input.phone);
@@ -184,6 +202,12 @@ export async function refresh(req: Request, res: Response) {
 }
 
 export async function me(req: Request, res: Response) {
+  if (req.user!.kind === 'staff') {
+    const staff = await findStaffById(req.user!.id);
+    if (!staff || !staff.is_active) throw new ApiError(401, 'Session no longer valid');
+    return res.json({ user: toPublicStaff(staff), linkedAccounts: [] });
+  }
+
   const user = await findUserById(req.user!.id);
   if (!user) throw new ApiError(404, 'User not found');
 

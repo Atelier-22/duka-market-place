@@ -47,13 +47,21 @@ export class InvalidTransitionError extends Error {
 }
 
 export class UnauthorizedTransitionError extends Error {
-  constructor(from: OrderStatus, to: OrderStatus, role: UserRole) {
+  constructor(from: OrderStatus, to: OrderStatus, role: ActorRole) {
     super(`Role "${role}" is not permitted to move an order from "${from}" to "${to}"`);
     this.name = 'UnauthorizedTransitionError';
   }
 }
 
-export function assertValidTransition(from: OrderStatus, to: OrderStatus, actorRole: UserRole): void {
+/**
+ * Who is asking. A super admin is an admin for the purposes of this map — the
+ * extra powers are about staff and oversight, not about which order moves are
+ * legal, and the state machine should not grow a second admin-shaped case.
+ */
+export type ActorRole = UserRole | 'super_admin';
+
+export function assertValidTransition(from: OrderStatus, to: OrderStatus, actor: ActorRole): void {
+  const actorRole: UserRole = actor === 'super_admin' ? 'admin' : actor;
   const allowedNext = ORDER_TRANSITIONS[from] ?? [];
   if (!allowedNext.includes(to)) {
     throw new InvalidTransitionError(from, to);

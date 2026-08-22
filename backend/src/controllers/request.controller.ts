@@ -8,6 +8,7 @@ import {
 import { listOffersForRequest } from '../models/offer.model';
 import { notifyShoppersOfNewRequest } from '../services/notification.service';
 import { ApiError } from '../middleware/errorHandler';
+import { hasOversight } from '../utils/roles';
 
 const createRequestSchema = z.object({
   title: z.string().min(3).max(200),
@@ -68,7 +69,7 @@ export async function getById(req: Request, res: Response) {
   if (!requestRow) throw new ApiError(404, 'Request not found');
 
   const isOwner = requestRow.customer_id === req.user!.id;
-  if (!isOwner && req.user!.role !== 'admin' && req.user!.role !== 'shopper') {
+  if (!isOwner && !hasOversight(req.user!.role) && req.user!.role !== 'shopper') {
     throw new ApiError(403, 'Not authorized to view this request');
   }
 

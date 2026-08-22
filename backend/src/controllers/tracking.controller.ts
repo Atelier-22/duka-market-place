@@ -4,6 +4,7 @@ import { query, queryOne } from '../db/pool';
 import { findOrderById } from '../models/order.model';
 import { ApiError } from '../middleware/errorHandler';
 import { notifyDeliveryScheduled, notifyDeliveryStarted } from '../services/notification.service';
+import { hasOversight } from '../utils/roles';
 
 /**
  * Live delivery tracking. The shopper's browser posts its position while an
@@ -16,7 +17,7 @@ import { notifyDeliveryScheduled, notifyDeliveryStarted } from '../services/noti
 async function loadParticipantOrder(orderId: string, userId: string, role: string) {
   const order = await findOrderById(orderId);
   if (!order) throw new ApiError(404, 'Order not found');
-  if (role !== 'admin' && order.customer_id !== userId && order.shopper_id !== userId) {
+  if (!hasOversight(role) && order.customer_id !== userId && order.shopper_id !== userId) {
     throw new ApiError(403, 'Not authorized to track this order');
   }
   return order;

@@ -1,7 +1,8 @@
 import {
-  BadgeCheck, ChartLine, FileText, LayoutDashboard, Package, Percent, Scale,
-  Settings, ShoppingBag, Users, Wallet, Wrench,
+  BadgeCheck, ChartLine, Eye, FileText, LayoutDashboard, Package, Percent, Scale,
+  Settings, ShieldCheck, ShoppingBag, Users, Wallet, Wrench,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import { AppShell } from './AppShell';
 import { NavItem } from './MobileNav';
 
@@ -22,7 +23,28 @@ const ITEMS: NavItem[] = [
   { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
+/**
+ * Only a super admin is shown these, and the API refuses them to anyone else.
+ * An admin never sees the entries, so nothing in their console suggests a layer
+ * above them exists — the same reasoning that keeps /admin off the customer and
+ * shopper UI entirely.
+ */
+const SUPER_ONLY: NavItem[] = [
+  { to: '/admin/god-view', label: 'Everything', icon: Eye },
+  { to: '/admin/staff', label: 'Admins', icon: ShieldCheck },
+];
+
 export function AdminLayout() {
+  const { user } = useAuth();
+  const isSuper = user?.role === 'super_admin';
+  const items = isSuper ? [...SUPER_ONLY, ...ITEMS] : ITEMS;
+
   // Wider than the other two: these pages are mostly tables.
-  return <AppShell items={ITEMS} roleLabel="Admin" maxWidth="max-w-[1600px]" />;
+  return (
+    <AppShell
+      items={items}
+      roleLabel={isSuper ? 'Super admin' : 'Admin'}
+      maxWidth="max-w-[1600px]"
+    />
+  );
 }

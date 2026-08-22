@@ -7,14 +7,18 @@ import { UserRole } from '../../types';
 const HOME_FOR: Record<UserRole, string> = {
   customer: '/app',
   shopper: '/shopper',
-  // Never linked from here — see the admin filter below.
+  // Staff never appear in this switcher at all — they are not rows in `users`,
+  // so nothing can link them to a customer or shopper account in the first
+  // place. These two entries exist only to satisfy the map.
   admin: '/app',
+  super_admin: '/app',
 };
 
 const LABEL_FOR: Record<UserRole, string> = {
   customer: 'Customer',
   shopper: 'Shopper',
   admin: 'Admin',
+  super_admin: 'Super admin',
 };
 
 /**

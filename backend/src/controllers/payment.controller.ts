@@ -4,11 +4,12 @@ import { query, queryOne } from '../db/pool';
 import { paymentService } from '../services/payment.service';
 import { findOrderById } from '../models/order.model';
 import { ApiError } from '../middleware/errorHandler';
+import { hasOversight } from '../utils/roles';
 
 export async function listForOrder(req: Request, res: Response) {
   const order = await findOrderById(req.params.orderId);
   if (!order) throw new ApiError(404, 'Order not found');
-  if (req.user!.role !== 'admin' && order.customer_id !== req.user!.id && order.shopper_id !== req.user!.id) {
+  if (!hasOversight(req.user!.role) && order.customer_id !== req.user!.id && order.shopper_id !== req.user!.id) {
     throw new ApiError(403, 'Not authorized');
   }
   const payments = await query('SELECT * FROM payments WHERE order_id = $1 ORDER BY created_at DESC', [req.params.orderId]);

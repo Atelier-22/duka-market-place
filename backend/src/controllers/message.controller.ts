@@ -7,11 +7,12 @@ import { findUserById } from '../models/user.model';
 import { notifyNewMessage } from '../services/notification.service';
 import { onlineExpr } from '../services/presence.service';
 import { ApiError } from '../middleware/errorHandler';
+import { hasOversight } from '../utils/roles';
 
 async function assertParticipant(orderId: string, userId: string, role: string) {
   const order = await findOrderById(orderId);
   if (!order) throw new ApiError(404, 'Order not found');
-  if (role !== 'admin' && order.customer_id !== userId && order.shopper_id !== userId) {
+  if (!hasOversight(role) && order.customer_id !== userId && order.shopper_id !== userId) {
     throw new ApiError(403, 'Not authorized to view this conversation');
   }
   return order;

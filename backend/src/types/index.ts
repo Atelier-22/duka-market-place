@@ -36,7 +36,14 @@ export interface AuthUser {
 
 export interface JwtPayload {
   sub: string;
-  role: UserRole;
+  /**
+   * `staff` means the subject is a row in `staff`, not `users`. Carried in the
+   * token because the two tables are separate and an id alone no longer says
+   * which one to look in — and because a user token must never be able to
+   * address a staff account by guessing an id.
+   */
+  kind?: 'user' | 'staff';
+  role: UserRole | 'admin' | 'super_admin';
   /**
    * Ids of the other accounts this person proved ownership of at login, by the
    * submitted password also verifying against them. Carried in the signed token

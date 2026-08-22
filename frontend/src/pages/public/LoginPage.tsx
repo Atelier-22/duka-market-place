@@ -6,6 +6,7 @@ import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { useAuth } from '../../context/AuthContext';
+import { homeFor } from '../../utils/home';
 
 export function LoginPage() {
   const { login, user } = useAuth();
@@ -29,7 +30,7 @@ export function LoginPage() {
     }
   }
 
-  if (user) navigate(user.role === 'shopper' ? '/shopper' : user.role === 'admin' ? '/admin' : '/app');
+  if (user) navigate(homeFor(user.role));
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md items-center px-4 py-16">

@@ -11,6 +11,7 @@ import { notifyOrderStatus } from '../services/notification.service';
 import { query, queryOne } from '../db/pool';
 import { ApiError } from '../middleware/errorHandler';
 import { OrderStatus } from '../types';
+import { hasOversight } from '../utils/roles';
 
 async function loadOrderOrThrow(id: string) {
   const order = await findOrderById(id);
@@ -19,7 +20,7 @@ async function loadOrderOrThrow(id: string) {
 }
 
 function assertParticipant(order: { customer_id: string; shopper_id: string }, userId: string, role: string) {
-  if (role === 'admin') return;
+  if (hasOversight(role)) return;
   if (order.customer_id !== userId && order.shopper_id !== userId) {
     throw new ApiError(403, 'Not authorized to act on this order');
   }
@@ -50,7 +51,11 @@ export async function getById(req: Request, res: Response) {
 }
 
 export async function listMine(req: Request, res: Response) {
-  const orders = await listOrdersForUser(req.user!.id, req.user!.role);
+  // Staff have no orders of their own; the admin branch returns an empty set.
+  const orders = await listOrdersForUser(
+    req.user!.id,
+    req.user!.role === 'super_admin' ? 'admin' : req.user!.role
+  );
   res.json({ orders });
 }
 
@@ -193,7 +198,7 @@ export async function markOutForDelivery(req: Request, res: Response) {
 export async function confirmDelivered(req: Request, res: Response) {
   const order = await loadOrderOrThrow(req.params.id);
   assertParticipant(order, req.user!.id, req.user!.role);
-  if (order.customer_id !== req.user!.id && req.user!.role !== 'admin') {
+  if (order.customer_id !== req.user!.id && !hasOversight(req.user!.role)) {
     throw new ApiError(403, 'Only the customer can confirm delivery');
   }
   assertValidTransition(order.status, 'delivered', req.user!.role);

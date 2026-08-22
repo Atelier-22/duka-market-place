@@ -49,6 +49,8 @@ import { AdminFeesPage } from './pages/admin/AdminFeesPage';
 import { AdminAnalyticsPage } from './pages/admin/AdminAnalyticsPage';
 import { AdminFinancePage } from './pages/admin/AdminFinancePage';
 import { AdminOpsPage } from './pages/admin/AdminOpsPage';
+import { AdminStaffPage } from './pages/admin/AdminStaffPage';
+import { AdminGodViewPage } from './pages/admin/AdminGodViewPage';
 
 export default function App() {
   return (
@@ -99,7 +101,7 @@ export default function App() {
         </Route>
 
         {/* Admin panel */}
-        <Route element={<ProtectedRoute allow={['admin']} />}>
+        <Route element={<ProtectedRoute allow={['admin', 'super_admin']} />}>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<AdminOverviewPage />} />
             <Route path="/admin/customers" element={<AdminCustomersPage />} />
@@ -114,6 +116,10 @@ export default function App() {
             <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
             <Route path="/admin/finance" element={<AdminFinancePage />} />
             <Route path="/admin/operations" element={<AdminOpsPage />} />
+            {/* The API gates these to super admins; an admin reaching them by
+                typing the URL gets an empty page and a 403, not data. */}
+            <Route path="/admin/staff" element={<AdminStaffPage />} />
+            <Route path="/admin/god-view" element={<AdminGodViewPage />} />
             <Route path="/admin/fees" element={<AdminFeesPage />} />
             {/* The same SettingsPage the customer and shopper dashboards use —
                 an admin is a person with an account like anyone else. */}
