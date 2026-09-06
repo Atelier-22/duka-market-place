@@ -350,9 +350,12 @@ body[data-theme='dark']::before {
 }
 
 /* Room for the fixed mobile tab strip, plus the iPhone home indicator. The
-   bar only exists below lg, so the padding goes away with it. */
+   bar only exists below lg, so the padding goes away with it.
+   5.5rem, not 5: the bar floats clear of the bottom edge now, so it stands
+   taller than the flush strip it replaced and the old reserve left the last
+   line of a page grazing it. */
 .app-main {
-  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
 @media (min-width: 1024px) {
   .app-main { padding-bottom: 0.25rem; }
