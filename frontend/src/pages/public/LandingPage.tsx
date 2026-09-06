@@ -29,7 +29,7 @@ export function LandingPage() {
         <div className="grid items-center gap-12 md:grid-cols-2">
           <div className="animate-fade-up">
             <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold text-brand-green-deep">
-              🇺🇬 Now live across Kampala
+              🇺🇬 Now live in towns across Uganda
             </span>
             <h1 className="mt-6 font-display text-4xl font-medium leading-[1.1] text-brand-green-deep md:text-6xl">
               Tell us what you need.<br />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, LucideIcon, Search, ShoppingBag, Smartphone, Store } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
@@ -44,6 +44,27 @@ export function CreateRequestPage() {
   const [newAddressLine, setNewAddressLine] = useState('');
   const [addingAddress, setAddingAddress] = useState(false);
   const [notes, setNotes] = useState('');
+
+  /**
+   * Locations grouped by town, in the order the server sent them — it already
+   * orders by city then name, so the grouping only has to preserve that.
+   * Kampala first regardless, because most orders are still there and it
+   * should not sit under "Jinja" purely by alphabet.
+   */
+  const locationsByCity = useMemo(() => {
+    const groups = new Map<string, Location[]>();
+    for (const l of locations) {
+      const city = l.city || 'Other';
+      const existing = groups.get(city);
+      if (existing) existing.push(l);
+      else groups.set(city, [l]);
+    }
+    return [...groups.entries()].sort(([a], [b]) =>
+      a === 'Kampala' ? -1 : b === 'Kampala' ? 1 : a.localeCompare(b)
+    );
+  }, [locations]);
+
+  const selectedLocation = locations.find((l) => l.id === locationId);
 
   useEffect(() => {
     api.get('/locations').then((res) => setLocations(res.data.locations));
@@ -196,12 +217,30 @@ export function CreateRequestPage() {
             </div>
 
             {(sourcingType === 'specific_market' || sourcingType === 'specific_shop') && (
-              <Select label="Choose a location" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
-                <option value="">Select a location…</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>{l.name}</option>
-                ))}
-              </Select>
+              <>
+                <Select
+                  label={`Choose a location${locationsByCity.length ? ` (${locations.length} across ${locationsByCity.length} towns)` : ''}`}
+                  value={locationId}
+                  onChange={(e) => setLocationId(e.target.value)}
+                >
+                  <option value="">Select a location…</option>
+                  {/* Grouped by town, and a native select on purpose: the OS
+                      picker gives full-size touch targets and a scroll people
+                      already know, which no custom dropdown matches on a phone. */}
+                  {locationsByCity.map(([city, inCity]) => (
+                    <optgroup key={city} label={city}>
+                      {inCity.map((l) => (
+                        <option key={l.id} value={l.id}>{l.name}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </Select>
+                {selectedLocation?.description && (
+                  <p className="-mt-1 text-xs text-brand-ink/55">
+                    {selectedLocation.city} · {selectedLocation.description}
+                  </p>
+                )}
+              </>
             )}
 
             {sourcingType === 'social_seller' && (
