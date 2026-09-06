@@ -75,14 +75,33 @@ export function CreateRequestPage() {
     });
   }, []);
 
-  const canProceed = [
-    title.trim().length >= 3,
-    true,
-    sourcingType !== 'specific_market' || !!locationId,
-    Number(budgetMax) > 0,
-    !!addressId,
-    true,
+  /**
+   * Why Continue is not available yet, in words — or null when it is.
+   *
+   * This was a list of booleans, so the button simply went grey and the reason
+   * lived only in the code. A disabled button is also `pointer-events-none`,
+   * so there was not even a tooltip to go looking for: you either guessed
+   * which field was wrong or gave up. The reason is now shown next to it.
+   *
+   * The location check covers 'specific_shop' as well. The picker has always
+   * been shown for both, but only 'specific_market' was ever required, so
+   * naming a shop and choosing nothing walked past this step and posted a
+   * request no shopper could act on.
+   */
+  const blockedReason: string | null = [
+    title.trim().length >= 3 ? null : 'Tell us what you need first — a few words is enough.',
+    null,
+    (sourcingType === 'specific_market' || sourcingType === 'specific_shop') && !locationId
+      ? 'Choose where the shopper should buy it.'
+      : sourcingType === 'social_seller' && !socialSellerUrl.trim()
+        ? "Paste the link to the seller's post."
+        : null,
+    Number(budgetMax) > 0 ? null : 'Enter the most you want to spend.',
+    addressId ? null : 'Choose where it should be delivered.',
+    null,
   ][step];
+
+  const canProceed = !blockedReason;
 
   /**
    * Ask the browser where we are, if it will say.
@@ -156,14 +175,32 @@ export function CreateRequestPage() {
       <h1 className="font-display text-2xl font-medium text-brand-green-deep">Request something</h1>
       <p className="mt-1 text-sm text-brand-ink/50">Tell us what you need — we'll find someone nearby to get it.</p>
 
-      {/* Progress */}
-      <div className="mt-6 flex items-center gap-1.5">
-        {STEPS.map((s, i) => (
-          <div key={s} className="flex flex-1 flex-col items-center gap-1.5">
-            <div className={`h-1.5 w-full rounded-full ${i <= step ? 'bg-brand-green-fresh' : 'bg-brand-green/15'}`} />
-            <span className={`text-[11px] font-medium ${i === step ? 'text-brand-green-deep' : 'text-brand-ink/35'}`}>{s}</span>
-          </div>
-        ))}
+      {/* Progress.
+          Six 11px captions across a 360px phone are unreadable, and unreadable
+          labels are why the flow felt like it had hidden steps. On a phone the
+          position is stated in words — which step, of how many, and what it is
+          called — and the captions only appear once there is room for them. */}
+      <div className="mt-6">
+        <div className="flex items-center gap-1.5">
+          {STEPS.map((s, i) => (
+            <div key={s} className="flex flex-1 flex-col items-center gap-1.5">
+              <div
+                className={`h-1.5 w-full rounded-full ${i <= step ? 'bg-brand-green-fresh' : 'bg-brand-green/15'}`}
+              />
+              <span
+                className={`hidden text-[11px] font-medium sm:block ${
+                  i === step ? 'text-brand-green-deep' : 'text-brand-ink/35'
+                }`}
+              >
+                {s}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-sm font-semibold text-brand-green-deep sm:hidden">
+          Step {step + 1} of {STEPS.length}
+          <span className="font-normal text-brand-ink/50"> · {STEPS[step]}</span>
+        </p>
       </div>
 
       <GlassCard padding="lg" hover={false} className="mt-6 min-h-[360px]">
@@ -309,19 +346,49 @@ export function CreateRequestPage() {
         )}
       </GlassCard>
 
-      <div className="mt-6 flex justify-between">
-        <GlassButton variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>
-          <ArrowLeft size={15} strokeWidth={2} /> Back
-        </GlassButton>
-        {step < STEPS.length - 1 ? (
-          <GlassButton onClick={() => setStep((s) => s + 1)} disabled={!canProceed}>
-            Continue <ArrowRight size={15} strokeWidth={2} />
-          </GlassButton>
-        ) : (
-          <GlassButton onClick={handleSubmit} disabled={submitting}>
-            {submitting ? 'Posting request…' : 'Submit request'}
-          </GlassButton>
+      {/* Sticky on a phone: the step content is long enough to scroll, and a
+          Continue button parked below the fold reads as a dead end. It stays
+          in normal flow once the viewport is tall enough not to need it. */}
+      <div
+        className={[
+          'sticky bottom-0 z-10 mt-6 -mx-4 border-t border-brand-green/10 bg-white/85 px-4 py-3',
+          'backdrop-blur-md sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:backdrop-blur-none',
+        ].join(' ')}
+      >
+        {/* The reason Continue is unavailable, where the thumb already is.
+            aria-live so it is announced rather than silently appearing. */}
+        {blockedReason && step < STEPS.length - 1 && (
+          <p className="mb-2 text-center text-xs font-medium text-brand-ink/60" aria-live="polite">
+            {blockedReason}
+          </p>
         )}
+        <div className="flex items-center justify-between gap-3">
+          <GlassButton
+            variant="ghost"
+            onClick={() => setStep((s) => Math.max(0, s - 1))}
+            disabled={step === 0}
+            className="min-h-[48px]"
+          >
+            <ArrowLeft size={15} strokeWidth={2} /> Back
+          </GlassButton>
+          {step < STEPS.length - 1 ? (
+            <GlassButton
+              onClick={() => setStep((s) => s + 1)}
+              disabled={!canProceed}
+              className="min-h-[48px] flex-1 sm:flex-none"
+            >
+              Continue <ArrowRight size={15} strokeWidth={2} />
+            </GlassButton>
+          ) : (
+            <GlassButton
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="min-h-[48px] flex-1 sm:flex-none"
+            >
+              {submitting ? 'Posting request…' : 'Submit request'}
+            </GlassButton>
+          )}
+        </div>
       </div>
     </div>
   );
