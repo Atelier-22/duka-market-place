@@ -151,12 +151,39 @@ class LocalStorageDriver implements StorageDriver {
   }
 }
 
+/** Which driver actually ended up serving, which is not always what was asked for. */
+export let activeStorageDriver: 'database' | 'local' | 's3' = 'database';
+
 function getStorageDriver(): StorageDriver {
+  // A container's disk is wiped whenever the container is replaced, and is not
+  // shared between instances. A photo written there is served correctly for a
+  // few minutes — by the instance that accepted the upload, and afterwards out
+  // of the browser's cache, since /uploads is sent as immutable — and then
+  // 404s permanently. That delay is why it reads as "photos vanish from the
+  // chat after a minute or two" rather than as an upload that plainly failed.
+  //
+  // Migration 008 moved the bytes into Postgres to end exactly this, but the
+  // driver is chosen by an environment variable, so one stale value in a
+  // dashboard silently brings the whole bug back. In production it is not
+  // allowed to: durability is not a thing worth honouring a typo over.
+  if (env.storageDriver === 'local' && env.nodeEnv === 'production') {
+    console.warn(
+      '[storage] STORAGE_DRIVER=local is not durable in production — a container disk ' +
+      'does not survive a restart and is not shared between instances, so uploads would ' +
+      'disappear minutes after being sent. Falling back to the database driver. ' +
+      'Remove STORAGE_DRIVER from the environment to silence this warning.'
+    );
+    activeStorageDriver = 'database';
+    return new DatabaseStorageDriver();
+  }
+
   switch (env.storageDriver) {
     case 'local':
+      activeStorageDriver = 'local';
       return new LocalStorageDriver();
     case 'database':
     default:
+      activeStorageDriver = 'database';
       return new DatabaseStorageDriver();
     // case 's3': return new S3StorageDriver(); // implement when credentials exist
   }

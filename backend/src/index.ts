@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import { env } from './config/env';
 import { errorHandler, asyncHandler } from './middleware/errorHandler';
 import * as fileController from './controllers/file.controller';
+import { activeStorageDriver } from './services/storage.service';
 
 import authRoutes from './routes/auth.routes';
 import requestRoutes from './routes/request.routes';
@@ -36,7 +37,15 @@ app.use(morgan(env.nodeEnv === 'development' ? 'dev' : 'combined'));
 // static folder, so URLs already stored in message rows keep resolving.
 app.get(/^\/uploads\/(.+)$/, asyncHandler(fileController.serve));
 
-app.get('/health', (_req, res) => res.json({ status: 'ok', env: env.nodeEnv }));
+// `storage` is here because the difference between a durable driver and a
+// container disk is invisible from outside until photos start disappearing
+// days later. Reporting it makes a misconfigured deploy answerable in one
+// request instead of one bug report.
+app.get('/health', (_req, res) => res.json({
+  status: 'ok',
+  env: env.nodeEnv,
+  storage: activeStorageDriver,
+}));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/requests', requestRoutes);
