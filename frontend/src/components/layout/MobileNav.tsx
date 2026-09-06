@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, LucideIcon, MoreHorizontal, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useConversations } from '../../hooks/useConversations';
+import { NavStyle, useNavStyle } from '../../hooks/useNavStyle';
 import { AccountToggle } from './AccountToggle';
 
 export interface NavItem {
@@ -34,6 +35,102 @@ function isActivePath(to: string, pathname: string): boolean {
 const SLIDE = 'duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none';
 
 /**
+ * The three looks share every behaviour — the same destinations, badges,
+ * overflow and reach argument — and differ only in how the current one is
+ * drawn. Keeping them in one component rather than three is what stops a fix
+ * to the badge or the active-path rule from landing in only one of them.
+ */
+function slotClasses(navStyle: NavStyle, isActive: boolean): string {
+  const base =
+    'relative z-10 flex min-h-[60px] flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] font-semibold transition-colors duration-200';
+  if (navStyle === 'glow') {
+    return `${base} ${isActive ? 'text-brand-red' : 'text-white/45'}`;
+  }
+  return `${base} ${isActive ? 'text-brand-green-deep' : 'text-brand-ink/45'}`;
+}
+
+function Slot({
+  navStyle,
+  icon: Icon,
+  label,
+  count,
+  isActive,
+}: {
+  navStyle: NavStyle;
+  icon: LucideIcon;
+  label: string;
+  count: number;
+  isActive: boolean;
+}) {
+  const badge = count > 0 && (
+    <span className="absolute -right-2 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-red px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-brand-white">
+      {count > 9 ? '9+' : count}
+    </span>
+  );
+
+  // Pop: the current tab rises out of the bar in a filled circle. The label
+  // goes with it — there is no room for both, and the circle is the signal.
+  if (navStyle === 'pop') {
+    return (
+      <>
+        <span
+          className={[
+            'relative flex h-11 w-11 items-center justify-center rounded-full transition-all',
+            SLIDE,
+            isActive
+              ? '-translate-y-3.5 bg-gradient-to-br from-brand-green to-brand-green-fresh text-white shadow-glass'
+              : 'translate-y-0 bg-transparent',
+          ].join(' ')}
+        >
+          <Icon size={22} strokeWidth={isActive ? 2.15 : 1.75} />
+          {badge}
+        </span>
+        <span
+          className={`max-w-full truncate px-0.5 transition-all ${SLIDE} ${
+            isActive ? 'pointer-events-none -translate-y-2 opacity-0' : 'opacity-100'
+          }`}
+        >
+          {label}
+        </span>
+      </>
+    );
+  }
+
+  // Glow: icons only against the dark bar, with the halo behind supplying the
+  // emphasis that a label would otherwise carry.
+  if (navStyle === 'glow') {
+    return (
+      <span
+        className={`relative transition-transform ${SLIDE} ${isActive ? '-translate-y-0.5 scale-110' : ''}`}
+      >
+        <Icon size={23} strokeWidth={isActive ? 2.2 : 1.75} />
+        {badge}
+      </span>
+    );
+  }
+
+  return (
+    <>
+      <span className={`relative transition-transform ${SLIDE} ${isActive ? '-translate-y-0.5' : ''}`}>
+        <Icon size={22} strokeWidth={isActive ? 2.15 : 1.75} />
+        {badge}
+      </span>
+      <span
+        className={`max-w-full truncate px-0.5 transition-transform ${SLIDE} ${isActive ? '-translate-y-0.5' : ''}`}
+      >
+        {label}
+      </span>
+      <span
+        aria-hidden
+        className={`h-1 w-1 rounded-full bg-brand-green-fresh transition-opacity duration-200 ${
+          isActive ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+    </>
+  );
+}
+
+/**
  * Phone navigation.
  *
  * The sidebar is 256px wide. On a 375px phone that leaves about a hundred
@@ -51,6 +148,7 @@ export function MobileNav({ items }: MobileNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [navStyle] = useNavStyle();
 
   // Navigating away must close the sheet, or it covers the page you just asked for.
   useEffect(() => setMenuOpen(false), [location.pathname]);
@@ -93,92 +191,70 @@ export function MobileNav({ items }: MobileNavProps) {
         }}
         aria-label="Main"
       >
-        <div className="glass relative flex items-stretch rounded-xl3 border border-brand-green/10 shadow-glass-lg">
+        <div
+          className={[
+            'relative flex items-stretch rounded-xl3 shadow-glass-lg',
+            navStyle === 'glow'
+              ? 'bg-brand-ink/95 backdrop-blur-md'
+              : 'glass border border-brand-green/10',
+          ].join(' ')}
+        >
           {/* The slide. One pill that moves between tabs rather than a
               highlight that blinks out here and in there — the movement is
               what tells you where you just came from. Width is a percentage of
               the slots actually rendered, so it lands on a label every time. */}
           <span
             aria-hidden
-            className={`pointer-events-none absolute inset-y-1.5 left-0 px-1 transition-all ${SLIDE}`}
+            className={`pointer-events-none absolute inset-y-1.5 left-0 flex items-center justify-center px-1 transition-all ${SLIDE}`}
             style={{
               width: `${100 / slotCount}%`,
               transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`,
               opacity: activeIndex < 0 ? 0 : 1,
             }}
           >
-            <span className="block h-full rounded-[1.6rem] bg-brand-green-mist" />
+            {navStyle === 'labeled' && (
+              <span className="block h-full w-full rounded-[1.6rem] bg-brand-green-mist" />
+            )}
+            {navStyle === 'glow' && (
+              <span className="block h-11 w-11 rounded-full bg-brand-red/35 blur-md" />
+            )}
+            {navStyle === 'pop' && (
+              <span className="block h-full w-full rounded-[1.6rem] bg-brand-green-mist/60" />
+            )}
           </span>
 
-          {tabs.map((item) => {
-            const Icon = item.icon;
-            const count = badgeFor(item);
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to.split('/').length <= 2}
-                className={({ isActive }) =>
-                  [
-                    'relative z-10 flex min-h-[60px] flex-1 flex-col items-center justify-center gap-1 px-1 py-2',
-                    'text-[11px] font-semibold transition-colors duration-200',
-                    isActive ? 'text-brand-green-deep' : 'text-brand-ink/45',
-                  ].join(' ')
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={`relative transition-transform ${SLIDE} ${isActive ? '-translate-y-0.5' : ''}`}
-                    >
-                      <Icon size={22} strokeWidth={isActive ? 2.15 : 1.75} />
-                      {count > 0 && (
-                        <span className="absolute -right-2 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-red px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-brand-white">
-                          {count > 9 ? '9+' : count}
-                        </span>
-                      )}
-                    </span>
-                    <span
-                      className={`max-w-full truncate px-0.5 transition-transform ${SLIDE} ${isActive ? '-translate-y-0.5' : ''}`}
-                    >
-                      {item.label}
-                    </span>
-                    <span
-                      aria-hidden
-                      className={`h-1 w-1 rounded-full bg-brand-green-fresh transition-opacity duration-200 ${
-                        isActive ? 'opacity-100' : 'opacity-0'
-                      }`}
-                    />
-                  </>
-                )}
-              </NavLink>
-            );
-          })}
+          {tabs.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to.split('/').length <= 2}
+              className={({ isActive }) => slotClasses(navStyle, isActive)}
+            >
+              {({ isActive }) => (
+                <Slot
+                  navStyle={navStyle}
+                  icon={item.icon}
+                  label={item.label}
+                  count={badgeFor(item)}
+                  isActive={isActive}
+                />
+              )}
+            </NavLink>
+          ))}
 
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
             aria-label="More"
             aria-expanded={menuOpen}
-            className={[
-              'relative z-10 flex min-h-[60px] flex-1 flex-col items-center justify-center gap-1 px-1 py-2',
-              'text-[11px] font-semibold transition-colors duration-200',
-              overflowActive ? 'text-brand-green-deep' : 'text-brand-ink/45',
-            ].join(' ')}
+            className={slotClasses(navStyle, overflowActive)}
           >
-            <span
-              className={`transition-transform ${SLIDE} ${overflowActive ? '-translate-y-0.5' : ''}`}
-            >
-              <MoreHorizontal size={22} strokeWidth={overflowActive ? 2.15 : 1.75} />
-            </span>
-            <span className={`transition-transform ${SLIDE} ${overflowActive ? '-translate-y-0.5' : ''}`}>
-              More
-            </span>
-            <span
-              aria-hidden
-              className={`h-1 w-1 rounded-full bg-brand-green-fresh transition-opacity duration-200 ${
-                overflowActive ? 'opacity-100' : 'opacity-0'
-              }`}
+            <Slot
+              navStyle={navStyle}
+              icon={MoreHorizontal}
+              label="More"
+              count={0}
+              isActive={overflowActive}
             />
           </button>
         </div>

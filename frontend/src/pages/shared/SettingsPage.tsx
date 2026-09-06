@@ -12,6 +12,7 @@ import { Input } from '../../components/ui/Input';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { ImageUpload } from '../../components/ui/ImageUpload';
 import { LocationSetting } from '../../components/domain/LocationSetting';
+import { NAV_STYLES, NavStyle, useNavStyle } from '../../hooks/useNavStyle';
 import { useToast } from '../../components/ui/Toast';
 
 type SectionId = 'personalization' | 'account' | 'appearance' | 'general' | 'location' | 'notifications' | 'security';
@@ -27,7 +28,7 @@ interface Section {
 const SECTIONS: Section[] = [
   { id: 'personalization', label: 'Personalization', icon: Sparkles, keywords: 'style tone voice traits warm friendly professional candid efficient encouraging' },
   { id: 'account', label: 'Account', icon: User, keywords: 'email phone number profile picture avatar name photo' },
-  { id: 'appearance', label: 'Appearance', icon: Palette, keywords: 'theme dark light system colour color accent' },
+  { id: 'appearance', label: 'Appearance', icon: Palette, keywords: 'theme dark light system colour color accent navigation nav bar tabs phone bottom' },
   { id: 'general', label: 'General', icon: Globe, keywords: 'language english swahili luganda region' },
   { id: 'location', label: 'Location', icon: MapPin, keywords: 'location gps map delivery address share tracking find me nearby' },
   { id: 'notifications', label: 'Notifications', icon: Bell, keywords: 'alerts messages orders offers marketing email push toggle' },
@@ -75,6 +76,61 @@ const LANGUAGES: { value: Language; label: string; note: string }[] = [
   { value: 'lg', label: 'Luganda', note: 'Translations in progress' },
 ];
 
+/**
+ * A miniature of the bar itself, so the choice is made by looking at the thing
+ * rather than by reading three names and guessing. Three dots stand in for
+ * tabs; the first is the active one.
+ */
+function NavStylePreview({ navStyle }: { navStyle: NavStyle }) {
+  const dark = navStyle === 'glow';
+  return (
+    <span
+      aria-hidden
+      className={[
+        'flex h-11 w-16 shrink-0 items-center justify-around rounded-xl px-1.5',
+        dark ? 'bg-brand-ink' : 'bg-brand-white ring-1 ring-brand-green/15',
+      ].join(' ')}
+    >
+      {[0, 1, 2].map((i) => {
+        const active = i === 0;
+        if (navStyle === 'pop') {
+          return (
+            <span
+              key={i}
+              className={
+                active
+                  ? '-mt-3 h-4 w-4 rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh shadow-sm'
+                  : 'h-1.5 w-1.5 rounded-full bg-brand-ink/25'
+              }
+            />
+          );
+        }
+        if (navStyle === 'glow') {
+          return (
+            <span
+              key={i}
+              className={
+                active
+                  ? 'h-2 w-2 rounded-full bg-brand-red shadow-[0_0_8px_2px_rgb(var(--brand-red)/0.6)]'
+                  : 'h-1.5 w-1.5 rounded-full bg-white/30'
+              }
+            />
+          );
+        }
+        return (
+          <span key={i} className="flex flex-col items-center gap-[3px]">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-brand-green-fresh' : 'bg-brand-ink/25'}`}
+            />
+            <span className={`h-[3px] w-4 rounded-full ${active ? 'bg-brand-green-fresh/60' : 'bg-brand-ink/15'}`} />
+            {active && <span className="h-[3px] w-[3px] rounded-full bg-brand-green-fresh" />}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
 function SectionCard({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
     <GlassCard padding="lg" hover={false} className="mb-5">
@@ -118,6 +174,7 @@ function Toggle({ checked, onChange, label, description }: {
 export function SettingsPage() {
   const { user } = useAuth();
   const { preferences, update } = usePreferences();
+  const [navStyle, setNavStyle] = useNavStyle();
   const { push } = useToast();
 
   const [search, setSearch] = useState('');
@@ -419,6 +476,36 @@ export function SettingsPage() {
                       style={{ background: `linear-gradient(135deg, ${a.swatch[0]}, ${a.swatch[1]})` }}
                     />
                     <span className="text-sm font-semibold text-brand-green-deep">{a.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">
+                Phone navigation
+              </p>
+              <p className="mt-1 text-xs text-brand-ink/45">
+                The bar at the bottom of the screen on a phone. Kept on this device rather than your
+                account, since it is the phone it appears on.
+              </p>
+              <div className="mt-3 flex flex-col gap-2">
+                {NAV_STYLES.map((s) => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => setNavStyle(s.key)}
+                    aria-pressed={navStyle === s.key}
+                    className={[
+                      'flex items-center gap-3 rounded-xl2 border p-3 text-left transition-all',
+                      navStyle === s.key
+                        ? 'border-brand-green-fresh bg-brand-green-mist'
+                        : 'border-brand-green/15 hover:bg-brand-green-mist/50',
+                    ].join(' ')}
+                  >
+                    <NavStylePreview navStyle={s.key} />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-brand-green-deep">{s.label}</span>
+                      <span className="mt-0.5 block text-xs text-brand-ink/50">{s.description}</span>
+                    </span>
                   </button>
                 ))}
               </div>
