@@ -67,6 +67,26 @@ export const env = {
 
   paymentDriver: (process.env.PAYMENT_DRIVER as 'manual' | 'mtn_momo' | 'airtel_money') ?? 'manual',
 
+  /**
+   * Reading fields off an identity document. 'manual' means no automated
+   * reading at all and a reviewer types what they see, which is a complete
+   * workflow rather than a degraded one — see services/ocr.service.ts.
+   */
+  ocrDriver: (process.env.OCR_DRIVER as 'manual' | 'claude') ?? 'manual',
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
+
+  /**
+   * Keys the hash of every ID number in identity_registry.
+   *
+   * An unkeyed digest of a national ID number is reversible by anyone willing
+   * to enumerate the format, which is short and structured, so the secret is
+   * what stops the registry from being a list of real ID numbers. Changing it
+   * makes every stored hash unmatchable and silently disables duplicate
+   * detection, so it is treated as required in production rather than
+   * defaulted.
+   */
+  idHashSecret: process.env.ID_HASH_SECRET ?? '',
+
   platformFeePercentage: Number(process.env.PLATFORM_FEE_PERCENTAGE ?? 10),
   defaultDeliveryFeeUgx: Number(process.env.DEFAULT_DELIVERY_FEE_UGX ?? 5000),
 };

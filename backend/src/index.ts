@@ -23,6 +23,7 @@ import uploadRoutes from './routes/upload.routes';
 import notificationRoutes from './routes/notification.routes';
 import settingsRoutes from './routes/settings.routes';
 import conversationRoutes from './routes/conversation.routes';
+import verificationRoutes from './routes/verification.routes';
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use('/api/uploads', uploadRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/messages', conversationRoutes);
+app.use('/api/verification', verificationRoutes);
 
 app.use((req, res) => res.status(404).json({ error: `No route for ${req.method} ${req.path}` }));
 app.use(errorHandler);
