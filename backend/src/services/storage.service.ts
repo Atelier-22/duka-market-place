@@ -1,6 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { env } from '../config/env';
 import { query, queryOne } from '../db/pool';
 
@@ -108,6 +114,106 @@ class DatabaseStorageDriver implements StorageDriver {
   }
 }
 
+/**
+ * Cloudflare R2, and by the same code any S3-compatible bucket.
+ *
+ * Durable like the database driver, but the bytes stop competing with the
+ * orders for space in Postgres — a chat photo, a receipt and an ID scan all
+ * grow without bound, and a full database stops accepting orders, not just
+ * uploads.
+ *
+ * ── WHY READS FALL BACK TO THE DATABASE ──
+ * Everything uploaded before this driver existed lives in `uploaded_files`.
+ * A key that is not in the bucket is looked for there before it is called
+ * missing, so switching drivers needs no migration and no rewritten URLs:
+ * old photos keep resolving, new ones go to R2, and the two can coexist
+ * indefinitely. Nothing has to be moved for the switch to be safe.
+ */
+class R2StorageDriver implements StorageDriver {
+  private client: S3Client;
+  private bucket: string;
+  /** Serves keys written before the switch. */
+  private legacy = new DatabaseStorageDriver();
+
+  constructor() {
+    const { endpoint, accessKeyId, secretAccessKey, bucket, region } = env.r2;
+    // Failing at boot beats failing on the first upload: a missing credential
+    // would otherwise surface as a broken photo for a customer rather than as
+    // a deploy that refused to start.
+    const missing = [
+      !endpoint && 'R2_ENDPOINT (or R2_ACCOUNT_ID)',
+      !accessKeyId && 'R2_ACCESS_KEY_ID',
+      !secretAccessKey && 'R2_SECRET_ACCESS_KEY',
+      !bucket && 'R2_BUCKET',
+    ].filter(Boolean);
+    if (missing.length) {
+      throw new Error(`STORAGE_DRIVER=r2 but ${missing.join(', ')} not set`);
+    }
+
+    this.bucket = bucket;
+    this.client = new S3Client({
+      region,
+      endpoint,
+      // R2 serves buckets as a path segment, not as a subdomain of the endpoint.
+      forcePathStyle: true,
+      credentials: { accessKeyId, secretAccessKey },
+    });
+  }
+
+  async save(buffer: Buffer, originalName: string, folder: string, meta: SaveMeta = {}): Promise<string> {
+    const key = buildKey(originalName, folder);
+    await this.client.send(new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      Body: buffer,
+      ContentType: meta.mimeType ?? mimeFromExtension(key),
+      ContentLength: buffer.byteLength,
+    }));
+    return key;
+  }
+
+  getUrl(key: string): string {
+    // Deliberately our own URL rather than the bucket's. It keeps every stored
+    // URL driver-independent, means the bucket never has to be public, and
+    // leaves access control somewhere we own.
+    return `${env.publicUrl}/uploads/${key}`;
+  }
+
+  async read(key: string): Promise<StoredFile | null> {
+    try {
+      const result = await this.client.send(new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      }));
+      if (!result.Body) return null;
+      const data = Buffer.from(await result.Body.transformToByteArray());
+      return {
+        data,
+        mimeType: result.ContentType ?? mimeFromExtension(key),
+        byteSize: data.byteLength,
+        filename: path.basename(key),
+      };
+    } catch (err) {
+      if (!isNotFound(err)) throw err;
+      // Written before the switch, if at all.
+      return this.legacy.read(key);
+    }
+  }
+
+  async delete(key: string): Promise<void> {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+    // The same key may also exist from the database era.
+    await this.legacy.delete(key);
+  }
+}
+
+/** A missing object, as opposed to a bucket that is unreachable or forbidden. */
+function isNotFound(err: unknown): boolean {
+  const e = err as { name?: string; Code?: string; $metadata?: { httpStatusCode?: number } };
+  return e?.name === 'NoSuchKey' || e?.name === 'NotFound'
+    || e?.Code === 'NoSuchKey' || e?.$metadata?.httpStatusCode === 404;
+}
+
 /** Kept for local development against a folder, and as the migration source. */
 class LocalStorageDriver implements StorageDriver {
   private root = path.resolve(process.cwd(), env.uploadDir);
@@ -152,7 +258,7 @@ class LocalStorageDriver implements StorageDriver {
 }
 
 /** Which driver actually ended up serving, which is not always what was asked for. */
-export let activeStorageDriver: 'database' | 'local' | 's3' = 'database';
+export let activeStorageDriver: 'database' | 'local' | 's3' | 'r2' = 'database';
 
 function getStorageDriver(): StorageDriver {
   // A container's disk is wiped whenever the container is replaced, and is not
@@ -181,11 +287,16 @@ function getStorageDriver(): StorageDriver {
     case 'local':
       activeStorageDriver = 'local';
       return new LocalStorageDriver();
+    // 's3' is the same driver: R2 is S3-compatible, and the endpoint decides
+    // which one is actually on the other end.
+    case 'r2':
+    case 's3':
+      activeStorageDriver = env.storageDriver;
+      return new R2StorageDriver();
     case 'database':
     default:
       activeStorageDriver = 'database';
       return new DatabaseStorageDriver();
-    // case 's3': return new S3StorageDriver(); // implement when credentials exist
   }
 }
 

@@ -32,8 +32,27 @@ export const env = {
 
   // 'database' by default: a container's disk is wiped on every deploy, so
   // anything written to a folder is gone the next time you ship.
-  storageDriver: (process.env.STORAGE_DRIVER as 'database' | 'local' | 's3') ?? 'database',
+  storageDriver: (process.env.STORAGE_DRIVER as 'database' | 'local' | 's3' | 'r2') ?? 'database',
   uploadDir: process.env.UPLOAD_DIR ?? './uploads',
+
+  /**
+   * Cloudflare R2. Durable like the database driver, but without putting image
+   * bytes in Postgres, where they compete for space with the orders.
+   *
+   * R2 is S3-compatible, so the same client and the same driver serve either
+   * one — point the endpoint at AWS and this is an S3 driver.
+   */
+  r2: {
+    endpoint: process.env.R2_ENDPOINT
+      ?? (process.env.R2_ACCOUNT_ID
+        ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
+        : ''),
+    accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',
+    bucket: process.env.R2_BUCKET ?? '',
+    // R2 ignores regions, but the S3 client refuses to start without one.
+    region: process.env.R2_REGION ?? 'auto',
+  },
 
   /**
    * Public origin of this API, used to build absolute URLs for uploaded files.
