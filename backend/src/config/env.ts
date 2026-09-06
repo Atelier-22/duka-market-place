@@ -19,7 +19,16 @@ export const env = {
   jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '30d',
 
-  corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+  /**
+   * Allowed browser origins, comma-separated. A site normally answers to more
+   * than one at a time — the apex and its www, plus the old host still serving
+   * traffic while DNS moves — and every one of them has to be listed or the
+   * browser blocks the call.
+   */
+  corsOrigins: (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
+    .filter(Boolean),
 
   // 'database' by default: a container's disk is wiped on every deploy, so
   // anything written to a folder is gone the next time you ship.

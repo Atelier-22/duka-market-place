@@ -26,7 +26,7 @@ import conversationRoutes from './routes/conversation.routes';
 const app = express();
 
 app.use(helmet({ crossOriginResourcePolicy: false })); // allow serving /uploads across origin in dev
-app.use(cors({ origin: env.corsOrigin, credentials: true }));
+app.use(cors({ origin: env.corsOrigins, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
 app.use(morgan(env.nodeEnv === 'development' ? 'dev' : 'combined'));
 
