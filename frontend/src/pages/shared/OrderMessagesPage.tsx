@@ -2,8 +2,8 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, Mic, Phone, Send, Square, Trash2, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { GlassCard } from '../../components/ui/GlassCard';
-import { GlassButton } from '../../components/ui/GlassButton';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { ChatMessage } from '../../components/domain/ChatMessage';
 import { VoiceNotePlayer } from '../../components/domain/VoiceNotePlayer';
 import { PresenceDot, lastSeenLabel } from '../../components/domain/PresenceDot';
@@ -201,7 +201,7 @@ export function OrderMessagesPage() {
         </button>
       </div>
 
-      <GlassCard hover={false} padding="md" className="flex flex-1 flex-col overflow-hidden">
+      <Card hover={false} padding="md" className="flex flex-1 flex-col overflow-hidden">
 
         <div className="flex items-center gap-3 border-b border-brand-green/10 pb-3">
 
@@ -343,9 +343,9 @@ export function OrderMessagesPage() {
                 Recording — speak in any language, then tap the square to stop
               </span>
             </div>
-            <GlassButton type="button" size="sm" onClick={finishRecording}>
+            <Button type="button" size="sm" onClick={finishRecording}>
               <Square size={14} strokeWidth={2.5} />
-            </GlassButton>
+            </Button>
           </div>
         ) : (
           <form onSubmit={handleSend} className="mt-3 flex items-center gap-2 border-t border-brand-green/10 pt-3">
@@ -391,12 +391,12 @@ export function OrderMessagesPage() {
               className="min-w-0 flex-1 rounded-full border border-brand-green/15 bg-brand-white/70 px-4 py-2.5 text-sm text-brand-ink outline-none transition-colors placeholder:text-brand-ink/35 focus:border-brand-green-fresh"
             />
 
-            <GlassButton type="submit" size="sm" disabled={uploading || !canSend}>
+            <Button type="submit" size="sm" disabled={uploading || !canSend}>
               <Send size={15} strokeWidth={2} />
-            </GlassButton>
+            </Button>
           </form>
         )}
-      </GlassCard>
+      </Card>
 
       {showProfile && viewableShopperId && (
         <ShopperProfileModal shopperId={viewableShopperId} onClose={() => setShowProfile(false)} />

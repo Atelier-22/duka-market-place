@@ -51,16 +51,16 @@ export function AccountToggle() {
   }
 
   return (
-    <div className="mt-4 rounded-xl bg-brand-green-mist/60 p-3">
-      <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-brand-ink/40">
+    <div className="surface-2 mt-4 rounded-xl p-3">
+      <p className="px-1 text-label font-semibold uppercase text-ink-3">
         Switch account
       </p>
 
       <div className="mt-2 flex flex-col gap-1">
-        <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 shadow-glass">
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-green" />
-          <span className="text-sm font-semibold text-brand-green-deep">{LABEL_FOR[user.role]}</span>
-          <span className="ml-auto text-[11px] text-brand-ink/40">Current</span>
+        <div className="surface flex min-h-[44px] items-center gap-2.5 rounded-lg px-3 py-2 shadow-card">
+          <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-brand-green" />
+          <span className="truncate text-small font-semibold text-brand-green-deep">{LABEL_FOR[user.role]}</span>
+          <span className="ml-auto shrink-0 text-caption text-ink-3">Current</span>
         </div>
 
         {switchable.map((account) => (
@@ -69,22 +69,26 @@ export function AccountToggle() {
             type="button"
             onClick={() => handleSwitch(account.id)}
             disabled={busy !== null}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-brand-ink/65 transition-colors hover:bg-white hover:text-brand-green-deep disabled:opacity-50"
+            className={[
+              'flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-small font-medium text-ink-2',
+              'transition-colors duration-150 hover:bg-surface hover:text-brand-green-deep',
+              'focus-visible:outline-none focus-visible:shadow-focus disabled:opacity-50',
+            ].join(' ')}
           >
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-ink/20" />
-            {LABEL_FOR[account.role]}
-            <span className="ml-auto text-[11px] text-brand-ink/40">
+            <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-line-strong" />
+            <span className="truncate">{LABEL_FOR[account.role]}</span>
+            <span className="ml-auto flex shrink-0 items-center text-caption text-ink-3">
               {busy === account.id ? (
                 'Switching…'
               ) : (
-                <ArrowLeftRight size={14} strokeWidth={1.75} />
+                <ArrowLeftRight size={14} strokeWidth={1.75} aria-hidden />
               )}
             </span>
           </button>
         ))}
       </div>
 
-      {error && <p className="mt-2 px-1 text-xs font-medium text-brand-red">{error}</p>}
+      {error && <p role="alert" className="mt-2 px-1 text-caption font-medium text-brand-red">{error}</p>}
     </div>
   );
 }

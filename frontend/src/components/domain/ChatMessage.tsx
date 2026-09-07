@@ -40,10 +40,10 @@ export function ChatMessage({
     <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
       <div
         className={[
-          'max-w-[75%] rounded-xl2 px-4 py-2.5 text-sm',
+          'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm',
           isOwn
             ? 'bg-brand-green text-white rounded-br-sm'
-            : 'glass rounded-bl-sm text-brand-ink',
+            : 'surface rounded-bl-sm text-brand-ink',
         ].join(' ')}
       >
         {!isOwn && <p className="mb-0.5 text-xs font-semibold opacity-60">{senderName}</p>}

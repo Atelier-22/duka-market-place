@@ -2,54 +2,61 @@ import { Link } from 'react-router-dom';
 import { BRAND } from '../../config/brand';
 import { DukaLockup } from '../ui/DukaLogo';
 
+const COLUMNS = [
+  {
+    title: 'Product',
+    links: [
+      { to: '/how-it-works', label: 'How it works' },
+      { to: '/become-a-shopper', label: 'Become a shopper' },
+      { to: '/register', label: 'Create a request' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { to: '/about', label: 'About' },
+      { to: '/help', label: 'Help & FAQ' },
+    ],
+  },
+  {
+    title: 'Legal',
+    links: [
+      { to: '/privacy', label: 'Privacy Policy' },
+      { to: '/terms', label: 'Terms & Conditions' },
+      { to: '/refunds', label: 'Refund Policy' },
+      { to: '/cookies', label: 'Cookies & Storage' },
+    ],
+  },
+];
+
 export function PublicFooter() {
   return (
-    <footer className="mt-24 px-4 pb-10">
-      <div className="glass-deep mx-auto max-w-6xl rounded-xl3 p-10">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
-          <div className="col-span-2 md:col-span-1">
+    <footer className="surface-deep mt-24">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
+        <div className="grid grid-cols-2 gap-10 md:grid-cols-5">
+          <div className="col-span-2 md:col-span-2">
             <DukaLockup markSize={44} variant="light" align="left" />
+            <p className="mt-4 max-w-xs text-sm text-white/60">
+              A verified local shopper goes to the market, shop or seller you name, buys what you need, and brings it to your door.
+            </p>
           </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-white/40">Product</p>
-            <div className="mt-3 flex flex-col gap-2 text-sm text-white/70">
-              <Link to="/how-it-works" className="hover:text-white">How it works</Link>
-              <Link to="/become-a-shopper" className="hover:text-white">Become a shopper</Link>
-              <Link to="/register" className="hover:text-white">Create a request</Link>
+          {COLUMNS.map((col) => (
+            <div key={col.title}>
+              <p className="text-label font-semibold uppercase text-white/45">{col.title}</p>
+              <div className="mt-3 flex flex-col gap-2.5 text-sm text-white/75">
+                {col.links.map((l) => (
+                  <Link key={l.to} to={l.to} className="transition-colors hover:text-white">{l.label}</Link>
+                ))}
+              </div>
             </div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-white/40">Company</p>
-            <div className="mt-3 flex flex-col gap-2 text-sm text-white/70">
-              <Link to="/about" className="hover:text-white">About</Link>
-              <Link to="/help" className="hover:text-white">Help &amp; FAQ</Link>
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-white/40">Legal</p>
-            <div className="mt-3 flex flex-col gap-2 text-sm text-white/70">
-              <Link to="/privacy" className="hover:text-white">Privacy Policy</Link>
-              <Link to="/terms" className="hover:text-white">Terms &amp; Conditions</Link>
-              <Link to="/refunds" className="hover:text-white">Refund Policy</Link>
-              <Link to="/cookies" className="hover:text-white">Cookies &amp; Storage</Link>
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-white/40">Contact</p>
-            <div className="mt-3 flex flex-col gap-2 text-sm text-white/70">
-              <a href={`mailto:${BRAND.supportEmail}`} className="hover:text-white">
-                {BRAND.supportEmail}
-              </a>
-
-              {BRAND.supportPhone && <span>{BRAND.supportPhone}</span>}
-              <span>{BRAND.country}</span>
-            </div>
-          </div>
+          ))}
         </div>
-        <div className="mt-10 flex flex-col items-center justify-between gap-2 border-t border-white/10 pt-6 text-xs text-white/40 md:flex-row">
+        <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-caption text-white/50 md:flex-row md:items-center md:justify-between">
           <span>© {new Date().getFullYear()} {BRAND.name}. All rights reserved.</span>
-          <span>
-            Operated by {BRAND.operatorName} in {BRAND.country}. Not yet incorporated as a company.
+          <span className="flex flex-wrap gap-x-4 gap-y-1">
+            <a href={`mailto:${BRAND.supportEmail}`} className="hover:text-white">{BRAND.supportEmail}</a>
+            {BRAND.supportPhone && <span>{BRAND.supportPhone}</span>}
+            <span>Operated by {BRAND.operatorName} in {BRAND.country}.</span>
           </span>
         </div>
       </div>

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Percent } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { GlassCard } from '../../components/ui/GlassCard';
-import { GlassButton } from '../../components/ui/GlassButton';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
+import { PageHeader, SectionHeader } from '../../components/ui/PageHeader';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { SkeletonHeading, SkeletonRegion, SkeletonRows } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
 
 export function AdminFeesPage() {
@@ -37,41 +40,63 @@ export function AdminFeesPage() {
 
   if (loading) {
     return (
-      <SkeletonRegion label="Loading" className="pb-10">
-        <SkeletonHeading subtitle={false} />
+      <SkeletonRegion label="Loading" className="mx-auto max-w-3xl pb-10">
+        <SkeletonHeading />
         <div className="mt-6"><SkeletonRows count={4} /></div>
       </SkeletonRegion>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl pb-10">
-      <h1 className="font-display text-2xl font-medium text-brand-green-deep">Platform fees</h1>
+    <div className="mx-auto max-w-3xl pb-10">
+      <PageHeader title="Platform fees" subtitle="The rules that decide what Duka adds to every order." />
 
-      <GlassCard hover={false} className="mt-6">
-        <div className="flex flex-col gap-3">
-          {fees.map((f) => (
-            <div key={f.id} className="flex items-center justify-between rounded-lg bg-brand-green-mist/60 p-3 text-sm">
-              <span className="font-medium">{f.name}</span>
-              <span className="text-brand-ink/60">{f.fee_type === 'platform_percentage' ? `${f.value}%` : `${Number(f.value).toLocaleString()} UGX`}</span>
-            </div>
-          ))}
-        </div>
-      </GlassCard>
+      <section>
+        <SectionHeader title="Current rules" />
+        {fees.length === 0 ? (
+          <EmptyState
+            size="sm"
+            icon={<Percent />}
+            title="No fee rules yet"
+            description="Add a rule below and it will apply to new orders."
+          />
+        ) : (
+          <Card padding="none" hover={false}>
+            <ul>
+              {fees.map((f) => (
+                <li key={f.id} className="flex items-center justify-between gap-4 border-b border-line px-4 py-3 text-sm last:border-0">
+                  <span className="font-medium text-ink">{f.name}</span>
+                  <span className="tabular-nums text-ink-2">
+                    {f.fee_type === 'platform_percentage' ? `${f.value}%` : `${Number(f.value).toLocaleString()} UGX`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+      </section>
 
-      <GlassCard padding="lg" hover={false} className="mt-6">
-        <p className="font-medium text-brand-green-deep">Add a fee rule</p>
-        <div className="mt-4 flex flex-col gap-3">
+      <Card padding="lg" hover={false} className="mt-6">
+        <h2 className="font-display text-h3 font-medium text-brand-green-deep">Add a fee rule</h2>
+        <div className="mt-4 flex flex-col gap-4">
           <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} />
           <Select label="Type" value={feeType} onChange={(e) => setFeeType(e.target.value)}>
             <option value="platform_percentage">Platform percentage</option>
             <option value="flat_delivery">Flat delivery fee</option>
             <option value="per_km_delivery">Per-km delivery fee</option>
           </Select>
-          <Input label="Value" type="number" value={value} onChange={(e) => setValue(e.target.value)} />
-          <GlassButton disabled={saving} onClick={handleCreate}>{saving ? 'Saving…' : 'Add fee'}</GlassButton>
+          <Input
+            label="Value"
+            type="number"
+            hint={feeType === 'platform_percentage' ? 'A percentage of the order value.' : 'An amount in UGX.'}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+          />
+          <div>
+            <Button loading={saving} onClick={handleCreate}>Add fee</Button>
+          </div>
         </div>
-      </GlassCard>
+      </Card>
     </div>
   );
 }

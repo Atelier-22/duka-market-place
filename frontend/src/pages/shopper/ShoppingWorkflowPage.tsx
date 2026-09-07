@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Bike, Camera, Check, CheckCircle2, CircleAlert, Footprints, MapPin, MessageCircle, Navigation, PartyPopper, X } from 'lucide-react';
+import { Bike, Camera, Check, CheckCircle2, CircleAlert, Footprints, MapPin, MessageCircle, Navigation, PartyPopper, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { Order, OrderStatus } from '../../types';
-import { GlassCard } from '../../components/ui/GlassCard';
-import { GlassButton } from '../../components/ui/GlassButton';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonDetail, SkeletonRegion } from '../../components/ui/Skeleton';
 import { OrderTimeline, TimelineAction } from '../../components/domain/OrderTimeline';
@@ -185,7 +186,7 @@ export function ShoppingWorkflowPage() {
         <EmptyState
           title="We couldn't open this job"
           description="Check your connection and try again."
-          action={<GlassButton size="sm" onClick={() => { setLoading(true); load(); }}>Try again</GlassButton>}
+          action={<Button size="sm" onClick={() => { setLoading(true); load(); }}>Try again</Button>}
         />
       </div>
     );
@@ -214,12 +215,13 @@ export function ShoppingWorkflowPage() {
 
   return (
     <div className="mx-auto max-w-2xl pb-16">
-      <button onClick={() => navigate(-1)} className="mb-4 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep"><ArrowLeft size={15} strokeWidth={2} className="inline" /> Back</button>
-
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-medium text-brand-green-deep">Job #{order.id.slice(0, 8)}</h1>
-        <StatusBadge status={order.status} />
-      </div>
+      <PageHeader
+        back="/shopper/orders"
+        backLabel="My jobs"
+        title={`Job #${order.id.slice(0, 8)}`}
+        actions={<StatusBadge status={order.status} />}
+        className="mb-0"
+      />
 
       <ActionNeededBanner
         status={order.status}
@@ -228,21 +230,21 @@ export function ShoppingWorkflowPage() {
         rated={rated}
       />
 
-      <GlassCard padding="lg" hover={false} className="mt-6">
+      <Card padding="lg" hover={false} className="mt-6">
         <OrderTimeline status={order.status} perspective="shopper" actions={timelineActions} />
-      </GlassCard>
+      </Card>
 
       {broadcasting && (
-        <GlassCard id="route-map" padding="lg" hover={false} className="mt-6">
+        <Card id="route-map" padding="lg" hover={false} className="mt-6">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Your route</p>
+            <p className="text-label font-semibold uppercase text-ink-3">Your route</p>
             <span className={`flex items-center gap-1.5 text-xs font-medium ${sharing ? 'text-brand-green-fresh' : 'text-brand-red'}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${sharing ? 'bg-brand-green-fresh' : 'bg-brand-red'}`} />
               {sharing ? 'Sharing location' : 'Location off'}
             </span>
           </div>
           {locationError && <p className="mt-2 text-xs font-medium text-brand-red">{locationError}</p>}
-          <div className="mt-3 overflow-hidden rounded-xl2 border border-brand-green/10">
+          <div className="mt-3 overflow-hidden rounded-2xl border border-line">
 
             <LazyLiveMap
               you={tracking?.shopper ? { lat: tracking.shopper.lat, lng: tracking.shopper.lng, label: 'You' } : null}
@@ -251,7 +253,7 @@ export function ShoppingWorkflowPage() {
             />
           </div>
           {tracking?.distanceMetres !== null && tracking?.distanceMetres !== undefined && (
-            <p className="mt-3 text-xs text-brand-ink/45">
+            <p className="mt-3 text-xs text-ink-3">
               {tracking.distanceMetres < 1000
                 ? `${tracking.distanceMetres} m`
                 : `${(tracking.distanceMetres / 1000).toFixed(1)} km`}
@@ -260,29 +262,29 @@ export function ShoppingWorkflowPage() {
           )}
 
           {tracking?.deliveryAddressLabel && (
-            <p className="mt-3 flex items-center gap-2 text-xs text-brand-ink/55">
+            <p className="mt-3 flex items-center gap-2 text-xs text-ink-2">
               <MapPin size={13} strokeWidth={2} className="shrink-0" />
               Deliver to <span className="font-medium text-brand-green-deep">{tracking.deliveryAddressLabel}</span>
             </p>
           )}
 
           {delivery && (delivery.delivery_instructions || delivery.delivery_handoff) && (
-            <div className="mt-3 rounded-xl bg-brand-green-mist/60 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">At the door</p>
-              <p className="mt-1 text-sm text-brand-ink/80">
+            <div className="mt-3 rounded-xl bg-surface-2 px-4 py-3">
+              <p className="text-label font-semibold uppercase text-ink-3">At the door</p>
+              <p className="mt-1 text-sm text-ink-2">
                 {HANDOFF_LABEL[delivery.delivery_handoff] ?? delivery.delivery_handoff}
                 {' · '}
                 {CONTACT_LABEL[delivery.delivery_contact] ?? delivery.delivery_contact}
               </p>
               {delivery.delivery_instructions && (
-                <p className="mt-1.5 whitespace-pre-line text-sm text-brand-ink/70">{delivery.delivery_instructions}</p>
+                <p className="mt-1.5 whitespace-pre-line text-sm text-ink-2">{delivery.delivery_instructions}</p>
               )}
             </div>
           )}
 
           {!tracking?.customer && !tracking?.destination && (
-            <div className="mt-3 rounded-xl bg-brand-yellow-soft/60 px-4 py-3">
-              <p className="flex items-start gap-2 text-sm text-yellow-900">
+            <div className="mt-3 rounded-xl bg-warning-soft/50 px-4 py-3">
+              <p className="flex items-start gap-2 text-sm text-warning">
                 <CircleAlert size={15} strokeWidth={2} className="mt-0.5 shrink-0" />
                 <span>
                   Your customer hasn't put their location on the map yet — only the
@@ -290,14 +292,14 @@ export function ShoppingWorkflowPage() {
                   "Pin this address" button under Live tracking.
                 </span>
               </p>
-              <GlassButton
+              <Button
                 size="sm"
                 variant="secondary"
                 className="mt-3"
                 onClick={() => navigate(`/shopper/orders/${id}/messages`)}
               >
                 <MessageCircle size={15} strokeWidth={2} /> Ask for directions
-              </GlassButton>
+              </Button>
             </div>
           )}
 
@@ -326,89 +328,89 @@ export function ShoppingWorkflowPage() {
               onDone={() => { refreshTracking(); load(); }}
             />
           )}
-        </GlassCard>
+        </Card>
       )}
 
       <div className="mt-6">
         {order.status === 'requested' && (
-          <GlassCard id="step-requested" glow="yellow" hover={false}>
+          <Card id="step-requested" glow="yellow" hover={false}>
             <p className="font-medium text-brand-green-deep">This job is waiting for your answer</p>
-            <p className="mt-1 text-sm text-brand-ink/60">
+            <p className="mt-1 text-sm text-ink-2">
               The customer picked you. Accept to take it on, or decline so it goes back to other shoppers.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <GlassButton disabled={acting} onClick={acceptJob}>
+              <Button disabled={acting} onClick={acceptJob}>
                 {acting ? 'Accepting…' : <><Check size={17} strokeWidth={2} /> Accept job</>}
-              </GlassButton>
-              <GlassButton variant="danger" disabled={acting} onClick={declineJob}>
+              </Button>
+              <Button variant="danger" disabled={acting} onClick={declineJob}>
                 <X size={17} strokeWidth={2} /> Decline
-              </GlassButton>
+              </Button>
             </div>
-          </GlassCard>
+          </Card>
         )}
 
         {order.status === 'shopper_assigned' && (
-          <GlassCard id="step-shopper_assigned" glow="green" hover={false}>
+          <Card id="step-shopper_assigned" glow="green" hover={false}>
             <p className="font-medium text-brand-green-deep">On your way?</p>
-            <p className="mt-1 text-sm text-brand-ink/60">Let the customer know you're headed to the location.</p>
-            <GlassButton className="mt-3" disabled={acting} onClick={goShopping} fullWidth>
+            <p className="mt-1 text-sm text-ink-2">Let the customer know you're headed to the location.</p>
+            <Button className="mt-3" disabled={acting} onClick={goShopping} fullWidth>
               {acting ? 'Updating…' : <><Footprints size={17} strokeWidth={2} /> I'm searching for the item</>}
-            </GlassButton>
-          </GlassCard>
+            </Button>
+          </Card>
         )}
 
         {order.status === 'shopping' && (
-          <GlassCard id="step-shopping" glow="yellow" hover={false}>
+          <Card id="step-shopping" glow="yellow" hover={false}>
             <p className="font-medium text-brand-green-deep">Found the item?</p>
-            <p className="mt-1 text-sm text-brand-ink/60">Upload a real photo and enter the exact price — this is what the customer will see before approving.</p>
+            <p className="mt-1 text-sm text-ink-2">Upload a real photo and enter the exact price — this is what the customer will see before approving.</p>
             <div className="mt-4 flex flex-col gap-3">
               <ImageUpload folder="item-found" label="Item photo" value={itemPhotoUrl} onChange={setItemPhotoUrl} />
               <Input label="Actual price (UGX)" type="number" value={actualPrice} onChange={(e) => setActualPrice(e.target.value)} />
               <Input label="Shop / stall name (optional)" value={shopName} onChange={(e) => setShopName(e.target.value)} />
-              <GlassButton disabled={acting} onClick={submitItemFound} fullWidth>
+              <Button disabled={acting} onClick={submitItemFound} fullWidth>
                 {acting ? 'Sending…' : <><Camera size={17} strokeWidth={2} /> Send to customer for approval</>}
-              </GlassButton>
+              </Button>
             </div>
-          </GlassCard>
+          </Card>
         )}
 
         {order.status === 'awaiting_customer_approval' && (
-          <GlassCard id="step-awaiting_customer_approval" hover={false}>
+          <Card id="step-awaiting_customer_approval" hover={false}>
             <p className="font-medium text-brand-green-deep">Waiting for customer approval</p>
-            <p className="mt-1 text-sm text-brand-ink/60">
+            <p className="mt-1 text-sm text-ink-2">
               We've sent your photo and price ({recordedPrice !== null ? `${recordedPrice.toLocaleString('en-UG')} UGX` : 'the recorded price'}) to the customer. This page updates on its own the moment they approve, so there is no need to refresh.
             </p>
-          </GlassCard>
+          </Card>
         )}
 
         {order.status === 'purchased' && (
-          <GlassCard id="step-purchased" glow="green" hover={false}>
+          <Card id="step-purchased" glow="green" hover={false}>
             <p className="font-medium text-brand-green-deep">Approved. Pay the shop, then upload the receipt</p>
-            <p className="mt-1 text-sm text-brand-ink/60">
+            <p className="mt-1 text-sm text-ink-2">
               The customer said yes. Buy the item with your own money, then upload a photo of the receipt. The customer pays you the full amount when you hand it over.
             </p>
             <div className="mt-4 flex flex-col gap-3">
               <ImageUpload folder="receipts" label="Receipt photo" value={receiptUrl} onChange={setReceiptUrl} />
-              <GlassButton disabled={acting} onClick={submitOutForDelivery} fullWidth>
+              <Button disabled={acting} onClick={submitOutForDelivery} fullWidth>
                 {acting ? 'Updating…' : <><Bike size={17} strokeWidth={2} /> Mark as out for delivery</>}
-              </GlassButton>
+              </Button>
             </div>
-          </GlassCard>
+          </Card>
         )}
 
         {order.status === 'out_for_delivery' && (
-          <GlassCard id="step-out_for_delivery" hover={false}>
+          <Card id="step-out_for_delivery" hover={false}>
             <p className="font-medium text-brand-green-deep">On the way to the customer</p>
-            <p className="mt-1 text-sm text-brand-ink/60">
+            <p className="mt-1 text-sm text-ink-2">
               Collect {recordedPrice !== null ? `${(recordedPrice + Number(order.shopping_fee_ugx) + Number(order.delivery_fee_ugx) + Number(order.platform_fee_ugx)).toLocaleString('en-UG')} UGX` : 'the full amount'} from the customer at the door. They confirm on their side, and your earnings release right after.
             </p>
-          </GlassCard>
+          </Card>
         )}
 
         {order.status === 'delivered' && (
-          <GlassCard id="step-delivered" glow="green" hover={false}>
+          <Card id="step-delivered" glow="green" hover={false}>
             <p className="font-medium text-brand-green-deep">Delivered — mark this job complete</p>
-            <GlassButton
+            <Button
               className="mt-3"
               disabled={acting}
               onClick={async () => {
@@ -426,37 +428,37 @@ export function ShoppingWorkflowPage() {
               fullWidth
             >
               {acting ? 'Completing…' : <><PartyPopper size={17} strokeWidth={2} /> Mark job as completed</>}
-            </GlassButton>
-          </GlassCard>
+            </Button>
+          </Card>
         )}
 
         {order.status === 'completed' && (
-          <GlassCard id="step-completed" glow="yellow" hover={false}>
+          <Card id="step-completed" glow="yellow" hover={false}>
             <p className="flex items-center gap-2 font-medium text-brand-green-deep">
               <CheckCircle2 size={17} strokeWidth={2} /> Job complete — earnings released to your balance.
             </p>
 
             {rated ? (
-              <p className="mt-4 text-sm text-brand-ink/55">Thanks — your rating was saved.</p>
+              <p className="mt-4 text-sm text-ink-2">Thanks — your rating was saved.</p>
             ) : (
-              <div className="mt-4 border-t border-brand-green/10 pt-4">
-                <p className="text-sm font-medium text-brand-ink">How was this customer?</p>
-                <p className="mt-0.5 text-xs text-brand-ink/45">Ratings help other shoppers know what to expect.</p>
+              <div className="mt-4 border-t border-line pt-4">
+                <p className="text-sm font-medium text-ink">How was this customer?</p>
+                <p className="mt-0.5 text-xs text-ink-3">Ratings help other shoppers know what to expect.</p>
                 <div className="mt-2"><RatingStars value={stars} interactive size="md" onChange={setStars} /></div>
-                <GlassButton size="sm" className="mt-3" disabled={acting} onClick={submitRating}>
+                <Button size="sm" className="mt-3" disabled={acting} onClick={submitRating}>
                   {acting ? 'Saving…' : 'Submit rating'}
-                </GlassButton>
+                </Button>
               </div>
             )}
-          </GlassCard>
+          </Card>
         )}
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
         {!['completed', 'cancelled', 'refunded', 'disputed'].includes(order.status) && (
-          <GlassButton variant="ghost" size="sm" onClick={() => navigate(`/shopper/orders/${id}/messages`)}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/shopper/orders/${id}/messages`)}>
             <MessageCircle size={17} strokeWidth={2} /> Message customer
-          </GlassButton>
+          </Button>
         )}
         {DISPUTABLE.includes(order.status) && (
           <DisputeButton orderId={order.id} perspective="shopper" onRaised={load} />

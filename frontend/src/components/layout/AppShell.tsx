@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { AppTopBar } from './AppTopBar';
 import { LocationPrompt } from '../domain/LocationPrompt';
@@ -9,14 +9,18 @@ import { MobileNav, NavItem } from './MobileNav';
 interface AppShellProps {
   items: NavItem[];
   roleLabel: string;
-
   maxWidth?: string;
 }
 
-export function AppShell({ items, roleLabel, maxWidth = 'max-w-7xl' }: AppShellProps) {
-
+/**
+ * Signed-in layout. Top bar on every width; a quiet sidebar from `lg`,
+ * the floating capsule nav below that. Each route settles in with a
+ * short fade so screens never pop.
+ */
+export function AppShell({ items, roleLabel, maxWidth = 'max-w-6xl' }: AppShellProps) {
+  const location = useLocation();
   const barRef = useRef<HTMLDivElement>(null);
-  const [barHeight, setBarHeight] = useState(92);
+  const [barHeight, setBarHeight] = useState(56);
 
   useEffect(() => {
     const el = barRef.current;
@@ -28,10 +32,12 @@ export function AppShell({ items, roleLabel, maxWidth = 'max-w-7xl' }: AppShellP
     return () => observer.disconnect();
   }, []);
 
-  return (
-    <div className="min-h-screen" style={{ ['--duka-topbar' as string]: `${Math.round(barHeight)}px` }}>
-      <div className="atmosphere" />
+  // Only the first path segments matter for the transition key, so section
+  // tabs inside a page (e.g. settings panels) do not re-animate the shell.
+  const pageKey = location.pathname.split('/').slice(0, 4).join('/');
 
+  return (
+    <div className="min-h-screen bg-page" style={{ ['--duka-topbar' as string]: `${Math.round(barHeight)}px` }}>
       <div ref={barRef}>
         <AppTopBar roleLabel={roleLabel} />
       </div>
@@ -40,13 +46,15 @@ export function AppShell({ items, roleLabel, maxWidth = 'max-w-7xl' }: AppShellP
       <LocationPrompt />
       <UnreadReminder />
 
-      <div className={`mx-auto flex ${maxWidth} gap-4 p-3 sm:p-4`}>
+      <div className={`mx-auto flex ${maxWidth} gap-8 px-4 py-5 sm:px-5 lg:px-8 lg:py-8`}>
         <div className="hidden lg:block">
           <AppSidebar items={items} />
         </div>
 
-        <main className="app-main min-w-0 flex-1 py-1">
-          <Outlet />
+        <main className="app-main min-w-0 flex-1">
+          <div key={pageKey} className="page-enter">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

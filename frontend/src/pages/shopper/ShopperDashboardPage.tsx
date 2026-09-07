@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Coins, Star, TrendingUp } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Coins, ShieldAlert, Star, TrendingUp } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { GlassCard } from '../../components/ui/GlassCard';
-import { GlassButton } from '../../components/ui/GlassButton';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { PageHeader, SectionHeader } from '../../components/ui/PageHeader';
 import { DashboardStat } from '../../components/domain/DashboardStat';
 import { ActiveJobCard } from '../../components/domain/ActiveJobCard';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonHeading, SkeletonRegion, SkeletonRows, SkeletonStats } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
 import { useAuth } from '../../context/AuthContext';
@@ -19,8 +21,8 @@ export function ShopperDashboardPage() {
   const { push } = useToast();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [togglingOnline, setTogglingOnline] = useState(false);
-
   const [deciding, setDeciding] = useState<string | null>(null);
 
   async function decide(orderId: string, accept: boolean) {
@@ -42,7 +44,11 @@ export function ShopperDashboardPage() {
   }
 
   function load() {
-    api.get('/shoppers/dashboard').then((res) => setData(res.data)).finally(() => setLoading(false));
+    setFailed(false);
+    api.get('/shoppers/dashboard')
+      .then((res) => setData(res.data))
+      .catch(() => setFailed(true))
+      .finally(() => setLoading(false));
   }
   useEffect(load, []);
 
@@ -51,12 +57,14 @@ export function ShopperDashboardPage() {
     try {
       await api.patch('/shoppers/profile', { isOnline: !data.profile.is_online });
       load();
+    } catch (err) {
+      push(apiErrorMessage(err), 'error');
     } finally {
       setTogglingOnline(false);
     }
   }
 
-  if (loading || !data) {
+  if (loading || (!data && !failed)) {
     return (
       <SkeletonRegion label="Loading your dashboard" className="flex flex-col gap-6 pb-10">
         <SkeletonHeading />
@@ -66,98 +74,101 @@ export function ShopperDashboardPage() {
     );
   }
 
+  if (failed || !data) {
+    return (
+      <EmptyState
+        title="We couldn't load your dashboard"
+        description="Check your connection and try again."
+        action={<Button size="sm" onClick={() => { setLoading(true); load(); }}>Try again</Button>}
+      />
+    );
+  }
+
   const activeJobs: any[] = data.activeOrders ?? [];
   const limit: number = data.activeJobLimit ?? 5;
   const atCapacity: boolean = data.atCapacity ?? activeJobs.length >= limit;
+  const online: boolean = !!data.profile.is_online;
+  const verified = data.profile.verification_status === 'approved';
 
   return (
     <div className="flex flex-col gap-6 pb-10">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-medium text-brand-green-deep">
-            {data.profile.is_online ? "You're online" : "You're offline"}, {user?.fullName.split(' ')[0]}
-          </h1>
-          <p className="text-sm text-brand-ink/50">
-            {data.availableJobsCount} open request{data.availableJobsCount === 1 ? '' : 's'} nearby right now.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <GlassButton
-            size="sm"
-            variant={data.profile.is_online ? 'danger' : 'primary'}
-            disabled={togglingOnline}
-            onClick={toggleOnline}
-          >
-            {data.profile.is_online ? 'Go offline' : 'Go online'}
-          </GlassButton>
-        </div>
-      </div>
+      <PageHeader
+        title={`${online ? "You're online" : "You're offline"}, ${user?.fullName.split(' ')[0] ?? ''}`}
+        subtitle={`${data.availableJobsCount} open request${data.availableJobsCount === 1 ? '' : 's'} nearby right now.`}
+        actions={
+          <Button size="sm" variant={online ? 'secondary' : 'primary'} loading={togglingOnline} onClick={toggleOnline}>
+            <span className={`h-2 w-2 rounded-full ${online ? 'bg-brand-green-fresh' : 'bg-ink-3'}`} aria-hidden />
+            {online ? 'Go offline' : 'Go online'}
+          </Button>
+        }
+        className="mb-0"
+      />
 
-      {data.profile.verification_status !== 'approved' && (
-        <GlassCard glow="yellow" hover={false}>
-          <p className="font-medium text-brand-green-deep">Verification {data.profile.verification_status}</p>
-          <p className="mt-1 text-sm text-brand-ink/60">
-            Complete verification to start accepting jobs. It only takes a couple of minutes.
-          </p>
-          <Link to="/shopper/verification" className="mt-3 inline-block">
-            <GlassButton size="sm">Verify my account <ArrowRight size={15} strokeWidth={2} /></GlassButton>
-          </Link>
-        </GlassCard>
+      {!verified && (
+        <Card tone="warning" className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-warning-soft text-warning">
+            <ShieldAlert size={18} strokeWidth={1.9} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-ink">Verification {data.profile.verification_status ?? 'needed'}</p>
+            <p className="mt-0.5 text-small text-ink-2">
+              Complete verification to start accepting jobs. It takes a couple of minutes.
+            </p>
+            <Link to="/shopper/verification" className="mt-3 inline-block">
+              <Button size="sm">Verify my account <ArrowRight size={15} strokeWidth={2} /></Button>
+            </Link>
+          </div>
+        </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <DashboardStat label="Today's earnings" value={formatUgx(data.earnings.today)} icon={<Coins size={18} strokeWidth={1.75} />} accent="yellow" />
-        <DashboardStat label="This week" value={formatUgx(data.earnings.week)} icon={<TrendingUp size={18} strokeWidth={1.75} />} accent="yellow" />
-        <DashboardStat label="Rating" value={String(data.profile.rating_avg || '—')} icon={<Star size={18} strokeWidth={1.75} />} />
-        <DashboardStat label="Completed jobs" value={String(data.profile.completed_jobs)} icon={<CheckCircle2 size={18} strokeWidth={1.75} />} />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+        <DashboardStat label="Today's earnings" value={formatUgx(data.earnings.today)} icon={<Coins />} accent="yellow" />
+        <DashboardStat label="This week" value={formatUgx(data.earnings.week)} icon={<TrendingUp />} accent="yellow" />
+        <DashboardStat label="Rating" value={String(data.profile.rating_avg || '—')} icon={<Star />} />
+        <DashboardStat label="Completed jobs" value={String(data.profile.completed_jobs)} icon={<CheckCircle2 />} />
       </div>
 
-      {activeJobs.length > 0 ? (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="font-display text-lg font-medium text-brand-green-deep">
+      <section>
+        <SectionHeader
+          title={
+            <>
               Your jobs
-
-              <span className="ml-2 text-sm font-normal text-brand-ink/40">
-                {activeJobs.length} of {limit}
-              </span>
-            </h2>
-            {!atCapacity && (
-              <Link to="/shopper/available" className="text-sm font-medium text-brand-green-deep hover:underline">
-                Take another job <ArrowRight size={14} strokeWidth={2} className="inline" />
+              <span className="ml-2 text-small font-normal text-ink-3">{activeJobs.length} of {limit}</span>
+            </>
+          }
+          action={
+            !atCapacity && activeJobs.length > 0 ? (
+              <Link to="/shopper/available" className="text-sm font-medium text-brand-green hover:underline">
+                Take another job
               </Link>
-            )}
-          </div>
+            ) : undefined
+          }
+        />
 
-          {atCapacity && (
-            <p className="rounded-xl bg-brand-yellow-soft/60 px-4 py-3 text-sm text-yellow-800">
-              You're carrying the maximum of {limit} jobs. Finish or hand one back before taking another.
-            </p>
-          )}
+        {atCapacity && (
+          <p className="mb-3 rounded-lg border border-brand-yellow/40 bg-warning-soft/50 px-4 py-3 text-small text-ink">
+            You're carrying the maximum of {limit} jobs. Finish or hand one back before taking another.
+          </p>
+        )}
 
+        {activeJobs.length > 0 ? (
           <div className="grid gap-4 lg:grid-cols-2">
             {activeJobs.map((job: any, i: number) => (
-              <ActiveJobCard
-                key={job.id}
-                job={job}
-                index={i + 1}
-                deciding={deciding === job.id}
-                onDecide={decide}
-              />
+              <ActiveJobCard key={job.id} job={job} index={i + 1} deciding={deciding === job.id} onDecide={decide} />
             ))}
           </div>
-        </div>
-      ) : (
-        <GlassCard padding="lg" hover={false}>
-          <p className="font-medium text-brand-green-deep">No active job right now</p>
-          <p className="mt-1 text-sm text-brand-ink/60">
-            Browse available requests near you and accept one to get started — you can run up to {limit} at a time.
-          </p>
-          <Link to="/shopper/available" className="mt-4 inline-block">
-            <GlassButton size="sm">Browse available requests <ArrowRight size={15} strokeWidth={2} /></GlassButton>
-          </Link>
-        </GlassCard>
-      )}
+        ) : (
+          <EmptyState
+            title="No active job right now"
+            description={`Browse open requests near you and accept one to get started. You can run up to ${limit} at a time.`}
+            action={
+              <Link to="/shopper/available">
+                <Button size="sm">Browse available requests <ArrowRight size={15} strokeWidth={2} /></Button>
+              </Link>
+            }
+          />
+        )}
+      </section>
     </div>
   );
 }

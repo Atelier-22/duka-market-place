@@ -18,6 +18,17 @@ interface LiveMapProps {
   className?: string;
 }
 
+/**
+ * Leaflet paints vector layers with SVG presentation attributes, which cannot
+ * read CSS variables, so the route colour is resolved from the token at
+ * creation time. Marker icons are plain HTML and use `rgb(var(--…))` inline.
+ */
+function tokenColor(name: string): string {
+  if (typeof window === 'undefined') return 'currentColor';
+  const triplet = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return triplet ? `rgb(${triplet})` : 'currentColor';
+}
+
 export function LiveMap({ you, them, destination, className = '' }: LiveMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -63,7 +74,7 @@ export function LiveMap({ you, them, destination, className = '' }: LiveMapProps
         routeLine.current.setLatLngs(line);
       } else {
         routeLine.current = L.polyline(line, {
-          color: '#16a34a', weight: 3, opacity: 0.5, dashArray: '6 8',
+          color: tokenColor('--brand-green'), weight: 3, opacity: 0.5, dashArray: '6 8',
         }).addTo(map);
       }
       if (!userMoved.current) {
@@ -76,7 +87,7 @@ export function LiveMap({ you, them, destination, className = '' }: LiveMapProps
     }
   }, [you, them, destination]);
 
-  return <div ref={containerRef} className={`h-72 w-full rounded-xl2 ${className}`} />;
+  return <div ref={containerRef} className={`h-72 w-full overflow-hidden rounded-xl ${className}`} />;
 }
 
 function place(
@@ -96,11 +107,14 @@ function place(
   return next;
 }
 
+/* Markers sit on light map tiles in every theme, so they use the accent
+   tokens that do not flip in dark mode, plus a white keyline. */
+
 const otherPartyIcon = L.divIcon({
   className: '',
   html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:28px;height:28px">
-    <span style="position:absolute;inset:0;border-radius:9999px;background:#16a34a;opacity:.25;animation:duka-ping 1.8s cubic-bezier(0,0,.2,1) infinite"></span>
-    <span style="position:relative;width:16px;height:16px;border-radius:9999px;background:#16a34a;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></span>
+    <span style="position:absolute;inset:0;border-radius:9999px;background:rgb(var(--brand-green-fresh));opacity:.25;animation:duka-ping 1.8s cubic-bezier(0,0,.2,1) infinite"></span>
+    <span style="position:relative;width:16px;height:16px;border-radius:9999px;background:rgb(var(--brand-green-fresh));border:3px solid white;box-shadow:0 1px 4px rgb(0 0 0 / .35)"></span>
   </div>`,
   iconSize: [28, 28],
   iconAnchor: [14, 14],
@@ -109,7 +123,7 @@ const otherPartyIcon = L.divIcon({
 const youIcon = L.divIcon({
   className: '',
   html: `<div style="display:flex;align-items:center;justify-content:center;width:18px;height:18px">
-    <span style="width:12px;height:12px;border-radius:9999px;background:#334155;border:3px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.35)"></span>
+    <span style="width:12px;height:12px;border-radius:9999px;background:rgb(var(--info));border:3px solid white;box-shadow:0 1px 3px rgb(0 0 0 / .35)"></span>
   </div>`,
   iconSize: [18, 18],
   iconAnchor: [9, 9],
@@ -118,10 +132,11 @@ const youIcon = L.divIcon({
 const destinationIcon = L.divIcon({
   className: '',
   html: `<div style="display:flex;align-items:center;justify-content:center;width:26px;height:26px">
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0f3d2e" stroke-width="1.8"
-         stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))">
-      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" fill="#fff"/>
-      <circle cx="12" cy="10" r="3" fill="#0f3d2e" stroke="none"/>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round"
+         style="stroke:rgb(var(--brand-green));filter:drop-shadow(0 1px 2px rgb(0 0 0 / .3))">
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" style="fill:white"/>
+      <circle cx="12" cy="10" r="3" stroke="none" style="fill:rgb(var(--brand-green))"/>
     </svg>
   </div>`,
   iconSize: [26, 26],

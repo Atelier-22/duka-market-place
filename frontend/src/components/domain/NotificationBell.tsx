@@ -224,7 +224,7 @@ export function NotificationBell() {
           <div
             ref={sheetRef}
             onClick={(e) => e.stopPropagation()}
-            className="glass w-full overflow-hidden rounded-t-2xl"
+            className="surface w-full overflow-hidden rounded-t-2xl"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             {header}
@@ -235,7 +235,7 @@ export function NotificationBell() {
       )}
 
       {open && !isMobile && (
-        <div className="glass absolute right-0 z-30 mt-2 w-80 overflow-hidden rounded-xl2 shadow-glass-lg">
+        <div className="surface absolute right-0 z-30 mt-2 w-80 overflow-hidden rounded-2xl shadow-raised">
           {header}
           {list}
         </div>

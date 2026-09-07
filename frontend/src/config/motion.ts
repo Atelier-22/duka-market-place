@@ -51,6 +51,23 @@ export const LOGO_TRANSITION_DURATION = 480;
 export const LOGO_HOLD_DURATION = 520;
 export const LOGO_SPRING: SpringConfig = { stiffness: 260, damping: 22, mass: 1 };
 
+/* ---------- Global timing ---------- */
+
+/** Durations in ms. Hover/press use fast; most state changes use base. */
+export const DURATION = { fast: 120, base: 200, slow: 320, page: 240 } as const;
+/** Easing curves. standard = most UI, emphasized = things that arrive, exit = things that leave. */
+export const EASE = {
+  standard: 'cubic-bezier(0.2, 0, 0, 1)',
+  emphasized: 'cubic-bezier(0.16, 1, 0.3, 1)',
+  exit: 'cubic-bezier(0.4, 0, 1, 1)',
+} as const;
+
+/* ---------- Auth: login ↔ sign-up ---------- */
+
+/** The organic surface travelling between sides. ζ≈0.8 → ~2% overshoot, ~0.6s. */
+export const AUTH_SPRING: SpringConfig = { stiffness: 200, damping: 23, mass: 1 };
+export const AUTH_TEXT_DURATION = 360;
+
 /* ---------- Press feedback ---------- */
 
 export const PRESS_SCALE = 0.94;

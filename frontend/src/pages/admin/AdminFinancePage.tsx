@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Banknote, Check } from 'lucide-react';
+import { Banknote, Check, Wallet } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { GlassCard } from '../../components/ui/GlassCard';
-import { GlassButton } from '../../components/ui/GlassButton';
-import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
+import { Button } from '../../components/ui/Button';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Tabs } from '../../components/ui/Tabs';
+import { StatusBadge } from '../../components/ui/StatusBadge';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { SkeletonHeading, SkeletonRegion, SkeletonTable } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
-import { formatDate, formatUgx } from './AdminDetailShell';
+import { AdminTable, Td, Th, Tr, formatDate, formatUgx } from './AdminDetailShell';
 
 type Tab = 'payouts' | 'payments';
 
@@ -59,7 +62,7 @@ export function AdminFinancePage() {
   if (loading) {
     return (
       <SkeletonRegion label="Loading" className="pb-10">
-        <SkeletonHeading subtitle={false} />
+        <SkeletonHeading />
         <div className="mt-6"><SkeletonTable rows={6} cols={5} /></div>
       </SkeletonRegion>
     );
@@ -67,125 +70,128 @@ export function AdminFinancePage() {
 
   const totalOwed = payouts.reduce((s, p) => s + Number(p.owed_ugx), 0);
   const pending = payments.filter((p) => p.status === 'pending');
+  const owedCount = payouts.filter((p) => Number(p.owed_ugx) > 0).length;
 
   return (
     <div className="pb-10">
-      <h1 className="font-display text-2xl font-medium text-brand-green-deep">Finance</h1>
-      <p className="mt-1 text-sm text-brand-ink/50">
-        {formatUgx(totalOwed)} owed to shoppers · {pending.length} payment{pending.length === 1 ? '' : 's'} awaiting settlement
-      </p>
+      <PageHeader
+        title="Finance"
+        subtitle={`${formatUgx(totalOwed)} owed to shoppers · ${pending.length} payment${pending.length === 1 ? '' : 's'} awaiting settlement`}
+      />
 
-      <div className="mt-5 flex gap-1 rounded-full border border-brand-green/15 p-1">
-        {(['payouts', 'payments'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={`flex-1 rounded-full px-3 py-2 text-sm font-medium capitalize transition-colors ${
-              tab === t ? 'bg-brand-green text-white' : 'text-brand-ink/55 hover:bg-brand-green-mist'
-            }`}
-          >
-            {t === 'payouts' ? 'Shopper payouts' : 'Customer payments'}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        ariaLabel="Finance view"
+        value={tab}
+        onChange={setTab}
+        className="mb-5"
+        items={[
+          { value: 'payouts', label: 'Shopper payouts', count: owedCount },
+          { value: 'payments', label: 'Customer payments', count: pending.length },
+        ]}
+      />
 
       {tab === 'payouts' && (
-        <GlassCard padding="sm" hover={false} className="mt-5 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-brand-green/10 text-left text-xs uppercase tracking-wide text-brand-ink/40">
-                <th className="px-3 py-3">Shopper</th>
-                <th className="px-3 py-3">Owed now</th>
-                <th className="px-3 py-3">Paid to date</th>
-                <th className="px-3 py-3">Last paid</th>
-                <th className="px-3 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {payouts.map((p) => {
-                const owed = Number(p.owed_ugx);
-                return (
-                  <tr key={p.shopper_id} className="border-b border-brand-green/5 last:border-0">
-                    <td className="px-3 py-3">
-                      <Link to={`/admin/shoppers/${p.shopper_id}`} className="font-medium text-brand-green-deep hover:underline">
-                        {p.full_name}
-                      </Link>
-                      <span className="block text-xs text-brand-ink/40">{p.phone}</span>
-                    </td>
-                    <td className={`px-3 py-3 font-semibold ${owed > 0 ? 'text-brand-green-deep' : 'text-brand-ink/35'}`}>
-                      {formatUgx(owed)}
-                      {p.owed_jobs > 0 && <span className="block text-xs font-normal text-brand-ink/40">{p.owed_jobs} job(s)</span>}
-                    </td>
-                    <td className="px-3 py-3 text-brand-ink/60">{formatUgx(p.paid_ugx)}</td>
-                    <td className="px-3 py-3 text-xs text-brand-ink/45">
-                      {p.last_paid_at ? formatDate(p.last_paid_at) : 'Never'}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <GlassButton
-                        size="sm"
-                        disabled={owed <= 0 || busy === p.shopper_id}
-                        onClick={() => pay(p)}
-                      >
-                        <Banknote size={14} strokeWidth={2} />
-                        {busy === p.shopper_id ? 'Paying…' : 'Pay out'}
-                      </GlassButton>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </GlassCard>
+        payouts.length === 0 ? (
+          <EmptyState
+            icon={<Wallet />}
+            title="No payouts yet"
+            description="Shoppers are listed here once they have earnings to pay out."
+          />
+        ) : (
+          <AdminTable
+            caption="Shopper payouts"
+            minWidth="min-w-[720px]"
+            head={
+              <>
+                <Th>Shopper</Th>
+                <Th align="right">Owed now</Th>
+                <Th align="right">Paid to date</Th>
+                <Th>Last paid</Th>
+                <Th align="right"><span className="sr-only">Actions</span></Th>
+              </>
+            }
+          >
+            {payouts.map((p) => {
+              const owed = Number(p.owed_ugx);
+              return (
+                <Tr key={p.shopper_id}>
+                  <Td>
+                    <Link to={`/admin/shoppers/${p.shopper_id}`} className="font-medium text-brand-green-deep hover:underline">
+                      {p.full_name}
+                    </Link>
+                    <span className="block text-caption text-ink-3">{p.phone}</span>
+                  </Td>
+                  <Td numeric className={owed > 0 ? 'font-semibold text-brand-green-deep' : 'text-ink-3'}>
+                    {formatUgx(owed)}
+                    {p.owed_jobs > 0 && <span className="block text-caption font-normal text-ink-3">{p.owed_jobs} job(s)</span>}
+                  </Td>
+                  <Td numeric muted>{formatUgx(p.paid_ugx)}</Td>
+                  <Td muted className="whitespace-nowrap text-caption">
+                    {p.last_paid_at ? formatDate(p.last_paid_at) : 'Never'}
+                  </Td>
+                  <Td align="right">
+                    <Button
+                      size="sm"
+                      disabled={owed <= 0}
+                      loading={busy === p.shopper_id}
+                      onClick={() => pay(p)}
+                    >
+                      <Banknote size={16} strokeWidth={2} /> Pay out
+                    </Button>
+                  </Td>
+                </Tr>
+              );
+            })}
+          </AdminTable>
+        )
       )}
 
       {tab === 'payments' && (
-        <GlassCard padding="sm" hover={false} className="mt-5 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-brand-green/10 text-left text-xs uppercase tracking-wide text-brand-ink/40">
-                <th className="px-3 py-3">Customer</th>
-                <th className="px-3 py-3">For</th>
-                <th className="px-3 py-3">Amount</th>
-                <th className="px-3 py-3">Status</th>
-                <th className="px-3 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((p) => (
-                <tr key={p.id} className="border-b border-brand-green/5 last:border-0">
-                  <td className="px-3 py-3">
-                    <span className="font-medium text-brand-ink">{p.payer_name}</span>
-                    <span className="block text-xs text-brand-ink/40">{p.payer_phone}</span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <Link to={`/admin/orders/${p.order_id}`} className="text-brand-green-deep hover:underline">
-                      {p.request_title ?? `#${String(p.order_id).slice(0, 8)}`}
-                    </Link>
-                    <span className="block text-xs text-brand-ink/40">{formatDate(p.created_at)}</span>
-                  </td>
-                  <td className="px-3 py-3 font-semibold text-brand-green-deep">{formatUgx(p.amount_ugx)}</td>
-                  <td className="px-3 py-3">
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      p.status === 'paid'
-                        ? 'bg-brand-green-mist text-brand-green-deep'
-                        : 'bg-brand-yellow-soft text-yellow-800'
-                    }`}>
-                      {p.status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    {p.status !== 'paid' && (
-                      <GlassButton size="sm" variant="secondary" disabled={busy === p.id} onClick={() => settle(p)}>
-                        <Check size={14} strokeWidth={2} /> Mark received
-                      </GlassButton>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </GlassCard>
+        payments.length === 0 ? (
+          <EmptyState
+            icon={<Wallet />}
+            title="No payments yet"
+            description="Customer payments are listed here as orders are placed."
+          />
+        ) : (
+          <AdminTable
+            caption="Customer payments"
+            minWidth="min-w-[720px]"
+            head={
+              <>
+                <Th>Customer</Th>
+                <Th>For</Th>
+                <Th align="right">Amount</Th>
+                <Th>Status</Th>
+                <Th align="right"><span className="sr-only">Actions</span></Th>
+              </>
+            }
+          >
+            {payments.map((p) => (
+              <Tr key={p.id}>
+                <Td>
+                  <span className="font-medium">{p.payer_name}</span>
+                  <span className="block text-caption text-ink-3">{p.payer_phone}</span>
+                </Td>
+                <Td>
+                  <Link to={`/admin/orders/${p.order_id}`} className="font-medium text-brand-green-deep hover:underline">
+                    {p.request_title ?? `#${String(p.order_id).slice(0, 8)}`}
+                  </Link>
+                  <span className="block text-caption text-ink-3">{formatDate(p.created_at)}</span>
+                </Td>
+                <Td numeric className="font-semibold text-brand-green-deep">{formatUgx(p.amount_ugx)}</Td>
+                <Td><StatusBadge status={p.status} /></Td>
+                <Td align="right">
+                  {p.status !== 'paid' && (
+                    <Button size="sm" variant="secondary" loading={busy === p.id} onClick={() => settle(p)}>
+                      <Check size={16} strokeWidth={2} /> Mark received
+                    </Button>
+                  )}
+                </Td>
+              </Tr>
+            ))}
+          </AdminTable>
+        )
       )}
     </div>
   );

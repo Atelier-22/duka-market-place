@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, CheckCircle2, Image as ImageIcon, Lock, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { GlassCard } from '../../components/ui/GlassCard';
-import { GlassButton } from '../../components/ui/GlassButton';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { ConsentCheckbox, PrivacyLink } from '../../components/ui/ConsentCheckbox';
 import { useToast } from '../../components/ui/Toast';
@@ -80,7 +80,7 @@ export function ShopperVerificationPage() {
         it is deleted as soon as a decision is made.
       </p>
 
-      <GlassCard padding="lg" hover={false} className="mt-6">
+      <Card padding="lg" hover={false} className="mt-6">
         {result ? (
           <div>
             {result.status === 'pending' ? (
@@ -92,7 +92,7 @@ export function ShopperVerificationPage() {
               <>
                 <p className="text-sm font-semibold text-brand-red">We could not accept that document.</p>
                 {result.reason && <p className="mt-2 text-sm text-brand-ink/70">{result.reason}</p>}
-                <GlassButton
+                <Button
                   variant="secondary"
                   className="mt-4"
                   onClick={() => {
@@ -101,7 +101,7 @@ export function ShopperVerificationPage() {
                   }}
                 >
                   Try again
-                </GlassButton>
+                </Button>
               </>
             )}
           </div>
@@ -120,7 +120,7 @@ export function ShopperVerificationPage() {
 
             <div>
               <p className="mb-1.5 text-sm font-medium text-brand-green-deep">Photo of the document</p>
-              <div className="glass relative flex h-40 w-full items-center justify-center overflow-hidden rounded-xl2 border-dashed">
+              <div className="surface relative flex h-40 w-full items-center justify-center overflow-hidden rounded-2xl border-dashed">
                 {previewUrl ? (
                   <img src={previewUrl} alt="The document you selected" className="h-full w-full object-contain" />
                 ) : (
@@ -173,12 +173,12 @@ export function ShopperVerificationPage() {
               reviewer can open the photograph. See the <PrivacyLink />.
             </ConsentCheckbox>
 
-            <GlassButton disabled={submitting || !file || !consented} onClick={handleSubmit} fullWidth>
+            <Button disabled={submitting || !file || !consented} onClick={handleSubmit} fullWidth>
               {submitting ? 'Submitting…' : 'Submit for review'}
-            </GlassButton>
+            </Button>
           </div>
         )}
-      </GlassCard>
+      </Card>
 
       <input
         ref={libraryRef}

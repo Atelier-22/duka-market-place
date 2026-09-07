@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Hourglass, Truck } from 'lucide-react';
+import { ArrowRight, Hourglass, Truck } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { ShoppingRequest, ShopperOffer } from '../../types';
-import { GlassCard } from '../../components/ui/GlassCard';
-import { GlassButton } from '../../components/ui/GlassButton';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { Bone, BonePill, BoneText, SkeletonRegion, SkeletonRequestCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ShopperOfferCard } from '../../components/domain/ShopperOfferCard';
@@ -80,7 +81,7 @@ export function RequestDetailsPage() {
     return (
       <SkeletonRegion label="Loading your request" className="mx-auto max-w-3xl pb-16">
         <BoneText w="w-14" className="mb-4 h-3" />
-        <GlassCard padding="lg" hover={false}>
+        <Card padding="lg" hover={false}>
           <div className="flex items-start justify-between">
             <div className="min-w-0 flex-1">
               <Bone className="h-7 w-2/3" />
@@ -90,11 +91,11 @@ export function RequestDetailsPage() {
           </div>
           <BoneText w="w-full" className="mt-5" />
           <BoneText w="w-4/5" className="mt-2" />
-          <div className="mt-5 grid grid-cols-2 gap-4 border-t border-brand-green/10 pt-4">
+          <div className="mt-5 grid grid-cols-2 gap-4 border-t border-line pt-4">
             <div><BoneText w="w-14" className="h-3" /><BoneText w="w-28" className="mt-2" /></div>
             <div><BoneText w="w-14" className="h-3" /><BoneText w="w-28" className="mt-2" /></div>
           </div>
-        </GlassCard>
+        </Card>
         <Bone className="mt-8 h-6 w-36" />
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <SkeletonRequestCard />
@@ -110,70 +111,62 @@ export function RequestDetailsPage() {
 
   return (
     <div className="mx-auto max-w-3xl pb-16">
-      <button onClick={() => navigate(-1)} className="mb-4 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep">
-        <ArrowLeft size={15} strokeWidth={2} className="inline" /> Back
-      </button>
+      <PageHeader back="/app/orders?view=requests" backLabel="Requests" title={request.title} actions={<StatusBadge status={request.status} />} />
 
       {/* Once a shopper is chosen, this page's job is to hand over to the order. */}
       {assigned && order && (
-        <GlassCard glow="green" hover={false} className="mb-4">
+        <Card glow="green" hover={false} className="mb-4">
           <p className="flex items-center gap-2 font-medium text-brand-green-deep">
             <Truck size={17} strokeWidth={2} /> Your shopper is on it
           </p>
-          <p className="mt-1 text-sm text-brand-ink/60">
+          <p className="mt-1 text-sm text-ink-2">
             You chose a shopper for this request. Everything from here on, including approving the price and confirming delivery, happens on the order.
           </p>
-          <GlassButton className="mt-3" fullWidth onClick={() => navigate(`/app/orders/${order.id}`)}>
+          <Button className="mt-3" fullWidth onClick={() => navigate(`/app/orders/${order.id}`)}>
             Track this order <ArrowRight size={16} strokeWidth={2} />
-          </GlassButton>
-        </GlassCard>
+          </Button>
+        </Card>
       )}
 
-      <GlassCard padding="lg" hover={false}>
-        <div className="flex items-start justify-between">
+      <Card padding="lg" hover={false}>
+        <p className="text-label font-semibold uppercase text-ink-3">
+          Posted {new Date(request.created_at).toLocaleDateString('en-UG', { day: 'numeric', month: 'long' })}
+        </p>
+        {request.description && <p className="mt-3 text-body text-ink-2">{request.description}</p>}
+        <div className="mt-5 grid grid-cols-2 gap-4 border-t border-line pt-4 text-sm">
           <div>
-            <h1 className="font-display text-2xl font-medium text-brand-green-deep">{request.title}</h1>
-            <p className="mt-1 text-xs text-brand-ink/40">
-              Posted {new Date(request.created_at).toLocaleDateString('en-UG', { day: 'numeric', month: 'long' })}
-            </p>
-          </div>
-          <StatusBadge status={request.status} />
-        </div>
-        {request.description && <p className="mt-4 text-sm text-brand-ink/65">{request.description}</p>}
-        <div className="mt-5 grid grid-cols-2 gap-4 border-t border-brand-green/10 pt-4 text-sm">
-          <div>
-            <p className="text-brand-ink/40">Budget</p>
+            <p className="text-ink-3">Budget</p>
             <p className="font-semibold text-brand-green-deep">up to {formatUgx(request.budget_max_ugx)}</p>
           </div>
           <div>
-            <p className="text-brand-ink/40">Sourcing</p>
+            <p className="text-ink-3">Sourcing</p>
             <p className="font-semibold text-brand-green-deep capitalize">{request.sourcing_type.replace(/_/g, ' ')}</p>
           </div>
         </div>
         {items.length > 0 && (
-          <div className="mt-4 border-t border-brand-green/10 pt-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Items</p>
-            <ul className="mt-2 flex flex-col gap-1 text-sm text-brand-ink/70">
+          <div className="mt-4 border-t border-line pt-4">
+            <p className="text-label font-semibold uppercase text-ink-3">Items</p>
+            <ul className="mt-2 flex flex-col gap-1 text-sm text-ink-2">
               {items.map((it) => <li key={it.id}>• {it.quantity}× {it.name}</li>)}
             </ul>
           </div>
         )}
-      </GlassCard>
+      </Card>
 
       {cancelled && (
-        <GlassCard hover={false} className="mt-6">
-          <p className="text-sm text-brand-ink/60">
+        <Card hover={false} className="mt-6">
+          <p className="text-sm text-ink-2">
             This request is {request.status}. Shoppers no longer see it. Need it after all?
           </p>
-          <GlassButton size="sm" variant="secondary" className="mt-3" onClick={() => navigate('/app/requests/new')}>
+          <Button size="sm" variant="secondary" className="mt-3" onClick={() => navigate('/app/requests/new')}>
             Post it again
-          </GlassButton>
-        </GlassCard>
+          </Button>
+        </Card>
       )}
 
       {!assigned && !cancelled && (
         <div className="mt-8">
-          <h2 className="mb-3 font-display text-lg font-medium text-brand-green-deep">
+          <h2 className="mb-3 font-display text-h3 font-medium text-brand-green-deep">
             Shopper offers {offers.length > 0 && `(${offers.length})`}
           </h2>
           {offers.length === 0 ? (
@@ -182,14 +175,14 @@ export function RequestDetailsPage() {
               title="Waiting for offers"
               description="Most requests get a first offer within about 15 minutes. They will appear here on their own, so there is no need to refresh."
               action={
-                <GlassButton size="sm" variant="ghost" disabled={cancelling} onClick={handleCancel}>
+                <Button size="sm" variant="ghost" disabled={cancelling} onClick={handleCancel}>
                   {cancelling ? 'Cancelling…' : 'Cancel this request'}
-                </GlassButton>
+                </Button>
               }
             />
           ) : (
             <>
-              <p className="mb-3 text-sm text-brand-ink/55">
+              <p className="mb-3 text-sm text-ink-2">
                 Pick the shopper you want. More may still come in while you decide.
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -203,9 +196,9 @@ export function RequestDetailsPage() {
                 ))}
               </div>
               <div className="mt-4">
-                <GlassButton size="sm" variant="ghost" disabled={cancelling} onClick={handleCancel}>
+                <Button size="sm" variant="ghost" disabled={cancelling} onClick={handleCancel}>
                   {cancelling ? 'Cancelling…' : 'Cancel this request instead'}
-                </GlassButton>
+                </Button>
               </div>
             </>
           )}

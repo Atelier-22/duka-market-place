@@ -1,36 +1,44 @@
-import { SelectHTMLAttributes, forwardRef, ReactNode } from 'react';
+import { SelectHTMLAttributes, forwardRef, ReactNode, useId } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { errorClasses, fieldClasses, hintClasses, labelClasses } from './Input';
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
+  hint?: string;
   children: ReactNode;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, id, className = '', children, ...rest }, ref) => {
-    const selectId = id ?? rest.name;
+  ({ label, error, hint, id, className = '', children, ...rest }, ref) => {
+    const generated = useId();
+    const selectId = id ?? rest.name ?? generated;
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={selectId} className="mb-1.5 block text-sm font-medium text-brand-green-deep">
+          <label htmlFor={selectId} className={labelClasses}>
             {label}
           </label>
         )}
-        <select
-          ref={ref}
-          id={selectId}
-          className={[
-            'w-full appearance-none rounded-xl border bg-brand-white px-4 py-3 text-[15px] text-brand-ink',
-            'transition-all duration-150',
-            'focus:outline-none focus:ring-2 focus:ring-brand-green-fresh/50 focus:border-brand-green-fresh',
-            error ? 'border-brand-red' : 'border-brand-green/15',
-            className,
-          ].join(' ')}
-          {...rest}
-        >
-          {children}
-        </select>
-        {error && <p className="mt-1 text-xs font-medium text-brand-red">{error}</p>}
+        <div className="relative">
+          <select
+            ref={ref}
+            id={selectId}
+            aria-invalid={error ? true : undefined}
+            className={fieldClasses(error, `appearance-none pl-3.5 pr-10 ${className}`)}
+            {...rest}
+          >
+            {children}
+          </select>
+          <ChevronDown
+            size={17}
+            strokeWidth={2}
+            className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-3"
+            aria-hidden
+          />
+        </div>
+        {hint && !error && <p className={hintClasses}>{hint}</p>}
+        {error && <p role="alert" className={errorClasses}>{error}</p>}
       </div>
     );
   }

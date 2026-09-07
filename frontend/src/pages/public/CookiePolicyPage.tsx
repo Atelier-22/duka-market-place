@@ -1,5 +1,6 @@
+import { Link } from 'react-router-dom';
 import { BRAND } from '../../config/brand';
-import { Clause, LegalDoc } from '../../components/layout/LegalDoc';
+import { Clause, LegalDoc, PROSE_LINK } from '../../components/layout/LegalDoc';
 
 export function CookiePolicyPage() {
   return (
@@ -62,10 +63,7 @@ export function CookiePolicyPage() {
         <p>
           Signing out discards the session token. Clearing site data in your browser removes the
           preferences as well. Neither deletes your account or your orders — for that, see the{' '}
-          <a className="font-medium text-brand-green-fresh underline" href="/privacy">
-            Privacy Policy
-          </a>
-          .
+          <Link className={PROSE_LINK} to="/privacy">Privacy Policy</Link>.
         </p>
       </Clause>
     </LegalDoc>

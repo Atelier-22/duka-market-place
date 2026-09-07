@@ -14,7 +14,11 @@ export function LazyLiveMap(props: LazyLiveMapProps) {
   return (
     <Suspense
       fallback={
-        <div className="shimmer-bg flex h-72 w-full items-center justify-center rounded-xl2 text-sm text-brand-ink/40">
+        <div
+          role="status"
+          aria-busy="true"
+          className="surface-2 flex h-72 w-full items-center justify-center rounded-xl text-small text-ink-3"
+        >
           Loading map…
         </div>
       }

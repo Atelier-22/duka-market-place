@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, X } from 'lucide-react';
-import { GlassCard } from '../ui/GlassCard';
-import { GlassButton } from '../ui/GlassButton';
+import { Avatar } from '../ui/Avatar';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
 import { StatusBadge } from '../ui/StatusBadge';
 import { OrderStatus } from '../../types';
 import { SHOPPER_STEP_LABELS } from '../../types';
@@ -23,42 +24,33 @@ interface ActiveJobCardProps {
   onDecide: (orderId: string, accept: boolean) => void;
 }
 
-function initials(name: string): string {
-  return name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
-}
-
 export function ActiveJobCard({ job, index, deciding, onDecide }: ActiveJobCardProps) {
   const needsAnswer = job.status === 'requested';
+  const detailsTo = `/shopper/orders/${job.id}`;
 
   return (
-    <GlassCard glow={needsAnswer ? 'yellow' : 'green'} padding="lg" hover={false}>
+    <Card tone={needsAnswer ? 'warning' : 'default'} hover={false}>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">
+        <p className="text-label font-semibold uppercase text-ink-3">
           {needsAnswer ? `Job ${index} · waiting for your answer` : `Job ${index}`}
         </p>
         <StatusBadge status={job.status} />
       </div>
 
       <div className="mt-3 flex items-center gap-3">
-        {job.customer_avatar ? (
-          <img src={job.customer_avatar} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
-        ) : (
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-green text-sm font-semibold text-white">
-            {initials(job.customer_name)}
-          </span>
-        )}
-        <div className="min-w-0">
-          <p className="truncate font-display text-lg font-medium text-brand-green-deep">
+        <Avatar name={job.customer_name} src={job.customer_avatar} size={44} />
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-display text-h3 font-medium text-brand-green-deep">
             {job.customer_name}
-          </p>
-          <p className="truncate text-xs text-brand-ink/40">
+          </h3>
+          <p className="truncate text-caption text-ink-3">
             #{job.id.slice(0, 8)}
             {job.request_title ? ` · ${job.request_title}` : ''}
           </p>
         </div>
       </div>
 
-      <p className="mt-3 text-sm text-brand-ink/60">
+      <p className="mt-3 text-small text-ink-2">
         {needsAnswer
           ? `${job.customer_name.split(' ')[0]} picked you for this job. Accept it or let it go back to other shoppers.`
           : SHOPPER_STEP_LABELS[job.status] ?? 'In progress'}
@@ -66,23 +58,23 @@ export function ActiveJobCard({ job, index, deciding, onDecide }: ActiveJobCardP
 
       {needsAnswer ? (
         <div className="mt-4 flex flex-wrap gap-2">
-          <GlassButton size="sm" disabled={deciding} onClick={() => onDecide(job.id, true)}>
+          <Button size="sm" loading={deciding} onClick={() => onDecide(job.id, true)}>
             {deciding ? 'Working…' : <><Check size={15} strokeWidth={2} /> Accept job</>}
-          </GlassButton>
-          <GlassButton size="sm" variant="danger" disabled={deciding} onClick={() => onDecide(job.id, false)}>
+          </Button>
+          <Button size="sm" variant="destructive" disabled={deciding} onClick={() => onDecide(job.id, false)}>
             <X size={15} strokeWidth={2} /> Decline
-          </GlassButton>
-          <Link to={`/shopper/orders/${job.id}`}>
-            <GlassButton size="sm" variant="secondary">View details</GlassButton>
+          </Button>
+          <Link to={detailsTo} className="inline-flex">
+            <Button size="sm" variant="secondary" tabIndex={-1}>View details</Button>
           </Link>
         </div>
       ) : (
-        <Link to={`/shopper/orders/${job.id}`} className="mt-4 inline-block">
-          <GlassButton size="sm">
+        <Link to={detailsTo} className="mt-4 inline-flex">
+          <Button size="sm" tabIndex={-1}>
             Continue job {index} <ArrowRight size={15} strokeWidth={2} />
-          </GlassButton>
+          </Button>
         </Link>
       )}
-    </GlassCard>
+    </Card>
   );
 }

@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
+import { Button } from '../../components/ui/Button';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonDetail, SkeletonRegion } from '../../components/ui/Skeleton';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { RatingStars } from '../../components/ui/RatingStars';
 import { ZoomableImage } from '../../components/ui/ZoomableImage';
 import { AdminUserActions } from '../../components/domain/AdminUserActions';
-import { AdminDetailShell, Empty, Field, Panel, formatDate, formatUgx } from './AdminDetailShell';
+import { AdminDetailShell, Empty, Field, Panel, Pill, PillTone, formatDate, formatUgx } from './AdminDetailShell';
 
-const VERIFICATION_TONE: Record<string, string> = {
-  approved: 'bg-brand-green-mist text-brand-green-deep',
-  pending: 'bg-brand-yellow-soft text-yellow-800',
-  rejected: 'bg-brand-red/10 text-brand-red',
-  unverified: 'bg-brand-ink/10 text-brand-ink/60',
+const VERIFICATION_TONE: Record<string, PillTone> = {
+  approved: 'success',
+  pending: 'warning',
+  rejected: 'danger',
+  unverified: 'neutral',
 };
 
 export function AdminShopperDetailPage() {
@@ -29,8 +32,25 @@ export function AdminShopperDetailPage() {
       .finally(() => setLoading(false));
   }, [id, reloadKey]);
 
+  function retry() {
+    setError(null);
+    setLoading(true);
+    setReloadKey((k) => k + 1);
+  }
+
   if (loading) return <SkeletonRegion label="Loading"><SkeletonDetail /></SkeletonRegion>;
-  if (error || !data) return <p className="p-8 text-sm text-brand-red">{error ?? 'Not found.'}</p>;
+  if (error || !data) {
+    return (
+      <div className="mx-auto max-w-5xl pb-16">
+        <PageHeader back title="Shopper" />
+        <EmptyState
+          title={error ?? 'Not found.'}
+          description="Check your connection and try again."
+          action={<Button variant="secondary" onClick={retry}>Try again</Button>}
+        />
+      </div>
+    );
+  }
 
   const { user, verifications, orders, earnings, ratings, offers } = data;
 
@@ -40,53 +60,57 @@ export function AdminShopperDetailPage() {
       subtitle={<>{user.phone}{user.email ? ` · ${user.email}` : ''}</>}
       badges={
         <>
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${VERIFICATION_TONE[user.verification_status] ?? VERIFICATION_TONE.unverified}`}>
+          <Pill tone={VERIFICATION_TONE[user.verification_status] ?? 'neutral'} className="capitalize">
             {user.verification_status ?? 'unverified'}
-          </span>
-          <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${user.is_online ? 'bg-brand-green-mist text-brand-green-deep' : 'bg-brand-ink/10 text-brand-ink/50'}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${user.is_online ? 'bg-brand-green-fresh' : 'bg-brand-ink/30'}`} />
+          </Pill>
+          <Pill tone={user.is_online ? 'success' : 'neutral'} dot>
             {user.is_online ? 'Online' : 'Offline'}
-          </span>
-          {!user.is_active && <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-semibold text-brand-red">Deactivated</span>}
+          </Pill>
+          {!user.is_active && <Pill tone="danger">Deactivated</Pill>}
         </>
       }
     >
       <Panel title="Performance">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <Field label="Rating" value={<span className="flex items-center gap-2">{Number(user.rating_avg ?? 0).toFixed(2)} <RatingStars value={Number(user.rating_avg ?? 0)} count={user.rating_count} /></span>} />
+          <Field
+            label="Rating"
+            value={
+              <span className="flex items-center gap-2 tabular-nums">
+                {Number(user.rating_avg ?? 0).toFixed(2)} <RatingStars value={Number(user.rating_avg ?? 0)} count={user.rating_count} />
+              </span>
+            }
+          />
           <Field label="Completed jobs" value={user.completed_jobs ?? 0} />
           <Field label="Cancelled jobs" value={user.cancelled_jobs ?? 0} />
           <Field label="Completion rate" value={`${Number(user.completion_rate ?? 0)}%`} />
-          <Field label="Available balance" value={formatUgx(user.available_balance_ugx)} />
-          <Field label="Lifetime earnings" value={formatUgx(user.lifetime_earnings_ugx)} />
+          <Field label="Available balance" value={<span className="tabular-nums">{formatUgx(user.available_balance_ugx)}</span>} />
+          <Field label="Lifetime earnings" value={<span className="tabular-nums">{formatUgx(user.lifetime_earnings_ugx)}</span>} />
           <Field label="Operating area" value={user.operating_area} />
           <Field label="Joined" value={formatDate(user.created_at)} />
         </div>
-        {user.bio && <p className="mt-4 border-t border-brand-green/10 pt-4 text-sm text-brand-ink/70">{user.bio}</p>}
+        {user.bio && <p className="mt-5 border-t border-line pt-4 text-sm text-ink-2">{user.bio}</p>}
       </Panel>
 
       <Panel title="Verification documents" count={verifications.length}>
-        {verifications.length === 0 ? <Empty>Nothing submitted.</Empty> : (
+        {verifications.length === 0 ? <Empty title="Nothing submitted" description="Documents the shopper uploads will appear here." /> : (
           <div className="grid gap-3 sm:grid-cols-2">
             {verifications.map((v: any) => (
-              <div key={v.id} className="rounded-xl2 border border-brand-green/15 p-3">
+              <div key={v.id} className="rounded-xl border border-line p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-brand-green-deep">{v.document_type.replace(/_/g, ' ')}</p>
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${VERIFICATION_TONE[v.status] ?? VERIFICATION_TONE.unverified}`}>
-                    {v.status}
-                  </span>
+                  <p className="text-sm font-medium capitalize text-brand-green-deep">{v.document_type.replace(/_/g, ' ')}</p>
+                  <Pill tone={VERIFICATION_TONE[v.status] ?? 'neutral'} className="capitalize">{v.status}</Pill>
                 </div>
                 {v.document_url && (
                   <ZoomableImage
                     src={v.document_url}
                     alt={v.document_type.replace(/_/g, ' ')}
                     caption={`${user.full_name} · ${v.document_type.replace(/_/g, ' ')}`}
-                    wrapperClassName="mt-2 w-full rounded-lg"
+                    wrapperClassName="mt-3 w-full rounded-lg"
                     className="h-32 w-full rounded-lg object-cover"
                   />
                 )}
-                <p className="mt-2 text-xs text-brand-ink/45">Submitted {formatDate(v.created_at)}</p>
-                {v.rejection_reason && <p className="mt-1 text-xs text-brand-red">{v.rejection_reason}</p>}
+                <p className="mt-2 text-caption text-ink-3">Submitted {formatDate(v.created_at)}</p>
+                {v.rejection_reason && <p className="mt-1 text-caption font-medium text-brand-red">{v.rejection_reason}</p>}
               </div>
             ))}
           </div>
@@ -94,23 +118,23 @@ export function AdminShopperDetailPage() {
       </Panel>
 
       <Panel title="Jobs taken" count={orders.length}>
-        {orders.length === 0 ? <Empty>No jobs yet.</Empty> : (
-          <div className="flex flex-col">
+        {orders.length === 0 ? <Empty title="No jobs yet" description="Orders this shopper takes on will be listed here." /> : (
+          <div className="-mx-2 flex flex-col">
             {orders.map((o: any) => (
               <Link
                 key={o.id}
                 to={`/admin/orders/${o.id}`}
-                className="flex items-center gap-3 border-b border-brand-green/5 py-2.5 last:border-0 hover:bg-brand-green-mist/40"
+                className="flex items-center gap-3 border-b border-line px-2 py-3 transition-colors last:border-0 hover:bg-surface-2"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-brand-green-deep">
                     #{o.id.slice(0, 8)} · {o.request_title ?? 'Order'}
                   </span>
-                  <span className="block truncate text-xs text-brand-ink/45">
+                  <span className="block truncate text-caption text-ink-3">
                     {o.customer_name} · {formatDate(o.created_at)}
                   </span>
                 </span>
-                <span className="shrink-0 text-sm text-brand-ink/60">{formatUgx(o.total_amount_ugx)}</span>
+                <span className="shrink-0 text-sm tabular-nums text-ink-2">{formatUgx(o.total_amount_ugx)}</span>
                 <StatusBadge status={o.status} />
               </Link>
             ))}
@@ -118,18 +142,18 @@ export function AdminShopperDetailPage() {
         )}
       </Panel>
 
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         <Panel title="Earnings history" count={earnings.length}>
-          {earnings.length === 0 ? <Empty>No earnings recorded.</Empty> : (
+          {earnings.length === 0 ? <Empty title="No earnings recorded" /> : (
             <div className="flex flex-col">
               {earnings.map((e: any) => (
-                <div key={e.id} className="flex items-center justify-between border-b border-brand-green/5 py-2 last:border-0">
-                  <span className="text-xs text-brand-ink/50">
+                <div key={e.id} className="flex items-center justify-between gap-3 border-b border-line py-2.5 last:border-0">
+                  <span className="min-w-0 truncate text-caption text-ink-3">
                     #{String(e.order_id).slice(0, 8)} · {formatDate(e.created_at)}
                   </span>
-                  <span className="flex items-center gap-2">
-                    <span className="text-sm text-brand-ink/75">{formatUgx(e.amount_ugx)}</span>
-                    <span className="text-[11px] uppercase tracking-wide text-brand-ink/35">{e.status}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="text-sm tabular-nums text-ink">{formatUgx(e.amount_ugx)}</span>
+                    <StatusBadge status={e.status} />
                   </span>
                 </div>
               ))}
@@ -138,13 +162,13 @@ export function AdminShopperDetailPage() {
         </Panel>
 
         <Panel title="Rating history" count={ratings.length}>
-          {ratings.length === 0 ? <Empty>Not rated yet.</Empty> : (
+          {ratings.length === 0 ? <Empty title="Not rated yet" /> : (
             <div className="flex flex-col">
               {ratings.map((r: any) => (
-                <div key={r.id} className="flex items-center justify-between border-b border-brand-green/5 py-2 last:border-0">
+                <div key={r.id} className="flex items-center justify-between gap-3 border-b border-line py-2.5 last:border-0">
                   <span className="min-w-0">
-                    <span className="block truncate text-sm text-brand-ink/75">{r.rated_by_name ?? 'A customer'}</span>
-                    <span className="block text-[11px] text-brand-ink/40">{formatDate(r.created_at)}</span>
+                    <span className="block truncate text-sm text-ink">{r.rated_by_name ?? 'A customer'}</span>
+                    <span className="block text-caption text-ink-3">{formatDate(r.created_at)}</span>
                   </span>
                   <RatingStars value={r.stars} />
                 </div>
@@ -155,20 +179,21 @@ export function AdminShopperDetailPage() {
       </div>
 
       <Panel title="Offers made" count={offers.length}>
-        {offers.length === 0 ? <Empty>No offers yet.</Empty> : (
+        {offers.length === 0 ? <Empty title="No offers yet" description="Offers this shopper makes on requests will be listed here." /> : (
           <div className="flex flex-col">
             {offers.map((o: any) => (
-              <div key={o.id} className="flex items-center justify-between border-b border-brand-green/5 py-2 last:border-0">
-                <span className="text-xs text-brand-ink/50">{formatDate(o.created_at)}</span>
+              <div key={o.id} className="flex items-center justify-between gap-3 border-b border-line py-2.5 last:border-0">
+                <span className="text-caption text-ink-3">{formatDate(o.created_at)}</span>
                 <span className="flex items-center gap-3">
-                  <span className="text-sm text-brand-ink/70">fee {formatUgx(o.shopping_fee_ugx)}</span>
-                  <span className="text-[11px] uppercase tracking-wide text-brand-ink/40">{o.status}</span>
+                  <span className="text-sm tabular-nums text-ink-2">fee {formatUgx(o.shopping_fee_ugx)}</span>
+                  <StatusBadge status={o.status} />
                 </span>
               </div>
             ))}
           </div>
         )}
       </Panel>
+
       <AdminUserActions
         userId={user.id}
         name={user.full_name}

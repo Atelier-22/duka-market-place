@@ -253,18 +253,18 @@ export function MobileNav({ items }: MobileNavProps) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="glass max-h-[85vh] w-full animate-fade-up overflow-y-auto rounded-t-2xl p-5"
+            className="surface max-h-[85vh] w-full animate-fade-up overflow-y-auto rounded-t-2xl p-5"
             style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}
           >
             <div className="mb-4 flex items-center justify-between">
               <div className="min-w-0">
-                <p className="truncate font-medium text-brand-ink">{user?.fullName}</p>
-                <p className="truncate text-xs text-brand-ink/40">{user?.phone}</p>
+                <p className="truncate font-medium text-ink">{user?.fullName}</p>
+                <p className="truncate text-xs text-ink-3">{user?.phone}</p>
               </div>
               <button
                 onClick={() => setMenuOpen(false)}
                 aria-label="Close menu"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-brand-ink/45 transition-transform hover:bg-brand-green-mist active:scale-95"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-3 transition-transform hover:bg-brand-green-mist active:scale-95"
               >
                 <X size={18} strokeWidth={2} />
               </button>
@@ -283,7 +283,7 @@ export function MobileNav({ items }: MobileNavProps) {
                         'flex items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-medium transition-[background-color,transform] active:scale-[0.97]',
                         isActive
                           ? 'bg-brand-green text-white'
-                          : 'bg-brand-green-mist/50 text-brand-ink/75',
+                          : 'bg-surface-2 text-ink-2',
                       ].join(' ')
                     }
                   >

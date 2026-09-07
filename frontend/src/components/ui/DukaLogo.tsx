@@ -59,14 +59,14 @@ export function DukaLockup({
         {BRAND.name}
       </p>
       <p
-        className={`mt-1 leading-tight ${light ? 'text-white/60' : 'text-brand-ink/50'}`}
+        className={`mt-1 leading-tight ${light ? 'text-white/60' : 'text-ink-3'}`}
         style={{ fontSize: Math.max(9, Math.round(markSize * 0.2)) }}
       >
         {BRAND.tagline}
       </p>
       {roleLabel && (
         <p
-          className={`mt-1.5 uppercase tracking-wider ${light ? 'text-white/40' : 'text-brand-ink/35'}`}
+          className={`mt-1.5 uppercase tracking-wider ${light ? 'text-white/40' : 'text-ink-3'}`}
           style={{ fontSize: Math.max(9, Math.round(markSize * 0.19)) }}
         >
           {roleLabel}

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Conversation, useConversations } from '../../hooks/useConversations';
 import { PresenceDot } from '../../components/domain/PresenceDot';
 import { MessageReceipt, tickStateFor } from '../../components/domain/MessageTicks';
-import { GlassCard } from '../../components/ui/GlassCard';
+import { Card } from '../../components/ui/Card';
 import { Bone, SkeletonChatRows, SkeletonRegion } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { StatusBadge } from '../../components/ui/StatusBadge';
@@ -103,7 +103,7 @@ export function ChatListPage() {
           />
         </div>
       ) : (
-        <GlassCard padding="md" hover={false} className="mt-5 overflow-hidden">
+        <Card padding="md" hover={false} className="mt-5 overflow-hidden">
           <div className="flex flex-col">
             {filtered.map((c) => (
               <Link
@@ -161,7 +161,7 @@ export function ChatListPage() {
               </Link>
             ))}
           </div>
-        </GlassCard>
+        </Card>
       )}
     </div>
   );

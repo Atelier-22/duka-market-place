@@ -43,8 +43,8 @@ export function ImageUpload({ folder, label, value, onChange, shape = 'card' }: 
       <div className={round ? 'flex items-center gap-4' : ''}>
         <div
           className={[
-            'glass relative flex items-center justify-center overflow-hidden',
-            round ? 'h-24 w-24 shrink-0 rounded-full' : 'h-36 w-full rounded-xl2 border-dashed',
+            'surface relative flex items-center justify-center overflow-hidden',
+            round ? 'h-24 w-24 shrink-0 rounded-full' : 'h-36 w-full rounded-2xl border-dashed',
           ].join(' ')}
         >
           {value ? (

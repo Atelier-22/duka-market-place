@@ -13,8 +13,7 @@ import { HowItWorksPage } from './pages/public/HowItWorksPage';
 import { BecomeShopperPage } from './pages/public/BecomeShopperPage';
 import { AboutPage } from './pages/public/AboutPage';
 import { FaqPage } from './pages/public/FaqPage';
-import { LoginPage } from './pages/public/LoginPage';
-import { RegisterPage } from './pages/public/RegisterPage';
+import { AuthPage } from './pages/public/AuthPage';
 import { PrivacyPolicyPage } from './pages/public/PrivacyPolicyPage';
 import { TermsPage } from './pages/public/TermsPage';
 import { RefundPolicyPage } from './pages/public/RefundPolicyPage';
@@ -74,9 +73,10 @@ export default function App() {
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/refunds" element={<RefundPolicyPage />} />
           <Route path="/cookies" element={<CookiePolicyPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
         </Route>
+
+        <Route path="/login" element={<AuthPage mode="login" />} />
+        <Route path="/register" element={<AuthPage mode="signup" />} />
 
         <Route element={<ProtectedRoute allow={['customer']} />}>
           <Route element={<CustomerLayout />}>

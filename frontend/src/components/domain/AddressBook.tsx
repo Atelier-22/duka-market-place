@@ -1,9 +1,11 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { Check, MapPin, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { FormEvent, ReactNode, useEffect, useState } from 'react';
+import { MapPin, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { Address } from '../../types';
-import { GlassButton } from '../ui/GlassButton';
+import { Button } from '../ui/Button';
+import { EmptyState } from '../ui/EmptyState';
 import { Input } from '../ui/Input';
+import { Bone, SkeletonRegion } from '../ui/Skeleton';
 import { useToast } from '../ui/Toast';
 
 interface Draft {
@@ -15,6 +17,29 @@ interface Draft {
 }
 
 const EMPTY: Draft = { id: null, label: 'Home', line1: '', landmark: '', city: 'Kampala' };
+
+/** Tertiary, icon-only action for a row; 44px tap target. */
+function IconButton({
+  label, onClick, tone = 'default', children,
+}: { label: string; onClick: () => void; tone?: 'default' | 'danger'; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={[
+        'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ink-3',
+        'transition-colors duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:shadow-focus',
+        tone === 'danger'
+          ? 'hover:bg-danger-soft/50 hover:text-brand-red'
+          : 'hover:bg-brand-green-mist hover:text-brand-green-deep',
+      ].join(' ')}
+    >
+      {children}
+    </button>
+  );
+}
 
 export function AddressBook() {
   const { push } = useToast();
@@ -88,58 +113,75 @@ export function AddressBook() {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-2" aria-busy="true">
+      <SkeletonRegion label="Loading addresses" className="flex flex-col gap-2">
         {[0, 1].map((i) => (
-          <div key={i} className="h-20 animate-pulse rounded-xl2 bg-brand-green-mist/60" />
+          <Bone key={i} className="h-20 w-full rounded-xl" />
         ))}
-      </div>
+      </SkeletonRegion>
     );
   }
+
+  const addButton = (
+    <Button type="button" size="sm" variant="secondary" onClick={() => setDraft(EMPTY)}>
+      <Plus size={15} strokeWidth={2} /> Add an address
+    </Button>
+  );
 
   return (
     <div>
       {addresses.length === 0 && !draft && (
-        <p className="text-sm text-brand-ink/55">
-          No saved addresses yet. Add one here and it will be ready the next time you order.
-        </p>
+        <EmptyState
+          size="sm"
+          icon={<MapPin strokeWidth={1.75} />}
+          title="No saved addresses yet"
+          description="Add one here and it will be ready the next time you order."
+          action={addButton}
+        />
       )}
 
-      <div className="flex flex-col gap-2">
-        {addresses.map((a) => (
-          <div key={a.id} className="rounded-xl2 border border-brand-green/12 p-3">
-            {confirmDelete === a.id ? (
-              <div>
-                <p className="text-sm font-medium text-brand-ink">Remove this address?</p>
-                <p className="mt-1 text-xs text-brand-ink/55">
-                  It disappears from your list and from the order form. Orders already delivered
-                  here keep showing it.
-                </p>
-                <div className="mt-3 flex gap-2">
-                  <GlassButton size="sm" variant="danger" onClick={() => remove(a.id)}>Remove</GlassButton>
-                  <GlassButton size="sm" variant="ghost" onClick={() => setConfirmDelete(null)}>Keep it</GlassButton>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex w-5 shrink-0 items-center justify-center">
-                  <MapPin size={18} strokeWidth={1.75} className="text-brand-ink/45" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-brand-green-deep">
-                    {a.label}
-                    {a.is_default && (
-                      <span className="rounded-full bg-brand-green-mist px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-green-deep">
-                        Default
-                      </span>
-                    )}
+      {addresses.length > 0 && (
+        <ul className="overflow-hidden rounded-xl border border-line bg-surface">
+          {addresses.map((a) => (
+            <li key={a.id} className="border-b border-line last:border-0">
+              {confirmDelete === a.id ? (
+                <div className="px-4 py-3">
+                  <p className="text-body font-medium text-ink">Remove this address?</p>
+                  <p className="mt-1 text-caption text-ink-3">
+                    It disappears from your list and from the order form. Orders already delivered
+                    here keep showing it.
                   </p>
-                  <p className="mt-0.5 break-words text-sm text-brand-ink/70">{a.line1}</p>
-                  {a.landmark && <p className="text-xs text-brand-ink/50">Near {a.landmark}</p>}
-                  <p className="text-xs text-brand-ink/40">{a.city}</p>
-
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button
-                      type="button"
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button size="sm" variant="destructive" onClick={() => remove(a.id)}>Remove</Button>
+                    <Button size="sm" variant="tertiary" onClick={() => setConfirmDelete(null)}>Keep it</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 px-4 py-3">
+                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-green-mist text-brand-green">
+                    <MapPin size={17} strokeWidth={1.8} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-center gap-2 text-body font-medium text-ink">
+                      {a.label}
+                      {a.is_default && (
+                        <span className="rounded-full bg-brand-green-mist px-2 py-0.5 text-caption font-semibold text-brand-green-deep">
+                          Default
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 break-words text-small text-ink-2">{a.line1}</p>
+                    <p className="text-caption text-ink-3">
+                      {a.landmark ? `Near ${a.landmark} · ` : ''}{a.city}
+                    </p>
+                    {!a.is_default && (
+                      <Button variant="link" onClick={() => makeDefault(a.id)} className="mt-1.5">
+                        Make default
+                      </Button>
+                    )}
+                  </div>
+                  <div className="-mr-2 flex shrink-0 items-center">
+                    <IconButton
+                      label={`Edit ${a.label}`}
                       onClick={() => setDraft({
                         id: a.id,
                         label: a.label,
@@ -147,39 +189,25 @@ export function AddressBook() {
                         landmark: a.landmark ?? '',
                         city: a.city,
                       })}
-                      className="flex min-h-[36px] items-center gap-1.5 rounded-xl border border-brand-green/15 px-3 text-xs font-medium text-brand-green-deep hover:bg-brand-green-mist"
                     >
-                      <Pencil size={13} strokeWidth={2} /> Edit
-                    </button>
-                    {!a.is_default && (
-                      <button
-                        type="button"
-                        onClick={() => makeDefault(a.id)}
-                        className="flex min-h-[36px] items-center gap-1.5 rounded-xl border border-brand-green/15 px-3 text-xs font-medium text-brand-green-deep hover:bg-brand-green-mist"
-                      >
-                        <Check size={13} strokeWidth={2} /> Make default
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDelete(a.id)}
-                      className="flex min-h-[36px] items-center gap-1.5 rounded-xl border border-brand-red/20 px-3 text-xs font-medium text-brand-red hover:bg-brand-red/10"
-                    >
-                      <Trash2 size={13} strokeWidth={2} /> Remove
-                    </button>
+                      <Pencil size={16} strokeWidth={2} />
+                    </IconButton>
+                    <IconButton label={`Remove ${a.label}`} tone="danger" onClick={() => setConfirmDelete(a.id)}>
+                      <Trash2 size={16} strokeWidth={2} />
+                    </IconButton>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {draft ? (
-        <form onSubmit={save} className="mt-4 flex flex-col gap-3 rounded-xl2 border border-brand-green/15 p-3">
-          <p className="text-sm font-semibold text-brand-green-deep">
+        <form onSubmit={save} className="mt-4 flex flex-col gap-3 rounded-xl border border-line p-4">
+          <h3 className="font-display text-h3 font-medium text-brand-green-deep">
             {draft.id ? 'Edit address' : 'New address'}
-          </p>
+          </h3>
           <Input
             label="Name for it"
             placeholder="Home, Work, Mum's place"
@@ -204,25 +232,17 @@ export function AddressBook() {
             value={draft.city}
             onChange={(e) => setDraft({ ...draft, city: e.target.value })}
           />
-          <div className="flex gap-2">
-            <GlassButton type="submit" size="sm" disabled={saving || draft.line1.trim().length < 3}>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" size="sm" loading={saving} disabled={draft.line1.trim().length < 3}>
               {saving ? 'Saving…' : 'Save address'}
-            </GlassButton>
-            <GlassButton type="button" size="sm" variant="ghost" onClick={() => setDraft(null)}>
+            </Button>
+            <Button type="button" size="sm" variant="tertiary" onClick={() => setDraft(null)}>
               <X size={14} strokeWidth={2} /> Cancel
-            </GlassButton>
+            </Button>
           </div>
         </form>
       ) : (
-        <GlassButton
-          type="button"
-          size="sm"
-          variant="secondary"
-          className="mt-4"
-          onClick={() => setDraft(EMPTY)}
-        >
-          <Plus size={15} strokeWidth={2} /> Add an address
-        </GlassButton>
+        addresses.length > 0 && <div className="mt-4">{addButton}</div>
       )}
     </div>
   );

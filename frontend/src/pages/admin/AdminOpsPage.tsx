@@ -1,27 +1,31 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Eye, EyeOff, Megaphone, MapPin, Plus, ScrollText } from 'lucide-react';
+import { Eye, EyeOff, MapPin, Megaphone, Plus, ScrollText } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { GlassCard } from '../../components/ui/GlassCard';
-import { GlassButton } from '../../components/ui/GlassButton';
-import { Input } from '../../components/ui/Input';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Input, labelClasses } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
-import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Tabs } from '../../components/ui/Tabs';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { SkeletonHeading, SkeletonRegion, SkeletonRows } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
-import { formatDate } from './AdminDetailShell';
+import { AdminTable, Td, Th, Tr, formatDate } from './AdminDetailShell';
 
 type Tab = 'announce' | 'places' | 'audit';
+type Audience = 'all' | 'customers' | 'shoppers';
 
-const AUDIENCES = [
+const AUDIENCES: { value: Audience; label: string }[] = [
   { value: 'all', label: 'Everyone' },
   { value: 'customers', label: 'Customers' },
   { value: 'shoppers', label: 'Shoppers' },
-] as const;
+];
 
 export function AdminOpsPage() {
   const { push } = useToast();
   const [tab, setTab] = useState<Tab>('announce');
 
-  const [audience, setAudience] = useState<'all' | 'customers' | 'shoppers'>('all');
+  const [audience, setAudience] = useState<Audience>('all');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
@@ -29,6 +33,8 @@ export function AdminOpsPage() {
   const [locations, setLocations] = useState<any[]>([]);
   const [newName, setNewName] = useState('');
   const [newCity, setNewCity] = useState('Kampala');
+  const [adding, setAdding] = useState(false);
+  const [toggling, setToggling] = useState<string | null>(null);
   const [entries, setEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -62,6 +68,7 @@ export function AdminOpsPage() {
 
   async function addLocation() {
     if (!newName.trim()) return;
+    setAdding(true);
     try {
       await api.post('/admin/locations', { name: newName.trim(), city: newCity.trim() || 'Kampala' });
       setNewName('');
@@ -69,162 +76,161 @@ export function AdminOpsPage() {
       load();
     } catch (err) {
       push(apiErrorMessage(err), 'error');
+    } finally {
+      setAdding(false);
     }
   }
 
   async function toggle(id: string) {
+    setToggling(id);
     try {
       await api.post(`/admin/locations/${id}/toggle`);
       load();
     } catch (err) {
       push(apiErrorMessage(err), 'error');
+    } finally {
+      setToggling(null);
     }
   }
 
   if (loading) {
     return (
       <SkeletonRegion label="Loading" className="pb-10">
-        <SkeletonHeading subtitle={false} />
+        <SkeletonHeading />
         <div className="mt-6"><SkeletonRows count={4} /></div>
       </SkeletonRegion>
     );
   }
 
-  const TABS: { id: Tab; label: string; icon: typeof Megaphone }[] = [
-    { id: 'announce', label: 'Announce', icon: Megaphone },
-    { id: 'places', label: 'Places', icon: MapPin },
-    { id: 'audit', label: 'Audit log', icon: ScrollText },
-  ];
-
   return (
     <div className="pb-10">
-      <h1 className="font-display text-2xl font-medium text-brand-green-deep">Operations</h1>
+      <PageHeader
+        title="Operations"
+        subtitle="Announcements, the places shoppers can be sent to, and the audit log."
+      />
 
-      <div className="mt-5 flex gap-1 rounded-full border border-brand-green/15 p-1">
-        {TABS.map((t) => {
-          const Icon = t.icon;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-colors ${
-                tab === t.id ? 'bg-brand-green text-white' : 'text-brand-ink/55 hover:bg-brand-green-mist'
-              }`}
-            >
-              <Icon size={15} strokeWidth={1.9} /> {t.label}
-            </button>
-          );
-        })}
-      </div>
+      <Tabs
+        ariaLabel="Operations"
+        value={tab}
+        onChange={setTab}
+        className="mb-5"
+        items={[
+          { value: 'announce', label: 'Announce' },
+          { value: 'places', label: 'Places', count: locations.length },
+          { value: 'audit', label: 'Audit log', count: entries.length },
+        ]}
+      />
 
       {tab === 'announce' && (
-        <GlassCard padding="lg" hover={false} className="mt-5 max-w-2xl">
-          <p className="text-sm text-brand-ink/60">
+        <Card padding="lg" hover={false} className="max-w-3xl">
+          <h2 className="flex items-center gap-2 font-display text-h3 font-medium text-brand-green-deep">
+            <Megaphone size={18} strokeWidth={1.75} className="text-brand-green" /> Send an announcement
+          </h2>
+          <p className="mt-1 text-small text-ink-2">
             Goes to everyone in the audience who has not turned announcements off, and who is not
             suspended. It lands in their notification bell.
           </p>
 
-          <div className="mt-4 flex gap-1 rounded-full border border-brand-green/15 p-1">
-            {AUDIENCES.map((a) => (
-              <button
-                key={a.value}
-                type="button"
-                onClick={() => setAudience(a.value)}
-                className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors ${
-                  audience === a.value ? 'bg-brand-green-mist text-brand-green-deep' : 'text-brand-ink/55'
-                }`}
-              >
-                {a.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3">
+          <div className="mt-5 flex flex-col gap-4">
+            <div>
+              <p className={labelClasses}>Audience</p>
+              <Tabs
+                ariaLabel="Audience"
+                value={audience}
+                onChange={setAudience}
+                items={AUDIENCES.map((a) => ({ value: a.value, label: a.label }))}
+              />
+            </div>
             <Input label="Headline" value={title} onChange={(e) => setTitle(e.target.value)} />
             <Textarea label="Message (optional)" rows={3} value={body} onChange={(e) => setBody(e.target.value)} />
             <div>
-              <GlassButton disabled={sending || !title.trim()} onClick={send}>
-                <Megaphone size={15} strokeWidth={2} /> {sending ? 'Sending…' : 'Send announcement'}
-              </GlassButton>
+              <Button loading={sending} disabled={!title.trim()} onClick={send}>
+                <Megaphone size={16} strokeWidth={2} /> Send announcement
+              </Button>
             </div>
           </div>
-        </GlassCard>
+        </Card>
       )}
 
       {tab === 'places' && (
-        <>
-          <GlassCard padding="lg" hover={false} className="mt-5 max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Add a market or shop</p>
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-5">
+          <Card padding="lg" hover={false} className="max-w-3xl">
+            <h2 className="flex items-center gap-2 font-display text-h3 font-medium text-brand-green-deep">
+              <MapPin size={18} strokeWidth={1.75} className="text-brand-green" /> Add a market or shop
+            </h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
               <Input label="Name" value={newName} onChange={(e) => setNewName(e.target.value)} />
               <Input label="City" value={newCity} onChange={(e) => setNewCity(e.target.value)} />
-              <GlassButton disabled={!newName.trim()} onClick={addLocation}>
-                <Plus size={15} strokeWidth={2} /> Add
-              </GlassButton>
+              <Button loading={adding} disabled={!newName.trim()} onClick={addLocation}>
+                <Plus size={16} strokeWidth={2} /> Add
+              </Button>
             </div>
-          </GlassCard>
+          </Card>
 
-          <GlassCard padding="sm" hover={false} className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-brand-green/10 text-left text-xs uppercase tracking-wide text-brand-ink/40">
-                  <th className="px-3 py-3">Place</th>
-                  <th className="px-3 py-3">City</th>
-                  <th className="px-3 py-3">Requests</th>
-                  <th className="px-3 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {locations.map((l) => (
-                  <tr key={l.id} className="border-b border-brand-green/5 last:border-0">
-                    <td className="px-3 py-3">
-                      <span className={l.is_active ? 'font-medium text-brand-ink' : 'text-brand-ink/40 line-through'}>
-                        {l.name}
-                      </span>
-                      <span className="ml-2 text-xs capitalize text-brand-ink/40">{l.type}</span>
-                    </td>
-                    <td className="px-3 py-3 text-brand-ink/60">{l.city}</td>
-                    <td className="px-3 py-3 text-brand-ink/60">{l.request_count}</td>
-                    <td className="px-3 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => toggle(l.id)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-brand-green/15 px-3 py-1.5 text-xs font-medium text-brand-ink/60 hover:bg-brand-green-mist"
-                      >
-                        {l.is_active
-                          ? <><EyeOff size={13} strokeWidth={2} /> Hide</>
-                          : <><Eye size={13} strokeWidth={2} /> Show</>}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </GlassCard>
-        </>
+          {locations.length === 0 ? (
+            <EmptyState
+              icon={<MapPin />}
+              title="No places yet"
+              description="Add the markets and shops shoppers can be sent to."
+            />
+          ) : (
+            <AdminTable
+              caption="Places"
+              head={
+                <>
+                  <Th>Place</Th>
+                  <Th>City</Th>
+                  <Th align="right">Requests</Th>
+                  <Th align="right"><span className="sr-only">Visibility</span></Th>
+                </>
+              }
+            >
+              {locations.map((l) => (
+                <Tr key={l.id}>
+                  <Td>
+                    <span className={l.is_active ? 'font-medium' : 'text-ink-3 line-through'}>{l.name}</span>
+                    <span className="ml-2 text-caption capitalize text-ink-3">{l.type}</span>
+                  </Td>
+                  <Td muted>{l.city}</Td>
+                  <Td numeric muted>{l.request_count}</Td>
+                  <Td align="right">
+                    <Button size="sm" variant="secondary" loading={toggling === l.id} onClick={() => toggle(l.id)}>
+                      {l.is_active
+                        ? <><EyeOff size={16} strokeWidth={2} /> Hide</>
+                        : <><Eye size={16} strokeWidth={2} /> Show</>}
+                    </Button>
+                  </Td>
+                </Tr>
+              ))}
+            </AdminTable>
+          )}
+        </div>
       )}
 
       {tab === 'audit' && (
-        <GlassCard padding="sm" hover={false} className="mt-5">
-          {entries.length === 0 ? (
-            <p className="px-3 py-10 text-center text-sm text-brand-ink/40">Nothing has been done yet.</p>
-          ) : (
-            <div className="flex flex-col">
+        entries.length === 0 ? (
+          <EmptyState
+            icon={<ScrollText />}
+            title="Nothing has been done yet"
+            description="Every admin action is recorded here as it happens."
+          />
+        ) : (
+          <Card padding="none" hover={false}>
+            <ul>
               {entries.map((e) => (
-                <div key={e.id} className="flex items-start gap-3 border-b border-brand-green/5 px-3 py-3 last:border-0">
-                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-green/40" />
+                <li key={e.id} className="flex items-start gap-3 border-b border-line px-4 py-3 last:border-0">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-green-fresh" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-brand-ink/80">{e.summary}</p>
-                    <p className="mt-0.5 text-xs text-brand-ink/40">
+                    <p className="text-small text-ink">{e.summary}</p>
+                    <p className="mt-0.5 text-caption text-ink-3">
                       {e.admin_name} · {e.action} · {formatDate(e.created_at)}
                     </p>
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
-          )}
-        </GlassCard>
+            </ul>
+          </Card>
+        )
       )}
     </div>
   );

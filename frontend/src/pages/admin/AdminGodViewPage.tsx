@@ -1,118 +1,131 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
 import { Eye } from 'lucide-react';
 import { api } from '../../services/api';
-import { GlassCard } from '../../components/ui/GlassCard';
-import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
-import { formatDate, formatUgx } from './AdminDetailShell';
-
-function Stat({ label, value, to, tone = 'ink' }: {
-  label: string; value: string | number; to?: string; tone?: 'ink' | 'good' | 'warn';
-}) {
-  const colour = tone === 'good' ? 'text-brand-green-fresh' : tone === 'warn' ? 'text-brand-red' : 'text-brand-green-deep';
-  const inner = (
-    <GlassCard padding="sm" hover={!!to}>
-      <p className="text-[11px] uppercase tracking-wide text-brand-ink/40">{label}</p>
-      <p className={`mt-1 font-display text-xl font-medium ${colour}`}>{value}</p>
-    </GlassCard>
-  );
-  return to ? <Link to={to}>{inner}</Link> : inner;
-}
+import { Button } from '../../components/ui/Button';
+import { PageHeader, SectionHeader } from '../../components/ui/PageHeader';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { SkeletonHeading, SkeletonRegion, SkeletonStats } from '../../components/ui/Skeleton';
+import { Empty, Panel, Pill, StatTile, formatDate, formatUgx } from './AdminDetailShell';
 
 export function AdminGodViewPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const load = useCallback(
+    () => api.get('/admin/god-view').then((r) => setData(r.data)).finally(() => setLoading(false)),
+    []
+  );
+
   useEffect(() => {
-    const load = () => api.get('/admin/god-view').then((r) => setData(r.data)).finally(() => setLoading(false));
     load();
     const t = setInterval(load, 20_000);
     return () => clearInterval(t);
-  }, []);
+  }, [load]);
 
   if (loading && !data) {
     return (
       <SkeletonRegion label="Loading" className="pb-10">
-        <SkeletonHeading subtitle={false} />
-        <div className="mt-6"><SkeletonStats /></div><div className="mt-6"><SkeletonStats /></div>
+        <SkeletonHeading />
+        <div className="mt-6"><SkeletonStats /></div>
+        <div className="mt-6"><SkeletonStats /></div>
       </SkeletonRegion>
     );
   }
-  if (!data) return <p className="py-16 text-center text-sm text-brand-ink/45">Could not load this page. Refresh to try again.</p>;
+  if (!data) {
+    return (
+      <div className="pb-10">
+        <PageHeader title="Everything" />
+        <EmptyState
+          title="Could not load this page"
+          description="Check your connection and try again."
+          action={<Button variant="secondary" onClick={() => { setLoading(true); load(); }}>Try again</Button>}
+        />
+      </div>
+    );
+  }
 
   const { platform: p, staffActivity, capacity } = data;
 
   return (
     <div className="pb-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-medium text-brand-green-deep">Everything</h1>
-          <p className="mt-1 text-sm text-brand-ink/50">
-            The whole platform, and every action your admins have taken on it.
-          </p>
-        </div>
-        <span className="flex items-center gap-2 rounded-full bg-brand-yellow-soft px-3 py-1.5 text-xs font-semibold text-yellow-800">
-          <Eye size={13} strokeWidth={2} /> Super admin
-        </span>
-      </div>
+      <PageHeader
+        title="Everything"
+        subtitle="The whole platform, and every action your admins have taken on it."
+        actions={
+          <Pill tone="warning">
+            <Eye size={13} strokeWidth={2} /> Super admin
+          </Pill>
+        }
+      />
 
-      <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">People</p>
-      <div className="mt-2 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Customers" value={p.customers} to="/admin/customers" />
-        <Stat label="Shoppers" value={p.shoppers} to="/admin/shoppers" />
-        <Stat label="Suspended" value={p.suspended_users} tone={p.suspended_users ? 'warn' : 'ink'} />
-        <Stat
-          label="Staff"
-          value={`${capacity.admins.used + capacity.superAdmins.used}`}
-          to="/admin/staff"
-        />
-      </div>
-
-      <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Trade</p>
-      <div className="mt-2 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Orders in flight" value={p.orders_in_flight} to="/admin/orders" />
-        <Stat label="Orders, all time" value={p.orders} />
-        <Stat label="Gross value" value={formatUgx(p.gmv_ugx)} />
-        <Stat label="Platform revenue" value={formatUgx(p.revenue_ugx)} tone="good" />
-      </div>
-
-      <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Needs attention</p>
-      <div className="mt-2 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Open disputes" value={p.open_disputes} to="/admin/disputes"
-          tone={p.open_disputes ? 'warn' : 'ink'} />
-        <Stat label="Awaiting verification" value={p.pending_verifications} to="/admin/verifications"
-          tone={p.pending_verifications ? 'warn' : 'ink'} />
-        <Stat label="Owed to shoppers" value={formatUgx(p.owed_ugx)} to="/admin/finance"
-          tone={Number(p.owed_ugx) > 0 ? 'warn' : 'ink'} />
-        <Stat label="Admin places left" value={capacity.admins.limit - capacity.admins.used} to="/admin/staff" />
-      </div>
-
-      <GlassCard padding="lg" hover={false} className="mt-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">
-          What your staff have been doing
-        </p>
-        {staffActivity.length === 0 ? (
-          <p className="mt-4 text-sm text-brand-ink/45">Nothing yet.</p>
-        ) : (
-          <div className="mt-3 flex flex-col">
-            {staffActivity.map((a: any) => (
-              <div key={a.id} className="flex items-start gap-3 border-b border-brand-green/5 py-2.5 last:border-0">
-                <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
-                  a.admin_role === 'super_admin' ? 'bg-brand-yellow' : 'bg-brand-green/40'
-                }`} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-brand-ink/80">{a.summary}</p>
-                  <p className="mt-0.5 text-xs text-brand-ink/40">
-                    {a.admin_name}
-                    {a.admin_role === 'super_admin' && ' · super admin'}
-                    {' · '}{a.action}{' · '}{formatDate(a.created_at)}
-                  </p>
-                </div>
-              </div>
-            ))}
+      <div className="flex flex-col gap-6">
+        <section>
+          <SectionHeader title="People" />
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <StatTile label="Customers" value={p.customers} to="/admin/customers" />
+            <StatTile label="Shoppers" value={p.shoppers} to="/admin/shoppers" />
+            <StatTile label="Suspended" value={p.suspended_users} tone={p.suspended_users ? 'danger' : 'default'} />
+            <StatTile
+              label="Staff"
+              value={`${capacity.admins.used + capacity.superAdmins.used}`}
+              to="/admin/staff"
+            />
           </div>
-        )}
-      </GlassCard>
+        </section>
+
+        <section>
+          <SectionHeader title="Trade" />
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <StatTile label="Orders in flight" value={p.orders_in_flight} to="/admin/orders" />
+            <StatTile label="Orders, all time" value={p.orders} />
+            <StatTile label="Gross value" value={formatUgx(p.gmv_ugx)} />
+            <StatTile label="Platform revenue" value={formatUgx(p.revenue_ugx)} tone="success" />
+          </div>
+        </section>
+
+        <section>
+          <SectionHeader title="Needs attention" />
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <StatTile
+              label="Open disputes" value={p.open_disputes} to="/admin/disputes"
+              tone={p.open_disputes ? 'danger' : 'default'}
+            />
+            <StatTile
+              label="Awaiting verification" value={p.pending_verifications} to="/admin/verifications"
+              tone={p.pending_verifications ? 'danger' : 'default'}
+            />
+            <StatTile
+              label="Owed to shoppers" value={formatUgx(p.owed_ugx)} to="/admin/finance"
+              tone={Number(p.owed_ugx) > 0 ? 'danger' : 'default'}
+            />
+            <StatTile label="Admin places left" value={capacity.admins.limit - capacity.admins.used} to="/admin/staff" />
+          </div>
+        </section>
+
+        <Panel title="What your staff have been doing" count={staffActivity.length}>
+          {staffActivity.length === 0 ? (
+            <Empty title="Nothing yet" description="Admin actions will be listed here as they happen." />
+          ) : (
+            <ul className="flex flex-col">
+              {staffActivity.map((a: any) => (
+                <li key={a.id} className="flex items-start gap-3 border-b border-line py-3 last:border-0">
+                  <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${
+                    a.admin_role === 'super_admin' ? 'bg-brand-yellow' : 'bg-brand-green-fresh'
+                  }`} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-small text-ink">{a.summary}</p>
+                    <p className="mt-0.5 text-caption text-ink-3">
+                      {a.admin_name}
+                      {a.admin_role === 'super_admin' && ' · super admin'}
+                      {' · '}{a.action}{' · '}{formatDate(a.created_at)}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
     </div>
   );
 }

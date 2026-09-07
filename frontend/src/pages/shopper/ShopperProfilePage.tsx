@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
-import { GlassCard } from '../../components/ui/GlassCard';
+import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
-import { GlassButton } from '../../components/ui/GlassButton';
+import { Button } from '../../components/ui/Button';
 import { api, apiErrorMessage } from '../../services/api';
 import { useToast } from '../../components/ui/Toast';
 import { useAuth } from '../../context/AuthContext';
@@ -46,7 +46,7 @@ export function ShopperProfilePage() {
   return (
     <div className="mx-auto max-w-xl pb-10">
       <h1 className="font-display text-2xl font-medium text-brand-green-deep">Profile</h1>
-      <GlassCard padding="lg" hover={false} className="mt-6">
+      <Card padding="lg" hover={false} className="mt-6">
         <div className="flex flex-col gap-4">
           <Input label="Full name" defaultValue={user?.fullName} disabled />
           <Input label="Phone number" defaultValue={user?.phone} disabled />
@@ -58,27 +58,27 @@ export function ShopperProfilePage() {
             value={bio}
             onChange={(e) => setBio(e.target.value)}
           />
-          <GlassButton disabled={saving} onClick={handleSave}>
+          <Button disabled={saving} onClick={handleSave}>
             {saving ? 'Saving…' : 'Save changes'}
-          </GlassButton>
+          </Button>
         </div>
-      </GlassCard>
+      </Card>
 
-      <GlassCard padding="lg" hover={false} className="mt-6">
+      <Card padding="lg" hover={false} className="mt-6">
         <p className="font-display text-lg font-medium text-brand-green-deep">Need something yourself?</p>
         <p className="mt-1.5 text-sm text-brand-ink/60">
           The same account can post shopping requests. Switch to customer mode to have
           someone else do the running around — you can switch back any time.
         </p>
-        <GlassButton
+        <Button
           className="mt-4"
           variant="secondary"
           disabled={switching}
           onClick={handleSwitchToCustomer}
         >
           {switching ? 'Switching…' : <><ShoppingCart size={17} strokeWidth={2} /> Switch to customer mode</>}
-        </GlassButton>
-      </GlassCard>
+        </Button>
+      </Card>
     </div>
   );
 }

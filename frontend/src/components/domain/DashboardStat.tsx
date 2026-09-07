@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { GlassCard } from '../ui/GlassCard';
+import { Card } from '../ui/Card';
 
 interface DashboardStatProps {
   label: string;
@@ -11,19 +11,19 @@ interface DashboardStatProps {
 
 const ACCENT: Record<string, string> = {
   green: 'text-brand-green-deep',
-  yellow: 'text-yellow-700',
+  yellow: 'text-warning',
   red: 'text-brand-red',
 };
 
 export function DashboardStat({ label, value, icon, trend, accent = 'green' }: DashboardStatProps) {
   return (
-    <GlassCard padding="md" hover={false}>
-      <div className="flex items-start justify-between">
-        <p className="text-xs font-medium uppercase tracking-wide text-brand-ink/45">{label}</p>
-        {icon && <span className="shrink-0 text-brand-green-fresh/70">{icon}</span>}
+    <Card padding="sm">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-label font-semibold uppercase text-ink-3">{label}</p>
+        {icon && <span className="shrink-0 text-brand-green [&>svg]:h-4 [&>svg]:w-4">{icon}</span>}
       </div>
-      <p className={`mt-2 font-display text-2xl font-semibold ${ACCENT[accent]}`}>{value}</p>
-      {trend && <p className="mt-1 text-xs text-brand-green-fresh">{trend}</p>}
-    </GlassCard>
+      <p className={`mt-2 truncate font-display text-2xl font-semibold tracking-tight ${ACCENT[accent]}`}>{value}</p>
+      {trend && <p className="mt-1 text-caption text-brand-green-fresh">{trend}</p>}
+    </Card>
   );
 }

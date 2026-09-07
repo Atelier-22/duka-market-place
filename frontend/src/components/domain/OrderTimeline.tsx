@@ -47,6 +47,19 @@ export function revealPanel(targetId: string) {
   window.setTimeout(() => el.classList.remove('flash-target'), 2000);
 }
 
+/** 32px step markers: done and active are solid brand green, upcoming sit quietly on the surface. */
+const MARKER = {
+  done: 'bg-brand-green text-white',
+  active: 'bg-brand-green text-white shadow-focus',
+  upcoming: 'surface border-line text-ink-3',
+} as const;
+
+const LABEL = {
+  done: 'text-ink',
+  active: 'text-brand-green-deep',
+  upcoming: 'text-ink-3',
+} as const;
+
 export function OrderTimeline({ status, perspective = 'customer', actions = {} }: OrderTimelineProps) {
   const navigate = useNavigate();
   const labels = orderStepLabels(perspective);
@@ -61,11 +74,14 @@ export function OrderTimeline({ status, perspective = 'customer', actions = {} }
   return (
     <div className="relative">
       {isBranched && (
-        <div className="mb-4 rounded-xl bg-brand-red/10 px-4 py-3 text-sm font-medium text-brand-red">
+        <div
+          role="status"
+          className="mb-4 rounded-lg border border-brand-red/30 bg-danger-soft/50 px-4 py-3 text-small font-medium text-brand-red"
+        >
           This order is {labels[status].toLowerCase()}.
         </div>
       )}
-      <ol className="relative flex flex-col gap-0">
+      <ol className="relative flex flex-col">
         {ORDER_STEPS.map((step, i) => {
           const done = !isBranched && i < currentIndex;
           const active = !isBranched && i === currentIndex;
@@ -73,47 +89,39 @@ export function OrderTimeline({ status, perspective = 'customer', actions = {} }
           const Icon = STEP_ICONS[step];
           const action = actions[step];
           const clickable = !!action;
+          const state = active ? 'active' : done ? 'done' : 'upcoming';
 
           const marker = (
             <span
-              className={[
-                'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all',
-                active
-                  ? 'bg-brand-green text-white shadow-glow animate-float'
-                  : done
-                  ? 'bg-brand-green-fresh/90 text-white'
-                  : 'bg-white text-brand-ink/30 border border-brand-green/15',
-              ].join(' ')}
+              aria-hidden
+              className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${MARKER[state]}`}
             >
-              <Icon size={18} strokeWidth={1.75} />
+              <Icon size={15} strokeWidth={2} />
             </span>
           );
 
           const text = (
-            <div className="min-w-0 pt-1.5 text-left">
-              <p className={`font-medium ${active ? 'text-brand-green-deep' : done ? 'text-brand-ink/70' : 'text-brand-ink/35'}`}>
+            <span className="min-w-0 flex-1 pt-1 text-left">
+              <span className={`block text-body font-medium ${LABEL[state]}`}>
                 {labels[step]}
-              </p>
-              {active && <p className="mt-0.5 text-xs text-brand-green-fresh">In progress</p>}
+              </span>
+              {active && <span className="mt-0.5 block text-caption text-brand-green">In progress</span>}
 
               {clickable && (
-                <p className={`mt-0.5 flex items-center gap-1 text-xs font-medium ${
-                  active ? 'text-brand-green-deep' : 'text-brand-ink/45'
-                }`}>
+                <span className="mt-0.5 flex items-center gap-1 text-caption font-medium text-brand-green">
                   {action.hint}
-                  <ArrowRight size={11} strokeWidth={2.5} className="shrink-0" />
-                </p>
+                  <ArrowRight size={12} strokeWidth={2.5} className="shrink-0" />
+                </span>
               )}
-            </div>
+            </span>
           );
 
           return (
-            <li key={step} className="relative flex pb-8 last:pb-0">
+            <li key={step} className="relative flex pb-6 last:pb-0">
               {!isLast && (
                 <span
-                  className={`absolute left-[19px] top-10 h-full w-0.5 ${
-                    done ? 'bg-brand-green-fresh' : 'bg-brand-green/15'
-                  }`}
+                  aria-hidden
+                  className={`absolute left-[15px] top-8 h-full w-0.5 ${done ? 'bg-brand-green' : 'bg-line'}`}
                 />
               )}
 
@@ -123,15 +131,15 @@ export function OrderTimeline({ status, perspective = 'customer', actions = {} }
                   onClick={() => go(action)}
                   title={action.hint}
                   className={[
-                    '-mx-2 -my-1 flex w-full items-start gap-4 rounded-xl px-2 py-1 text-left transition-colors',
-                    'hover:bg-brand-green-mist/60 focus-visible:bg-brand-green-mist/60',
+                    '-mx-2 -my-1 flex min-h-[44px] w-full items-start gap-3 rounded-lg px-2 py-1 text-left',
+                    'transition-colors duration-150 hover:bg-surface-2 focus-visible:outline-none focus-visible:shadow-focus',
                   ].join(' ')}
                 >
                   {marker}
                   {text}
                 </button>
               ) : (
-                <div className="flex w-full items-start gap-4">
+                <div className="flex w-full items-start gap-3">
                   {marker}
                   {text}
                 </div>

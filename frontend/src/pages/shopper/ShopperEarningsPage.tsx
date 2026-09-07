@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CalendarDays, Coins, Trophy, TrendingUp } from 'lucide-react';
 import { api } from '../../services/api';
-import { GlassCard } from '../../components/ui/GlassCard';
+import { Card } from '../../components/ui/Card';
 import { DashboardStat } from '../../components/domain/DashboardStat';
 import { SkeletonRegion, SkeletonRows, SkeletonStats } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -52,13 +52,13 @@ export function ShopperEarningsPage() {
         ) : (
           <div className="flex flex-col gap-3">
             {earnings.map((e) => (
-              <GlassCard key={e.id} hover={false} className="flex items-center justify-between">
+              <Card key={e.id} hover={false} className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-brand-ink">{formatUgx(e.amount_ugx)}</p>
                   <p className="text-xs text-brand-ink/45">Order #{e.order_id.slice(0, 8)} · {e.status}</p>
                 </div>
                 <span className="text-xs text-brand-ink/40">{new Date(e.created_at).toLocaleDateString('en-UG')}</span>
-              </GlassCard>
+              </Card>
             ))}
           </div>
         )}

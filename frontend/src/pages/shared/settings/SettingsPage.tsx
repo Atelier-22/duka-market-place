@@ -1,13 +1,16 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  Bell, ChevronLeft, ChevronRight, CircleHelp, CreditCard, Gift, LogOut, LucideIcon, MapPin,
+  Bell, ChevronRight, CircleHelp, CreditCard, Gift, LogOut, LucideIcon, MapPin,
   Search, ShieldCheck, SlidersHorizontal, Truck, User,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { UserRole } from '../../../types';
 import { homeFor } from '../../../utils/home';
-import { GlassCard } from '../../../components/ui/GlassCard';
+import { Card } from '../../../components/ui/Card';
+import { Input } from '../../../components/ui/Input';
+import { ListRow } from '../../../components/ui/ListRow';
+import { PageHeader } from '../../../components/ui/PageHeader';
 import {
   AddressesPanel, AppearancePanel, ContactSupportPanel, CouponsPanel, DeliveryInstructionsPanel,
   DeliveryPreferencesPanel, DevicesPanel, HelpCenterPanel, LanguagePanel, LocationPanel,
@@ -185,46 +188,37 @@ export function SettingsPage() {
       {/* Header */}
       {(!isMobile || !current) && (
         <>
-          <h1 className="font-display text-2xl font-medium text-brand-green-deep">Settings</h1>
-          <p className="mt-1 text-sm text-brand-ink/50">Make Duka work the way you want it to.</p>
-          <div className="relative mt-5">
-            <Search size={16} strokeWidth={1.75} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-ink/35" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search settings…"
-              aria-label="Search settings"
-              className="glass w-full rounded-full py-2.5 pl-10 pr-4 text-sm text-brand-ink outline-none transition-colors placeholder:text-brand-ink/35 focus:border-brand-green-fresh"
-            />
-          </div>
+          <PageHeader title="Settings" subtitle="Make Duka work the way you want it to." className="mb-4" />
+          <Input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search settings…"
+            aria-label="Search settings"
+            icon={<Search size={17} strokeWidth={1.8} />}
+          />
         </>
       )}
 
       {isMobile && current && (
-        <div className="mb-4">
-          <Link to={base} className="inline-flex min-h-[44px] items-center gap-1 text-sm font-medium text-brand-ink/55 hover:text-brand-green-deep">
-            <ChevronLeft size={18} strokeWidth={2} /> Settings
-          </Link>
-          <h1 className="font-display text-2xl font-medium text-brand-green-deep">{current.label}</h1>
-          <p className="mt-1 text-sm text-brand-ink/50">{groupLabel(current.group, role)}</p>
-        </div>
+        <PageHeader back={base} backLabel="Settings" title={current.label} subtitle={groupLabel(current.group, role)} />
       )}
 
       {/* Search results replace everything */}
       {searching && (
         <div className="mt-5">
           {matches.length === 0 ? (
-            <GlassCard padding="lg" hover={false}>
-              <p className="text-sm text-brand-ink/50">No settings match "{search}".</p>
-            </GlassCard>
+            <Card padding="lg" hover={false}>
+              <p className="text-sm text-ink-3">No settings match "{search}".</p>
+            </Card>
           ) : (
-            <GlassCard padding="sm" hover={false}>
+            <Card padding="none">
               <div className="flex flex-col">
                 {matches.map((i) => (
                   <Row key={i.id} to={`${base}/${i.id}`} label={i.label} description={`${groupLabel(i.group, role)} · ${i.description}`} onClick={() => setSearch('')} />
                 ))}
               </div>
-            </GlassCard>
+            </Card>
           )}
         </div>
       )}
@@ -235,7 +229,7 @@ export function SettingsPage() {
           {showIndex && (
             <div className={isMobile ? 'flex flex-col gap-4' : 'w-64 shrink-0'}>
               {isMobile && user && (
-                <Link to={`${base}/personal`} className="glass flex items-center gap-3 rounded-xl2 p-4 transition-transform active:scale-[0.99]">
+                <Link to={`${base}/personal`} className="surface flex items-center gap-3 rounded-2xl p-4 shadow-card transition-transform active:scale-[0.99]">
                   {user.avatarUrl ? (
                     <img src={user.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
                   ) : (
@@ -244,18 +238,18 @@ export function SettingsPage() {
                     </span>
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium text-brand-ink">{user.fullName}</span>
-                    <span className="block truncate text-xs text-brand-ink/45">{user.phone}</span>
+                    <span className="block truncate font-medium text-ink">{user.fullName}</span>
+                    <span className="block truncate text-xs text-ink-3">{user.phone}</span>
                   </span>
-                  <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-brand-ink/30" />
+                  <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-ink-3" />
                 </Link>
               )}
 
               {groups.map((g) => {
                 const Icon = g.icon;
                 return isMobile ? (
-                  <GlassCard key={g.id} padding="sm" hover={false}>
-                    <p className="flex items-center gap-2 px-2 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">
+                  <Card key={g.id} padding="none">
+                    <p className="flex items-center gap-2 px-4 pb-1 pt-3 text-label font-semibold uppercase text-ink-3">
                       <Icon size={14} strokeWidth={2} /> {groupLabel(g, role)}
                     </p>
                     <div className="flex flex-col">
@@ -263,10 +257,10 @@ export function SettingsPage() {
                         <Row key={i.id} to={`${base}/${i.id}`} label={i.label} description={i.description} />
                       ))}
                     </div>
-                  </GlassCard>
+                  </Card>
                 ) : (
                   <div key={g.id} className="mb-4">
-                    <p className="flex items-center gap-2 px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-brand-ink/40">
+                    <p className="flex items-center gap-2 px-3 pb-1 text-label font-semibold uppercase text-ink-3">
                       <Icon size={13} strokeWidth={2} /> {groupLabel(g, role)}
                     </p>
                     <nav className="flex flex-col gap-0.5">
@@ -276,7 +270,7 @@ export function SettingsPage() {
                           to={`${base}/${i.id}`}
                           className={[
                             'rounded-xl px-3 py-2 text-sm font-medium transition-colors',
-                            current?.id === i.id ? 'bg-brand-green-mist text-brand-green-deep' : 'text-brand-ink/60 hover:bg-brand-green-mist/60',
+                            current?.id === i.id ? 'bg-brand-green-mist text-brand-green-deep' : 'text-ink-2 hover:bg-surface-2',
                           ].join(' ')}
                         >
                           {i.label}
@@ -288,18 +282,18 @@ export function SettingsPage() {
               })}
 
               {/* Legal + log out */}
-              <div className={isMobile ? 'mt-2' : 'mt-2 border-t border-brand-green/10 pt-4'}>
+              <div className={isMobile ? 'mt-2' : 'mt-2 border-t border-line pt-4'}>
                 <div className={isMobile ? 'flex flex-col' : 'flex flex-col gap-0.5'}>
                   {LEGAL.map((l) => (
                     <Link
                       key={l.to}
                       to={l.to}
                       className={isMobile
-                        ? 'flex min-h-[48px] items-center justify-between px-2 text-sm font-medium text-brand-ink/70'
-                        : 'rounded-xl px-3 py-2 text-sm font-medium text-brand-ink/55 hover:bg-brand-green-mist/60'}
+                        ? 'flex min-h-[48px] items-center justify-between px-2 text-sm font-medium text-ink-2'
+                        : 'rounded-xl px-3 py-2 text-sm font-medium text-ink-2 hover:bg-surface-2'}
                     >
                       {l.label}
-                      {isMobile && <ChevronRight size={17} strokeWidth={2} className="text-brand-ink/30" />}
+                      {isMobile && <ChevronRight size={17} strokeWidth={2} className="text-ink-3" />}
                     </Link>
                   ))}
                 </div>
@@ -308,13 +302,13 @@ export function SettingsPage() {
                   onClick={handleLogout}
                   className={[
                     'mt-3 flex items-center gap-3 rounded-xl text-sm font-semibold text-brand-red transition-[background-color,transform] hover:bg-brand-red/10 active:scale-[0.99]',
-                    isMobile ? 'glass min-h-[52px] w-full justify-center rounded-xl2 px-4' : 'w-full px-3 py-2.5',
+                    isMobile ? 'surface min-h-[52px] w-full justify-center rounded-2xl px-4' : 'w-full px-3 py-2.5',
                   ].join(' ')}
                 >
                   <LogOut size={18} strokeWidth={1.9} /> Log out
                 </button>
                 {isMobile && (
-                  <p className="mt-4 text-center text-[11px] text-brand-ink/35">Duka · signed in as {user?.phone}</p>
+                  <p className="mt-4 text-center text-[11px] text-ink-3">Duka · signed in as {user?.phone}</p>
                 )}
               </div>
             </div>
@@ -333,19 +327,7 @@ export function SettingsPage() {
 }
 
 function Row({ to, label, description, onClick }: { to: string; label: string; description: string; onClick?: () => void }) {
-  return (
-    <Link
-      to={to}
-      onClick={onClick}
-      className="flex min-h-[60px] items-center gap-3 border-b border-brand-green/8 px-2 py-3 text-left transition-colors last:border-0 active:bg-brand-green-mist/60"
-    >
-      <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-medium text-brand-ink">{label}</span>
-        <span className="block truncate text-xs text-brand-ink/50">{description}</span>
-      </span>
-      <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-brand-ink/30" />
-    </Link>
-  );
+  return <ListRow to={to} onClick={onClick} label={label} description={description} />;
 }
 
 function PanelFor({ id, onLogout }: { id: string; onLogout: () => void }): ReactNode {

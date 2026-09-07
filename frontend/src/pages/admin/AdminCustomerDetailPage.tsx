@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
+import { Button } from '../../components/ui/Button';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonDetail, SkeletonRegion } from '../../components/ui/Skeleton';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { AdminUserActions } from '../../components/domain/AdminUserActions';
-import { AdminDetailShell, Empty, Field, Panel, formatDate, formatUgx } from './AdminDetailShell';
+import { AdminDetailShell, Empty, Field, Panel, Pill, formatDate, formatUgx } from './AdminDetailShell';
 
 export function AdminCustomerDetailPage() {
   const { id } = useParams();
@@ -20,8 +23,25 @@ export function AdminCustomerDetailPage() {
       .finally(() => setLoading(false));
   }, [id, reloadKey]);
 
+  function retry() {
+    setError(null);
+    setLoading(true);
+    setReloadKey((k) => k + 1);
+  }
+
   if (loading) return <SkeletonRegion label="Loading"><SkeletonDetail /></SkeletonRegion>;
-  if (error || !data) return <p className="p-8 text-sm text-brand-red">{error ?? 'Not found.'}</p>;
+  if (error || !data) {
+    return (
+      <div className="mx-auto max-w-5xl pb-16">
+        <PageHeader back title="Customer" />
+        <EmptyState
+          title={error ?? 'Not found.'}
+          description="Check your connection and try again."
+          action={<Button variant="secondary" onClick={retry}>Try again</Button>}
+        />
+      </div>
+    );
+  }
 
   const { user, requests, orders, disputes, addresses, totals } = data;
 
@@ -31,25 +51,25 @@ export function AdminCustomerDetailPage() {
       subtitle={<>{user.phone}{user.email ? ` · ${user.email}` : ''}</>}
       badges={
         <>
-          <span className="rounded-full bg-brand-green-mist px-3 py-1 text-xs font-semibold text-brand-green-deep">Customer</span>
-          {!user.is_active && <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-semibold text-brand-red">Deactivated</span>}
+          <Pill tone="brand">Customer</Pill>
+          {!user.is_active && <Pill tone="danger">Deactivated</Pill>}
         </>
       }
     >
       <Panel title="Profile">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <Field label="Joined" value={formatDate(user.created_at)} />
-          <Field label="Lifetime spent" value={formatUgx(totals.lifetimeSpentUgx)} />
+          <Field label="Lifetime spent" value={<span className="tabular-nums">{formatUgx(totals.lifetimeSpentUgx)}</span>} />
           <Field label="Completed orders" value={totals.completedOrders} />
           <Field label="Requests posted" value={requests.length} />
         </div>
         {addresses.length > 0 && (
-          <div className="mt-4 border-t border-brand-green/10 pt-4">
-            <p className="text-[11px] uppercase tracking-wide text-brand-ink/40">Addresses</p>
+          <div className="mt-5 border-t border-line pt-4">
+            <p className="text-label font-semibold uppercase text-ink-3">Addresses</p>
             <ul className="mt-2 flex flex-col gap-1">
               {addresses.map((a: any) => (
-                <li key={a.id} className="text-sm text-brand-ink/70">
-                  {a.label}: {a.line1}, {a.city}{a.is_default ? ' (default)' : ''}
+                <li key={a.id} className="text-sm text-ink-2">
+                  <span className="font-medium text-ink">{a.label}:</span> {a.line1}, {a.city}{a.is_default ? ' (default)' : ''}
                 </li>
               ))}
             </ul>
@@ -64,13 +84,13 @@ export function AdminCustomerDetailPage() {
               <Link
                 key={d.id}
                 to={`/admin/orders/${d.order_id}`}
-                className="flex items-center justify-between gap-3 rounded-xl border border-brand-red/20 bg-brand-red/5 px-3 py-2 hover:bg-brand-red/10"
+                className="flex items-center justify-between gap-3 rounded-xl border border-brand-red/25 bg-danger-soft/30 px-4 py-3 transition-colors hover:bg-danger-soft/50"
               >
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-brand-ink">{d.reason}</span>
-                  <span className="block text-xs text-brand-ink/45">Order #{d.order_id.slice(0, 8)} · {formatDate(d.created_at)}</span>
+                  <span className="block truncate text-sm font-medium text-ink">{d.reason}</span>
+                  <span className="block text-caption text-ink-3">Order #{d.order_id.slice(0, 8)} · {formatDate(d.created_at)}</span>
                 </span>
-                <span className="shrink-0 text-xs font-semibold uppercase text-brand-red">{d.status.replace(/_/g, ' ')}</span>
+                <span className="shrink-0 text-label font-semibold uppercase text-brand-red">{d.status.replace(/_/g, ' ')}</span>
               </Link>
             ))}
           </div>
@@ -78,23 +98,23 @@ export function AdminCustomerDetailPage() {
       )}
 
       <Panel title="Orders" count={orders.length}>
-        {orders.length === 0 ? <Empty>No orders yet.</Empty> : (
-          <div className="flex flex-col">
+        {orders.length === 0 ? <Empty title="No orders yet" description="Orders this customer places will be listed here." /> : (
+          <div className="-mx-2 flex flex-col">
             {orders.map((o: any) => (
               <Link
                 key={o.id}
                 to={`/admin/orders/${o.id}`}
-                className="flex items-center gap-3 border-b border-brand-green/5 py-2.5 last:border-0 hover:bg-brand-green-mist/40"
+                className="flex items-center gap-3 border-b border-line px-2 py-3 transition-colors last:border-0 hover:bg-surface-2"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-brand-green-deep">
                     #{o.id.slice(0, 8)} · {o.request_title ?? 'Order'}
                   </span>
-                  <span className="block truncate text-xs text-brand-ink/45">
+                  <span className="block truncate text-caption text-ink-3">
                     {o.shopper_name ? `Shopper: ${o.shopper_name}` : 'Unassigned'} · {formatDate(o.created_at)}
                   </span>
                 </span>
-                <span className="shrink-0 text-sm text-brand-ink/60">{formatUgx(o.total_amount_ugx)}</span>
+                <span className="shrink-0 text-sm tabular-nums text-ink-2">{formatUgx(o.total_amount_ugx)}</span>
                 <StatusBadge status={o.status} />
               </Link>
             ))}
@@ -103,21 +123,22 @@ export function AdminCustomerDetailPage() {
       </Panel>
 
       <Panel title="Requests" count={requests.length}>
-        {requests.length === 0 ? <Empty>No requests yet.</Empty> : (
+        {requests.length === 0 ? <Empty title="No requests yet" description="Shopping requests this customer posts will be listed here." /> : (
           <div className="flex flex-col">
             {requests.map((r: any) => (
-              <div key={r.id} className="flex items-center gap-3 border-b border-brand-green/5 py-2.5 last:border-0">
+              <div key={r.id} className="flex items-center gap-3 border-b border-line py-3 last:border-0">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm text-brand-ink/80">{r.title}</span>
-                  <span className="block text-xs text-brand-ink/45">{formatDate(r.created_at)}</span>
+                  <span className="block truncate text-sm text-ink">{r.title}</span>
+                  <span className="block text-caption text-ink-3">{formatDate(r.created_at)}</span>
                 </span>
-                <span className="shrink-0 text-sm text-brand-ink/55">up to {formatUgx(r.budget_max_ugx)}</span>
-                <span className="shrink-0 text-[11px] uppercase tracking-wide text-brand-ink/40">{r.status.replace(/_/g, ' ')}</span>
+                <span className="shrink-0 text-sm tabular-nums text-ink-2">up to {formatUgx(r.budget_max_ugx)}</span>
+                <StatusBadge status={r.status} />
               </div>
             ))}
           </div>
         )}
       </Panel>
+
       <AdminUserActions
         userId={user.id}
         name={user.full_name}

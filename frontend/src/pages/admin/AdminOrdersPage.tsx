@@ -1,19 +1,23 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Package } from 'lucide-react';
 import { api } from '../../services/api';
-import { GlassCard } from '../../components/ui/GlassCard';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonHeading, SkeletonRegion, SkeletonTable } from '../../components/ui/Skeleton';
+import { AdminTable, Td, Th, Tr, formatUgx } from './AdminDetailShell';
 
 export function AdminOrdersPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => { api.get('/admin/orders').then((r) => setRows(r.data.orders)).finally(() => setLoading(false)); }, []);
+
   if (loading) {
     return (
       <SkeletonRegion label="Loading" className="pb-10">
-        <SkeletonHeading subtitle={false} />
+        <SkeletonHeading />
         <div className="mt-6"><SkeletonTable rows={7} cols={5} /></div>
       </SkeletonRegion>
     );
@@ -21,32 +25,38 @@ export function AdminOrdersPage() {
 
   return (
     <div className="pb-10">
-      <h1 className="font-display text-2xl font-medium text-brand-green-deep">Orders</h1>
-      <GlassCard hover={false} padding="sm" className="mt-6 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-brand-green/10 text-left text-xs uppercase tracking-wide text-brand-ink/40">
-              <th className="px-4 py-3">Order</th><th className="px-4 py-3">Customer</th><th className="px-4 py-3">Shopper</th>
-              <th className="px-4 py-3">Status</th><th className="px-4 py-3">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((o) => (
-              <tr
-                key={o.id}
-                onClick={() => navigate(`/admin/orders/${o.id}`)}
-                className="cursor-pointer border-b border-brand-green/5 transition-colors last:border-0 hover:bg-brand-green-mist/50"
-              >
-                <td className="px-4 py-3 font-mono text-xs">{o.id.slice(0, 8)}</td>
-                <td className="px-4 py-3">{o.customer_name}</td>
-                <td className="px-4 py-3">{o.shopper_name}</td>
-                <td className="px-4 py-3"><StatusBadge status={o.status} /></td>
-                <td className="px-4 py-3">{o.total_amount_ugx ? Number(o.total_amount_ugx).toLocaleString() + ' UGX' : '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </GlassCard>
+      <PageHeader title="Orders" subtitle="Every order on the platform. Open one to see its full history." />
+
+      {rows.length === 0 ? (
+        <EmptyState
+          icon={<Package />}
+          title="No orders yet"
+          description="Orders appear here as soon as customers accept offers."
+        />
+      ) : (
+        <AdminTable
+          caption="Orders"
+          head={
+            <>
+              <Th>Order</Th>
+              <Th>Customer</Th>
+              <Th>Shopper</Th>
+              <Th>Status</Th>
+              <Th align="right">Total</Th>
+            </>
+          }
+        >
+          {rows.map((o) => (
+            <Tr key={o.id} onClick={() => navigate(`/admin/orders/${o.id}`)}>
+              <Td className="font-mono text-caption text-ink-2">{o.id.slice(0, 8)}</Td>
+              <Td className="font-medium">{o.customer_name}</Td>
+              <Td muted>{o.shopper_name}</Td>
+              <Td><StatusBadge status={o.status} /></Td>
+              <Td numeric>{o.total_amount_ugx ? formatUgx(o.total_amount_ugx) : '—'}</Td>
+            </Tr>
+          ))}
+        </AdminTable>
+      )}
     </div>
   );
 }

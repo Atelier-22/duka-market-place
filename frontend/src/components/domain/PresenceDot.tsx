@@ -1,16 +1,14 @@
 interface PresenceDotProps {
   online: boolean;
-
+  /** `avatar` pins the dot to the corner of a `relative` avatar wrapper; `inline` sits in text. */
   variant?: 'avatar' | 'inline';
   className?: string;
 }
 
+/** Presence: fresh green (with a soft halo inline) when online, muted when away. */
 export function PresenceDot({ online, variant = 'inline', className = '' }: PresenceDotProps) {
   const label = online ? 'Online' : 'Offline';
-  const colour = online
-
-    ? 'bg-brand-green-fresh shadow-[0_0_0_3px_rgba(34,197,94,0.22)]'
-    : 'bg-brand-red';
+  const colour = online ? 'bg-brand-green-fresh' : 'bg-ink-3';
 
   if (variant === 'avatar') {
     return (
@@ -18,14 +16,18 @@ export function PresenceDot({ online, variant = 'inline', className = '' }: Pres
         title={label}
         aria-label={label}
         role="img"
-        className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-brand-white ${colour} ${className}`}
+        className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-surface ${colour} ${className}`}
       />
     );
   }
 
   return (
-    <span title={label} className={`inline-flex items-center gap-1.5 ${className}`}>
-      <span role="img" aria-label={label} className={`h-2 w-2 shrink-0 rounded-full ${colour}`} />
+    <span title={label} className={`inline-flex shrink-0 items-center ${className}`}>
+      <span
+        role="img"
+        aria-label={label}
+        className={`h-2 w-2 shrink-0 rounded-full ${colour} ${online ? 'ring-[3px] ring-brand-green-fresh/20' : ''}`}
+      />
     </span>
   );
 }

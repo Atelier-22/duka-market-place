@@ -2,280 +2,117 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==================================================================== */
+/* Duka design tokens                                                    */
+/* Every colour is an RGB triplet so Tailwind can add alpha, and every   */
+/* accent / dark-mode variant only redefines the triplets.               */
+/* ==================================================================== */
+
 :root {
   color-scheme: light;
 
+  /* Brand */
   --brand-green-deep: 11 61 46;
   --brand-green: 19 122 76;
   --brand-green-fresh: 31 174 107;
   --brand-green-mist: 231 245 236;
-
   --brand-yellow: 242 183 5;
   --brand-yellow-soft: 252 231 166;
   --brand-red: 214 73 59;
   --brand-red-soft: 246 216 212;
-
   --brand-surface: 255 255 255;
   --brand-ink: 12 26 20;
 
-  --app-bg: #F3FBF6;
+  /* Semantic surfaces and text */
+  --app-bg: 246 248 247;
+  --surface: 255 255 255;
+  --surface-2: 244 247 245;
+  --line: 226 232 229;
+  --line-strong: 205 214 209;
+  --text-2: 71 85 78;
+  --text-3: 122 135 128;
+  --info: 37 99 235;
+  --info-soft: 219 234 254;
+  --warning: 176 112 16;
+  --shadow-ink: 11 61 46;
 
-  /* Glass: restrained. Tone these numbers, never the rules below. */
-  --glass-bg: 255 255 255;
-  --glass-bg-alpha: 0.92;
-  --glass-blur: 6px;
-  --glass-border: var(--brand-green);
-  --glass-border-alpha: 0.14;
-
-  /* Phone nav: the floating indicator's colour and the dark-variant surface.
-     Swap --nav-indicator-a/b to any brand token to recolour the active tab. */
-  --nav-indicator-a: var(--brand-green-fresh);
-  --nav-indicator-b: var(--brand-green);
+  /* Phone nav: indicator colour and the dark-variant surface. */
+  --nav-indicator: var(--brand-green);
   --nav-dark-bg: 18 23 20;
-  --nav-shadow: 11 61 46;
 
   /* Full-screen brand transition backdrop. */
   --overlay-bg: 8 14 11;
 }
 
-[data-accent='ocean'] {
-  --brand-green-deep: 12 45 74;
-  --brand-green: 21 101 163;
-  --brand-green-fresh: 46 155 217;
-  --brand-green-mist: 226 240 250;
-  --app-bg: #F2F8FD;
-}
-
-[data-accent='sunset'] {
-  --brand-green-deep: 87 33 20;
-  --brand-green: 178 71 34;
-  --brand-green-fresh: 232 116 53;
-  --brand-green-mist: 253 236 226;
-  --brand-yellow: 240 160 20;
-  --app-bg: #FEF7F2;
-}
-
-[data-accent='grape'] {
-  --brand-green-deep: 49 26 82;
-  --brand-green: 103 58 168;
-  --brand-green-fresh: 145 96 214;
-  --brand-green-mist: 240 233 252;
-  --app-bg: #F9F5FE;
-}
-
-[data-accent='charcoal'] {
-  --brand-green-deep: 24 28 32;
-  --brand-green: 62 72 82;
-  --brand-green-fresh: 105 119 132;
-  --brand-green-mist: 235 238 241;
-  --app-bg: #F6F7F8;
-}
-
-[data-accent='rose'] {
-  --brand-green-deep: 92 26 51;
-  --brand-green: 187 55 105;
-  --brand-green-fresh: 232 93 145;
-  --brand-green-mist: 253 231 240;
-  --app-bg: #FEF5F8;
-}
-
-[data-accent='amber'] {
-  --brand-green-deep: 90 56 8;
-  --brand-green: 176 116 16;
-  --brand-green-fresh: 226 160 32;
-  --brand-green-mist: 253 243 219;
-  --brand-yellow: 214 145 12;
-  --app-bg: #FEFAF0;
-}
-
-[data-accent='teal'] {
-  --brand-green-deep: 10 61 61;
-  --brand-green: 17 122 122;
-  --brand-green-fresh: 32 173 173;
-  --brand-green-mist: 224 245 245;
-  --app-bg: #F1FBFB;
-}
-
-[data-accent='indigo'] {
-  --brand-green-deep: 32 32 92;
-  --brand-green: 68 68 178;
-  --brand-green-fresh: 106 106 224;
-  --brand-green-mist: 231 231 252;
-  --app-bg: #F5F5FE;
-}
-
-[data-accent='crimson'] {
-  --brand-green-deep: 92 18 25;
-  --brand-green: 175 35 50;
-  --brand-green-fresh: 219 62 79;
-  --brand-green-mist: 252 229 232;
-  --app-bg: #FEF4F5;
-}
-
-[data-accent='lime'] {
-  --brand-green-deep: 54 74 12;
-  --brand-green: 106 145 24;
-  --brand-green-fresh: 150 196 40;
-  --brand-green-mist: 239 249 219;
-  --app-bg: #F9FDF0;
-}
-
-[data-accent='plum'] {
-  --brand-green-deep: 71 22 66;
-  --brand-green: 140 45 130;
-  --brand-green-fresh: 186 78 174;
-  --brand-green-mist: 249 231 246;
-  --app-bg: #FDF5FC;
-}
-
-[data-accent='sky'] {
-  --brand-green-deep: 14 55 84;
-  --brand-green: 25 118 178;
-  --brand-green-fresh: 56 170 235;
-  --brand-green-mist: 224 242 252;
-  --app-bg: #F2FAFE;
-}
-
-[data-accent='copper'] {
-  --brand-green-deep: 74 40 22;
-  --brand-green: 148 82 42;
-  --brand-green-fresh: 196 116 64;
-  --brand-green-mist: 248 235 226;
-  --brand-yellow: 218 152 48;
-  --app-bg: #FDF7F3;
-}
-
-[data-accent='forest'] {
-  --brand-green-deep: 18 46 28;
-  --brand-green: 38 94 55;
-  --brand-green-fresh: 62 140 82;
-  --brand-green-mist: 228 242 232;
-  --app-bg: #F4FAF5;
-}
-
-[data-accent='slate'] {
-  --brand-green-deep: 26 35 46;
-  --brand-green: 62 82 104;
-  --brand-green-fresh: 100 126 154;
-  --brand-green-mist: 234 238 243;
-  --app-bg: #F5F7F9;
-}
+[data-accent='ocean']    { --brand-green-deep: 12 45 74;  --brand-green: 21 101 163; --brand-green-fresh: 46 155 217; --brand-green-mist: 226 240 250; --app-bg: 245 248 251; }
+[data-accent='sunset']   { --brand-green-deep: 87 33 20;  --brand-green: 178 71 34;  --brand-green-fresh: 232 116 53; --brand-green-mist: 253 236 226; --brand-yellow: 240 160 20; --app-bg: 250 247 245; }
+[data-accent='grape']    { --brand-green-deep: 49 26 82;  --brand-green: 103 58 168; --brand-green-fresh: 145 96 214; --brand-green-mist: 240 233 252; --app-bg: 248 246 251; }
+[data-accent='charcoal'] { --brand-green-deep: 24 28 32;  --brand-green: 62 72 82;   --brand-green-fresh: 105 119 132; --brand-green-mist: 235 238 241; --app-bg: 246 247 248; }
+[data-accent='rose']     { --brand-green-deep: 92 26 51;  --brand-green: 187 55 105; --brand-green-fresh: 232 93 145; --brand-green-mist: 253 231 240; --app-bg: 250 246 248; }
+[data-accent='amber']    { --brand-green-deep: 90 56 8;   --brand-green: 176 116 16; --brand-green-fresh: 226 160 32; --brand-green-mist: 253 243 219; --brand-yellow: 214 145 12; --app-bg: 250 248 243; }
+[data-accent='teal']     { --brand-green-deep: 10 61 61;  --brand-green: 17 122 122; --brand-green-fresh: 32 173 173; --brand-green-mist: 224 245 245; --app-bg: 245 249 249; }
+[data-accent='indigo']   { --brand-green-deep: 32 32 92;  --brand-green: 68 68 178;  --brand-green-fresh: 106 106 224; --brand-green-mist: 231 231 252; --app-bg: 246 246 251; }
+[data-accent='crimson']  { --brand-green-deep: 92 18 25;  --brand-green: 175 35 50;  --brand-green-fresh: 219 62 79;  --brand-green-mist: 252 229 232; --app-bg: 250 246 246; }
+[data-accent='lime']     { --brand-green-deep: 54 74 12;  --brand-green: 106 145 24; --brand-green-fresh: 150 196 40; --brand-green-mist: 239 249 219; --app-bg: 248 250 244; }
+[data-accent='plum']     { --brand-green-deep: 71 22 66;  --brand-green: 140 45 130; --brand-green-fresh: 186 78 174; --brand-green-mist: 249 231 246; --app-bg: 250 246 249; }
+[data-accent='sky']      { --brand-green-deep: 14 55 84;  --brand-green: 25 118 178; --brand-green-fresh: 56 170 235; --brand-green-mist: 224 242 252; --app-bg: 245 249 251; }
+[data-accent='copper']   { --brand-green-deep: 74 40 22;  --brand-green: 148 82 42;  --brand-green-fresh: 196 116 64; --brand-green-mist: 248 235 226; --brand-yellow: 218 152 48; --app-bg: 250 247 245; }
+[data-accent='forest']   { --brand-green-deep: 18 46 28;  --brand-green: 38 94 55;   --brand-green-fresh: 62 140 82;  --brand-green-mist: 228 242 232; --app-bg: 246 248 246; }
+[data-accent='slate']    { --brand-green-deep: 26 35 46;  --brand-green: 62 82 104;  --brand-green-fresh: 100 126 154; --brand-green-mist: 234 238 243; --app-bg: 246 247 249; }
 
 [data-theme='dark'] {
   color-scheme: dark;
 
   --brand-green-deep: 209 240 224;
   --brand-green-mist: 27 44 37;
-
   --brand-surface: 22 28 25;
   --brand-ink: 232 240 235;
 
-  --app-bg: #0E1512;
-  --glass-bg: 30 40 35;
-  --glass-bg-alpha: 0.92;
-  --glass-border: 255 255 255;
-  --glass-border-alpha: 0.10;
-  --nav-shadow: 0 0 0;
+  --app-bg: 14 20 17;
+  --surface: 22 29 25;
+  --surface-2: 29 38 33;
+  --line: 44 56 49;
+  --line-strong: 62 78 69;
+  --text-2: 176 190 182;
+  --text-3: 126 140 132;
+  --info-soft: 30 49 84;
+  --shadow-ink: 0 0 0;
 }
 
-[data-theme='dark'][data-accent='ocean']    { --brand-green-deep: 205 231 248; --brand-green-mist: 22 38 52; --app-bg: #0C1219; }
-[data-theme='dark'][data-accent='sunset']   { --brand-green-deep: 252 226 210; --brand-green-mist: 48 30 22; --app-bg: #17100C; }
-[data-theme='dark'][data-accent='grape']    { --brand-green-deep: 232 219 250; --brand-green-mist: 39 28 55; --app-bg: #120E18; }
-[data-theme='dark'][data-accent='charcoal'] { --brand-green-deep: 228 232 236; --brand-green-mist: 33 37 41; --app-bg: #101214; }
-[data-theme='dark'][data-accent='rose']     { --brand-green-deep: 250 219 231; --brand-green-mist: 50 26 36; --app-bg: #170D12; }
-[data-theme='dark'][data-accent='amber']    { --brand-green-deep: 250 234 200; --brand-green-mist: 46 36 18; --app-bg: #15110A; }
-[data-theme='dark'][data-accent='teal']     { --brand-green-deep: 205 240 240; --brand-green-mist: 20 42 42; --app-bg: #0A1414; }
-[data-theme='dark'][data-accent='indigo']   { --brand-green-deep: 220 220 250; --brand-green-mist: 28 28 52; --app-bg: #0D0D18; }
-[data-theme='dark'][data-accent='crimson']  { --brand-green-deep: 250 214 218; --brand-green-mist: 48 22 26; --app-bg: #160B0D; }
-[data-theme='dark'][data-accent='lime']     { --brand-green-deep: 231 246 205; --brand-green-mist: 34 44 18; --app-bg: #10150A; }
-[data-theme='dark'][data-accent='plum']     { --brand-green-deep: 245 217 240; --brand-green-mist: 44 24 42; --app-bg: #150B14; }
-[data-theme='dark'][data-accent='sky']      { --brand-green-deep: 208 235 250; --brand-green-mist: 20 38 50; --app-bg: #0A1218; }
-[data-theme='dark'][data-accent='copper']   { --brand-green-deep: 246 227 213; --brand-green-mist: 44 30 22; --app-bg: #150F0B; }
-[data-theme='dark'][data-accent='forest']   { --brand-green-deep: 213 236 219; --brand-green-mist: 24 38 28; --app-bg: #0B120D; }
-[data-theme='dark'][data-accent='slate']    { --brand-green-deep: 224 231 238; --brand-green-mist: 30 36 44; --app-bg: #0E1114; }
+[data-theme='dark'][data-accent='ocean']    { --brand-green-deep: 205 231 248; --brand-green-mist: 22 38 52; }
+[data-theme='dark'][data-accent='sunset']   { --brand-green-deep: 252 226 210; --brand-green-mist: 48 30 22; }
+[data-theme='dark'][data-accent='grape']    { --brand-green-deep: 232 219 250; --brand-green-mist: 39 28 55; }
+[data-theme='dark'][data-accent='charcoal'] { --brand-green-deep: 228 232 236; --brand-green-mist: 33 37 41; }
+[data-theme='dark'][data-accent='rose']     { --brand-green-deep: 250 219 231; --brand-green-mist: 50 26 36; }
+[data-theme='dark'][data-accent='amber']    { --brand-green-deep: 250 234 200; --brand-green-mist: 46 36 18; }
+[data-theme='dark'][data-accent='teal']     { --brand-green-deep: 205 240 240; --brand-green-mist: 20 42 42; }
+[data-theme='dark'][data-accent='indigo']   { --brand-green-deep: 220 220 250; --brand-green-mist: 28 28 52; }
+[data-theme='dark'][data-accent='crimson']  { --brand-green-deep: 250 214 218; --brand-green-mist: 48 22 26; }
+[data-theme='dark'][data-accent='lime']     { --brand-green-deep: 231 246 205; --brand-green-mist: 34 44 18; }
+[data-theme='dark'][data-accent='plum']     { --brand-green-deep: 245 217 240; --brand-green-mist: 44 24 42; }
+[data-theme='dark'][data-accent='sky']      { --brand-green-deep: 208 235 250; --brand-green-mist: 20 38 50; }
+[data-theme='dark'][data-accent='copper']   { --brand-green-deep: 246 227 213; --brand-green-mist: 44 30 22; }
+[data-theme='dark'][data-accent='forest']   { --brand-green-deep: 213 236 219; --brand-green-mist: 24 38 28; }
+[data-theme='dark'][data-accent='slate']    { --brand-green-deep: 224 231 238; --brand-green-mist: 30 36 44; }
 
-html, body, #root {
+/* ==================================================================== */
+/* Base                                                                  */
+/* ==================================================================== */
+
+/* The document is the only scroller; body and #root just fill it. */
+html {
   height: 100%;
+}
+body, #root {
+  min-height: 100%;
 }
 
 body {
   @apply font-sans text-brand-ink antialiased;
-  background: var(--app-bg);
-  transition: background 200ms ease;
-}
-
-.flash-target {
-  animation: duka-flash 1s ease-out 2;
-  border-radius: theme('borderRadius.xl2');
-}
-
-@keyframes duka-flash {
-  0%   { box-shadow: 0 0 0 0 rgb(var(--brand-green-fresh) / 0.55); }
-  70%  { box-shadow: 0 0 0 12px rgb(var(--brand-green-fresh) / 0); }
-  100% { box-shadow: 0 0 0 0 rgb(var(--brand-green-fresh) / 0); }
-}
-
-/* Glass surfaces live in the components layer so Tailwind utilities
-   (border-*, bg-*) can still override them per element. */
-@layer components {
-  .glass,
-  .glass-liquid {
-    background: rgb(var(--glass-bg) / var(--glass-bg-alpha));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
-  }
-
-  /* Chips sit on top of glass already; same surface, no second blur pass. */
-  .glass-chip {
-    background: rgb(var(--glass-bg) / var(--glass-bg-alpha));
-    border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
-  }
-
-  .glass-deep {
-    background: rgb(var(--brand-green-deep) / var(--glass-bg-alpha));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid rgb(255 255 255 / 0.10);
-    color: white;
-  }
-  [data-theme='dark'] .glass-deep {
-    background: rgb(var(--brand-green-mist) / var(--glass-bg-alpha));
-  }
-
-  .glass-hover {
-    transition: border-color 160ms ease, box-shadow 160ms ease;
-  }
-  .glass-hover:hover {
-    border-color: rgb(var(--glass-border) / calc(var(--glass-border-alpha) * 2));
-  }
-}
-
-.app-main {
-  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
-}
-@media (min-width: 1024px) {
-  .app-main { padding-bottom: 0.25rem; }
-}
-
-@media (max-width: 640px) {
-  h1, h2, h3, p, span, td, th, dt, dd, li { overflow-wrap: anywhere; }
-}
-
-@media (max-width: 640px) {
-  html, body { overflow-x: hidden; }
-}
-
-@media (max-width: 640px) {
-  input, select, textarea { font-size: 16px !important; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
+  background: rgb(var(--app-bg));
+  font-size: 15px;
+  line-height: 1.5;
+  transition: background-color 200ms ease;
 }
 
 ::selection {
@@ -288,61 +125,116 @@ body {
   border-radius: 4px;
 }
 
-.atmosphere {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: var(--app-bg);
+@media (max-width: 640px) {
+  h1, h2, h3, p, span, td, th, dt, dd, li { overflow-wrap: anywhere; }
+  html { overflow-x: hidden; }
+  input, select, textarea { font-size: 16px !important; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
 
-.text-gradient-brand {
-  color: rgb(var(--brand-green));
+/* ==================================================================== */
+/* Surfaces                                                              */
+/* Solid, bordered, barely shadowed. Utilities can still override.       */
+/* ==================================================================== */
+
+@layer components {
+  .surface {
+    background-color: rgb(var(--surface));
+    border: 1px solid rgb(var(--line));
+  }
+  .surface-2 {
+    background-color: rgb(var(--surface-2));
+    border: 1px solid rgb(var(--line));
+  }
+  .surface-deep {
+    background-color: rgb(var(--brand-green-deep));
+    color: #fff;
+  }
+  [data-theme='dark'] .surface-deep {
+    background-color: rgb(var(--brand-green-mist));
+  }
+  .surface-hover {
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  }
+  .surface-hover:hover {
+    border-color: rgb(var(--line-strong));
+    box-shadow: 0 4px 14px -4px rgb(var(--shadow-ink) / 0.12), 0 1px 3px rgb(var(--shadow-ink) / 0.05);
+  }
+}
+
+.app-main {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 1024px) {
+  .app-main { padding-bottom: 1rem; }
+}
+
+/* Route change: a short settle, never a slide. */
+.page-enter {
+  animation: duka-page 240ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+@keyframes duka-page {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.flash-target {
+  animation: duka-flash 1s ease-out 2;
+  border-radius: 16px;
+}
+@keyframes duka-flash {
+  0%   { box-shadow: 0 0 0 0 rgb(var(--brand-green-fresh) / 0.55); }
+  70%  { box-shadow: 0 0 0 12px rgb(var(--brand-green-fresh) / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(var(--brand-green-fresh) / 0); }
 }
 
 .shimmer-bg {
   background: linear-gradient(
     90deg,
-    rgb(var(--brand-green-mist)) 25%,
-    rgb(var(--glass-bg)) 50%,
-    rgb(var(--brand-green-mist)) 75%
+    rgb(var(--surface-2)) 25%,
+    rgb(var(--line) / 0.55) 50%,
+    rgb(var(--surface-2)) 75%
   );
   background-size: 200% 100%;
 }
 
-/* ------------------------------------------------------------------ */
-/* Phone navigation: floating capsule + travelling indicator.          */
-/* Geometry and spring values come from src/config/motion.ts.          */
-/* ------------------------------------------------------------------ */
+@keyframes duka-ping {
+  75%, 100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ==================================================================== */
+/* Phone navigation: solid capsule + travelling indicator.               */
+/* Geometry and spring values come from src/config/motion.ts.            */
+/* ==================================================================== */
 
 .duka-nav {
   --nav-tint: var(--brand-green-fresh);
-  --nav-mix: 10%;
-  --nav-base: var(--glass-bg);
-  --nav-base-alpha: var(--glass-bg-alpha);
-  --nav-surface: rgb(var(--nav-base) / var(--nav-base-alpha));
-  --nav-fg-muted: rgb(var(--brand-ink) / 0.45);
+  --nav-mix: 6%;
+  --nav-base: var(--surface);
+  --nav-surface: rgb(var(--nav-base));
+  --nav-fg-muted: rgb(var(--text-3));
   --nav-fg-active: rgb(var(--brand-green));
 
   position: relative;
   display: flex;
   align-items: stretch;
-  border-radius: 2rem;
+  border-radius: 20px;
   background-color: var(--nav-surface);
-  border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid rgb(var(--line));
   box-shadow:
-    0 20px 50px -12px rgb(var(--nav-shadow) / 0.28),
-    0 2px 8px -2px rgb(var(--nav-shadow) / 0.12);
+    0 12px 32px -12px rgb(var(--shadow-ink) / 0.22),
+    0 1px 3px rgb(var(--shadow-ink) / 0.06);
 }
 @supports (background: color-mix(in srgb, red, blue)) {
   .duka-nav {
-    --nav-surface: color-mix(
-      in srgb,
-      rgb(var(--nav-base) / var(--nav-base-alpha)),
-      rgb(var(--nav-tint)) var(--nav-mix)
-    );
+    --nav-surface: color-mix(in srgb, rgb(var(--nav-base)), rgb(var(--nav-tint)) var(--nav-mix));
   }
 }
 [data-theme='dark'] .duka-nav {
@@ -350,25 +242,23 @@ body {
 }
 .duka-nav--dark {
   --nav-base: var(--nav-dark-bg);
-  --nav-base-alpha: 0.94;
-  --nav-mix: 14%;
+  --nav-mix: 10%;
   --nav-fg-muted: rgb(255 255 255 / 0.5);
   --nav-fg-active: rgb(255 255 255);
   border-color: rgb(255 255 255 / 0.08);
   box-shadow:
-    0 20px 50px -12px rgb(0 0 0 / 0.55),
-    0 2px 8px -2px rgb(0 0 0 / 0.3);
+    0 12px 32px -12px rgb(0 0 0 / 0.5),
+    0 1px 3px rgb(0 0 0 / 0.3);
 }
 
 .duka-nav__indicator {
   position: absolute;
   left: 0;
   border-radius: 9999px;
-  background: linear-gradient(140deg, rgb(var(--nav-indicator-a)), rgb(var(--nav-indicator-b)));
+  background: rgb(var(--nav-indicator));
   box-shadow:
     0 0 0 4px var(--nav-surface),
-    0 12px 24px -8px rgb(var(--nav-indicator-a) / 0.7),
-    0 0 20px -2px rgb(var(--nav-indicator-a) / 0.35);
+    0 10px 20px -8px rgb(var(--nav-indicator) / 0.6);
   will-change: transform;
   pointer-events: none;
 }
@@ -442,9 +332,9 @@ body {
   box-shadow: 0 0 0 2px var(--nav-surface);
 }
 
-/* ------------------------------------------------------------------ */
-/* Brand transition overlay                                            */
-/* ------------------------------------------------------------------ */
+/* ==================================================================== */
+/* Brand transition overlay                                              */
+/* ==================================================================== */
 
 .duka-brand-overlay {
   position: fixed;
@@ -453,9 +343,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(var(--overlay-bg) / 0.8);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
+  background: rgb(var(--overlay-bg) / 0.86);
   animation: duka-overlay-in var(--overlay-ms) ease both;
 }
 .duka-brand-overlay[data-phase='out'] {
@@ -481,7 +369,7 @@ body {
   border-radius: 9999px;
   background: rgb(var(--brand-green-fresh));
   filter: blur(36px);
-  opacity: 0.55;
+  opacity: 0.5;
 }
 .duka-brand-overlay[data-phase='logo'] .duka-brand-overlay__glow,
 .duka-brand-overlay[data-phase='out'] .duka-brand-overlay__glow {
@@ -509,33 +397,27 @@ body {
   color: rgb(255 255 255 / 0.65);
 }
 
-@keyframes duka-overlay-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes duka-overlay-out {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
+@keyframes duka-overlay-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes duka-overlay-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes duka-logo-in {
   from { opacity: 0; transform: scale(0.6); }
   to   { opacity: 1; transform: scale(1); }
 }
 @keyframes duka-logo-glow {
-  0%   { background: rgb(var(--brand-green-fresh)); opacity: 0.55; }
-  45%  { background: rgb(var(--brand-yellow)); opacity: 0.6; }
-  100% { background: rgb(255 255 255); opacity: 0.4; }
+  0%   { background: rgb(var(--brand-green-fresh)); opacity: 0.5; }
+  45%  { background: rgb(var(--brand-yellow)); opacity: 0.55; }
+  100% { background: rgb(255 255 255); opacity: 0.35; }
 }
 
-@keyframes duka-ping {
-  75%, 100% { transform: scale(2.2); opacity: 0; }
-}
+/* ==================================================================== */
+/* Maps                                                                  */
+/* ==================================================================== */
 
 .leaflet-container {
   font-family: inherit;
-  background: rgb(var(--brand-green-mist));
+  background: rgb(var(--surface-2));
 }
 .leaflet-control-attribution {
   font-size: 10px;
-  background: rgba(255, 255, 255, 0.75) !important;
+  background: rgb(var(--surface) / 0.85) !important;
 }

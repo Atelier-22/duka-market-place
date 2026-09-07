@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, CheckCircle2, MessageCircle, Package, PartyPopper, Wallet } from 'lucide-react';
+import { Check, CheckCircle2, MessageCircle, Package, PartyPopper, Wallet } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { Order, OrderStatus } from '../../types';
-import { GlassCard } from '../../components/ui/GlassCard';
-import { GlassButton } from '../../components/ui/GlassButton';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { ZoomableImage } from '../../components/ui/ZoomableImage';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonDetail, SkeletonRegion } from '../../components/ui/Skeleton';
@@ -112,7 +113,7 @@ export function ActiveOrderPage() {
         <EmptyState
           title="We couldn't open this order"
           description="Check your connection and try again."
-          action={<GlassButton size="sm" onClick={() => { setLoading(true); load(); }}>Try again</GlassButton>}
+          action={<Button size="sm" onClick={() => { setLoading(true); load(); }}>Try again</Button>}
         />
       </div>
     );
@@ -146,7 +147,7 @@ export function ActiveOrderPage() {
   );
 
   const payLine = (text: string) => (
-    <p className="mt-3 flex items-start gap-2 rounded-xl bg-brand-yellow-soft/60 px-3 py-2.5 text-sm text-yellow-900">
+    <p className="mt-3 flex items-start gap-2 rounded-xl bg-warning-soft/50 px-3 py-2.5 text-sm text-warning">
       <Wallet size={16} strokeWidth={2} className="mt-0.5 shrink-0" />
       <span>{text}</span>
     </p>
@@ -157,56 +158,56 @@ export function ActiveOrderPage() {
   const actionCard = (
     <>
       {order.status === 'awaiting_customer_approval' && (
-        <GlassCard id="step-awaiting_customer_approval" glow="yellow" hover={false} className="mt-4">
+        <Card id="step-awaiting_customer_approval" glow="yellow" hover={false} className="mt-4">
           <p className="font-medium text-brand-green-deep">Approve this purchase?</p>
-          <p className="mt-1 text-sm text-brand-ink/60">
+          <p className="mt-1 text-sm text-ink-2">
             Your shopper found it. Check the photo and the price, then approve so they can buy it.
           </p>
           {pricing && <div className="mt-3">{pricing}</div>}
           {payLine(`You will pay ${formatUgx(payable)} in cash or mobile money when your shopper arrives. Nothing is charged now.`)}
-          <GlassButton className="mt-3" disabled={acting} onClick={() => act('approve')} fullWidth>
+          <Button className="mt-3" disabled={acting} onClick={() => act('approve')} fullWidth>
             {acting ? 'Approving…' : <><CheckCircle2 size={17} strokeWidth={2} /> Approve purchase</>}
-          </GlassButton>
-        </GlassCard>
+          </Button>
+        </Card>
       )}
 
       {order.status === 'out_for_delivery' && (
-        <GlassCard id="step-out_for_delivery" glow="green" hover={false} className="mt-4">
+        <Card id="step-out_for_delivery" glow="green" hover={false} className="mt-4">
           <p className="font-medium text-brand-green-deep">Received your item?</p>
-          <p className="mt-1 text-sm text-brand-ink/60">Confirm delivery once your shopper hands it over.</p>
+          <p className="mt-1 text-sm text-ink-2">Confirm delivery once your shopper hands it over.</p>
           {payable > 0 && payLine(`Have ${formatUgx(payable)} ready. You pay your shopper when they hand it over.`)}
-          <GlassButton className="mt-3" disabled={acting} onClick={() => act('delivered')} fullWidth>
+          <Button className="mt-3" disabled={acting} onClick={() => act('delivered')} fullWidth>
             {acting ? 'Confirming…' : <><Package size={17} strokeWidth={2} /> Confirm delivery</>}
-          </GlassButton>
-        </GlassCard>
+          </Button>
+        </Card>
       )}
 
       {order.status === 'delivered' && (
-        <GlassCard id="step-delivered" glow="green" hover={false} className="mt-4">
+        <Card id="step-delivered" glow="green" hover={false} className="mt-4">
           <p className="font-medium text-brand-green-deep">Order complete?</p>
-          <p className="mt-1 text-sm text-brand-ink/60">Mark this order as done to release your shopper's earnings.</p>
-          <GlassButton className="mt-3" disabled={acting} onClick={() => act('complete')} fullWidth>
+          <p className="mt-1 text-sm text-ink-2">Mark this order as done to release your shopper's earnings.</p>
+          <Button className="mt-3" disabled={acting} onClick={() => act('complete')} fullWidth>
             {acting ? 'Completing…' : <><PartyPopper size={17} strokeWidth={2} /> Mark as completed</>}
-          </GlassButton>
-        </GlassCard>
+          </Button>
+        </Card>
       )}
 
       {order.status === 'completed' && !rated && (
-        <GlassCard id="step-completed" glow="yellow" hover={false} className="mt-4">
+        <Card id="step-completed" glow="yellow" hover={false} className="mt-4">
           <p className="font-medium text-brand-green-deep">Rate your shopper</p>
-          <p className="mt-1 text-sm text-brand-ink/60">Ratings are what other customers see when they choose a shopper.</p>
+          <p className="mt-1 text-sm text-ink-2">Ratings are what other customers see when they choose a shopper.</p>
           <div className="mt-2"><RatingStars value={stars} interactive size="md" onChange={setStars} /></div>
-          <GlassButton className="mt-3" onClick={submitRating} fullWidth>Submit rating</GlassButton>
-        </GlassCard>
+          <Button className="mt-3" onClick={submitRating} fullWidth>Submit rating</Button>
+        </Card>
       )}
 
       {order.status === 'completed' && rated && (
-        <GlassCard hover={false} className="mt-4">
-          <p className="flex items-center gap-2 text-sm text-brand-ink/70">
+        <Card hover={false} className="mt-4">
+          <p className="flex items-center gap-2 text-sm text-ink-2">
             <CheckCircle2 size={16} strokeWidth={2} className="text-brand-green-fresh" />
             All done. You rated this shopper {stars} star{stars === 1 ? '' : 's'}.
           </p>
-        </GlassCard>
+        </Card>
       )}
     </>
   );
@@ -217,14 +218,13 @@ export function ActiveOrderPage() {
 
   return (
     <div className="mx-auto max-w-3xl pb-16">
-      <button onClick={() => navigate(-1)} className="mb-4 text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep">
-        <ArrowLeft size={15} strokeWidth={2} className="inline" /> Back
-      </button>
-
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-medium text-brand-green-deep">Order #{order.id.slice(0, 8)}</h1>
-        <StatusBadge status={order.status} />
-      </div>
+      <PageHeader
+        back="/app/orders"
+        backLabel="Orders"
+        title={`Order #${order.id.slice(0, 8)}`}
+        actions={<StatusBadge status={order.status} />}
+        className="mb-0"
+      />
 
       <ActionNeededBanner
         status={order.status}
@@ -246,9 +246,9 @@ export function ActiveOrderPage() {
       </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
-        <GlassCard padding="lg" hover={false}>
+        <Card padding="lg" hover={false}>
           <OrderTimeline status={order.status} actions={timelineActions} />
-        </GlassCard>
+        </Card>
 
         <div className="flex flex-col gap-4">
           {shopper && (
@@ -261,11 +261,11 @@ export function ActiveOrderPage() {
           {order.status !== 'awaiting_customer_approval' && pricing}
 
           {items.length > 0 && (
-            <GlassCard hover={false}>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">What your shopper found</p>
+            <Card hover={false}>
+              <p className="mb-2 text-label font-semibold uppercase text-ink-3">What your shopper found</p>
               <div className="flex flex-col gap-2">
                 {items.map((it) => (
-                  <div key={it.id} className="flex items-center gap-3 rounded-lg bg-brand-green-mist/60 p-2">
+                  <div key={it.id} className="flex items-center gap-3 rounded-lg bg-surface-2 p-2">
                     {it.photo_url && (
                       <ZoomableImage
                         src={it.photo_url}
@@ -276,25 +276,25 @@ export function ActiveOrderPage() {
                       />
                     )}
                     <div className="flex-1 text-sm">
-                      <p className="font-medium text-brand-ink">{it.name}</p>
-                      <p className="text-brand-ink/50">{formatUgx(toNumber(it.price_ugx))}{it.shop_name ? ` · ${it.shop_name}` : ''}</p>
+                      <p className="font-medium text-ink">{it.name}</p>
+                      <p className="text-ink-3">{formatUgx(toNumber(it.price_ugx))}{it.shop_name ? ` · ${it.shop_name}` : ''}</p>
                     </div>
                     {it.is_selected && <Check size={16} strokeWidth={2.5} className="text-brand-green-fresh" />}
                   </div>
                 ))}
               </div>
-            </GlassCard>
+            </Card>
           )}
 
           {!finished && (
             <div className="flex flex-wrap gap-2">
-              <GlassButton variant="ghost" size="sm" onClick={() => navigate(chat)}>
+              <Button variant="ghost" size="sm" onClick={() => navigate(chat)}>
                 <MessageCircle size={17} strokeWidth={2} /> Message shopper
-              </GlassButton>
+              </Button>
               {canCancel && (
-                <GlassButton variant="danger" size="sm" disabled={acting} onClick={() => act('cancel')}>
+                <Button variant="tertiary" size="sm" disabled={acting} onClick={() => act('cancel')} className="text-brand-red hover:bg-danger-soft/40">
                   Cancel order
-                </GlassButton>
+                </Button>
               )}
               {canDispute && <DisputeButton orderId={order.id} perspective="customer" onRaised={load} />}
             </div>

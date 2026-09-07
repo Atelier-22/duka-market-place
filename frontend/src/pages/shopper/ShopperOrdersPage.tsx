@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ShoppingBag } from 'lucide-react';
 import { api } from '../../services/api';
 import { Order, OrderStatus } from '../../types';
-import { GlassCard } from '../../components/ui/GlassCard';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { actionFor, isYourTurn } from '../../components/domain/ActionNeededBanner';
 import { SkeletonRegion, SkeletonRows } from '../../components/ui/Skeleton';
@@ -19,28 +21,24 @@ function JobRow({ order, onClick }: { order: Order; onClick: () => void }) {
   const yourTurn = isYourTurn(order.status, 'shopper');
   const copy = actionFor(order.status, 'shopper');
   return (
-    <GlassCard
-      hover
-      glow={yourTurn ? 'yellow' : 'none'}
-      onClick={onClick}
-      className="flex cursor-pointer items-center justify-between gap-3"
-    >
+    <Card tone={yourTurn ? 'warning' : 'default'} onClick={onClick} className="flex items-center justify-between gap-3">
       <div className="min-w-0">
-        <p className="font-medium text-brand-ink">Job #{order.id.slice(0, 8)}</p>
-        <p className="text-xs text-brand-ink/45">
-          Fee: {formatUgx(Number(order.shopping_fee_ugx) + Number(order.delivery_fee_ugx))} · {new Date(order.created_at).toLocaleDateString('en-UG')}
+        <p className="font-medium text-ink">Job #{order.id.slice(0, 8)}</p>
+        <p className="mt-0.5 text-caption text-ink-3">
+          Fee {formatUgx(Number(order.shopping_fee_ugx) + Number(order.delivery_fee_ugx))} ·{' '}
+          {new Date(order.created_at).toLocaleDateString('en-UG', { day: 'numeric', month: 'short' })}
         </p>
         {yourTurn && copy?.cta && (
-          <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-yellow-800">
+          <p className="mt-1.5 flex items-center gap-1 text-caption font-semibold text-warning">
             Your turn: {copy.cta} <ArrowRight size={12} strokeWidth={2.5} />
           </p>
         )}
         {!yourTurn && copy?.tone === 'wait' && (
-          <p className="mt-1 text-xs text-brand-ink/50">{copy.title}</p>
+          <p className="mt-1 text-caption text-ink-3">{copy.title}</p>
         )}
       </div>
       <StatusBadge status={order.status} />
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -48,45 +46,63 @@ export function ShopperOrdersPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    api.get('/orders/mine').then((res) => setOrders(res.data.orders)).finally(() => setLoading(false));
-  }, []);
+  function load() {
+    setFailed(false);
+    api.get('/orders/mine')
+      .then((res) => setOrders(res.data.orders))
+      .catch(() => setFailed(true))
+      .finally(() => setLoading(false));
+  }
+  useEffect(load, []);
 
   const needsYou = orders.filter((o) => isYourTurn(o.status, 'shopper'));
   const waiting = orders.filter((o) => !FINISHED.includes(o.status) && !isYourTurn(o.status, 'shopper'));
   const past = orders.filter((o) => FINISHED.includes(o.status));
 
   const section = (title: string, list: Order[]) => list.length > 0 && (
-    <div>
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">{title}</p>
+    <section>
+      <p className="mb-2 text-label font-semibold uppercase text-ink-3">{title}</p>
       <div className="flex flex-col gap-3">
         {list.map((o) => <JobRow key={o.id} order={o} onClick={() => navigate(`/shopper/orders/${o.id}`)} />)}
       </div>
-    </div>
+    </section>
   );
 
   return (
-    <div className="pb-10">
-      <h1 className="font-display text-2xl font-medium text-brand-green-deep">My jobs</h1>
-      {!loading && needsYou.length > 0 && (
-        <p className="mt-1 text-sm text-brand-ink/50">
-          {needsYou.length === 1 ? 'One job is waiting on you.' : `${needsYou.length} jobs are waiting on you.`}
-        </p>
+    <div className="mx-auto max-w-5xl pb-10">
+      <PageHeader
+        title="My jobs"
+        subtitle={
+          !loading && needsYou.length > 0
+            ? needsYou.length === 1 ? 'One job is waiting on you.' : `${needsYou.length} jobs are waiting on you.`
+            : 'Every job you have taken, newest first.'
+        }
+        actions={<Button size="sm" variant="secondary" onClick={() => navigate('/shopper/available')}>Find a job</Button>}
+      />
+      {loading ? (
+        <SkeletonRegion label="Loading your jobs"><SkeletonRows count={4} /></SkeletonRegion>
+      ) : failed ? (
+        <EmptyState
+          title="We couldn't load your jobs"
+          description="Check your connection and try again."
+          action={<Button size="sm" onClick={() => { setLoading(true); load(); }}>Try again</Button>}
+        />
+      ) : orders.length === 0 ? (
+        <EmptyState
+          icon={<ShoppingBag strokeWidth={1.5} />}
+          title="No jobs yet"
+          description="Browse open requests near you and send an offer to take your first job."
+          action={<Button size="sm" onClick={() => navigate('/shopper/available')}>Browse requests</Button>}
+        />
+      ) : (
+        <div className="flex flex-col gap-6">
+          {section('Your turn', needsYou)}
+          {section('Waiting on the customer', waiting)}
+          {section('Past jobs', past)}
+        </div>
       )}
-      <div className="mt-6">
-        {loading ? (
-          <SkeletonRegion label="Loading your jobs"><SkeletonRows count={4} /></SkeletonRegion>
-        ) : orders.length === 0 ? (
-          <EmptyState title="No jobs yet" description="Browse available requests to accept your first job." />
-        ) : (
-          <div className="flex flex-col gap-6">
-            {section('Your turn', needsYou)}
-            {section('Waiting on the customer', waiting)}
-            {section('Past jobs', past)}
-          </div>
-        )}
-      </div>
     </div>
   );
 }

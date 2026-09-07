@@ -8,10 +8,10 @@ import { revealPanel } from './OrderTimeline';
  * and whether it is their move. Every status has an entry for both sides so
  * nobody is ever left with a bare timeline.
  *
- *  act   → yellow, "Your turn", tap to jump to the action card
+ *  act   → warning tone, "Your turn", tap to jump to the action card
  *  wait  → neutral, says who you are waiting on and roughly how long
- *  done  → green, the order is finished (rate the other side)
- *  alert → red, cancelled / disputed
+ *  done  → success, the order is finished (rate the other side)
+ *  alert → danger, cancelled / disputed
  */
 export type ActionTone = 'act' | 'wait' | 'done' | 'alert';
 
@@ -84,33 +84,29 @@ export function isYourTurn(status: OrderStatus, perspective: OrderPerspective): 
 
 const TONE = {
   act: {
-    border: 'border-l-brand-yellow',
-    hover: 'hover:bg-brand-yellow-soft/30',
-    iconBg: 'bg-brand-yellow-soft text-yellow-800',
+    box: 'border-brand-yellow/60 bg-warning-soft/40',
+    iconBg: 'bg-brand-yellow text-brand-ink',
     label: 'Your turn',
-    labelColor: 'text-yellow-800',
+    labelColor: 'text-warning',
     Icon: ArrowDown,
   },
   wait: {
-    border: 'border-l-brand-green-fresh',
-    hover: 'hover:bg-brand-green-mist/40',
+    box: 'border-line bg-surface',
     iconBg: 'bg-brand-green-mist text-brand-green',
     label: 'Nothing to do yet',
     labelColor: 'text-brand-green',
     Icon: Clock,
   },
   done: {
-    border: 'border-l-brand-green',
-    hover: 'hover:bg-brand-green-mist/40',
+    box: 'border-brand-green-fresh/40 bg-brand-green-mist/50',
     iconBg: 'bg-brand-green text-white',
     label: 'Done',
     labelColor: 'text-brand-green-deep',
     Icon: Star,
   },
   alert: {
-    border: 'border-l-brand-red',
-    hover: '',
-    iconBg: 'bg-brand-red/10 text-brand-red',
+    box: 'border-brand-red/30 bg-danger-soft/30',
+    iconBg: 'bg-brand-red text-white',
     label: 'Needs attention',
     labelColor: 'text-brand-red',
     Icon: CircleAlert,
@@ -149,12 +145,12 @@ export function ActionNeededBanner({
         <Icon size={17} strokeWidth={2.25} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className={`block text-xs font-semibold uppercase tracking-wide ${tone.labelColor}`}>{tone.label}</span>
-        <span className="block text-sm font-medium text-brand-ink">{action.title}</span>
-        {estimate && <span className="mt-0.5 block text-xs text-brand-ink/50">{estimate}</span>}
+        <span className={`block text-label font-semibold uppercase ${tone.labelColor}`}>{tone.label}</span>
+        <span className="block text-sm font-medium text-ink">{action.title}</span>
+        {estimate && <span className="mt-0.5 block text-caption text-ink-3">{estimate}</span>}
       </span>
       {action.cta && (
-        <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-green px-3 py-1.5 text-xs font-semibold text-white">
+        <span className="flex shrink-0 items-center gap-1 rounded-lg bg-brand-green px-3 py-2 text-caption font-semibold text-white">
           {action.cta}
           {to && <ArrowRight size={13} strokeWidth={2.5} />}
         </span>
@@ -162,7 +158,14 @@ export function ActionNeededBanner({
     </>
   );
 
-  const classes = `glass mt-4 flex w-full items-center gap-3 rounded-xl2 border-l-4 ${tone.border} px-4 py-3 text-left transition-[background-color,transform] active:scale-[0.99] ${tone.hover} ${className}`;
+  const interactive = !!to || !!(action.cta && targetId);
+  const classes = [
+    'mt-4 flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left shadow-card',
+    'transition-[border-color,transform,box-shadow] duration-150',
+    tone.box,
+    interactive ? 'hover:border-line-strong hover:shadow-raised active:scale-[0.99]' : '',
+    className,
+  ].join(' ');
 
   if (to) {
     return <Link to={to} className={classes}>{body}</Link>;

@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Clock, MapPin, Truck } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { GlassCard } from '../ui/GlassCard';
-import { GlassButton } from '../ui/GlassButton';
+import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useToast } from '../ui/Toast';
 
@@ -15,6 +14,10 @@ interface ShoppingDonePanelProps {
   locationError: string | null;
   onDone: () => void;
 }
+
+/** A sub-section at the foot of the route card, separated by a hairline rather than another card. */
+const SECTION = 'mt-5 border-t border-line pt-4';
+const HEADING = 'flex items-center gap-2 font-display text-h3 font-medium text-brand-green-deep';
 
 export function ShoppingDonePanel({
   orderId, shoppingDoneAt, deliveryStartedAt, deliveryDeferredTo,
@@ -49,47 +52,47 @@ export function ShoppingDonePanel({
 
   if (deliveryStartedAt) {
     return (
-      <GlassCard hover={false} className="mt-4">
-        <p className="flex items-center gap-2 font-medium text-brand-green-deep">
-          <Truck size={17} strokeWidth={1.75} /> Delivering now
-        </p>
-        <p className="mt-1 text-sm text-brand-ink/60">
+      <section className={SECTION}>
+        <h3 className={HEADING}>
+          <Truck size={18} strokeWidth={1.75} className="shrink-0 text-brand-green" /> Delivering now
+        </h3>
+        <p className="mt-1 text-small text-ink-2">
           {sharingLocation
             ? 'The customer can see you moving on their map.'
             : locationError ?? 'Turn on location sharing so the customer can follow you.'}
         </p>
         {!sharingLocation && locationError && (
-          <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-brand-red">
-            <MapPin size={13} strokeWidth={2} /> {locationError}
+          <p role="alert" className="mt-2 flex items-center gap-1.5 text-caption font-medium text-brand-red">
+            <MapPin size={13} strokeWidth={2} className="shrink-0" /> {locationError}
           </p>
         )}
-      </GlassCard>
+      </section>
     );
   }
 
   if (deliveryDeferredTo) {
     return (
-      <GlassCard hover={false} className="mt-4">
-        <p className="flex items-center gap-2 font-medium text-brand-green-deep">
-          <Clock size={17} strokeWidth={1.75} /> Delivery scheduled
-        </p>
-        <p className="mt-1 text-sm text-brand-ink/60">
+      <section className={SECTION}>
+        <h3 className={HEADING}>
+          <Clock size={18} strokeWidth={1.75} className="shrink-0 text-brand-green" /> Delivery scheduled
+        </h3>
+        <p className="mt-1 text-small text-ink-2">
           Agreed for {new Date(deliveryDeferredTo).toLocaleString('en-UG', { dateStyle: 'medium', timeStyle: 'short' })}.
           Come back and start the delivery when you set off.
         </p>
-        <GlassButton size="sm" className="mt-3" disabled={busy} onClick={() => submit(true)}>
+        <Button size="sm" className="mt-3" disabled={busy} onClick={() => submit(true)}>
           <Truck size={15} strokeWidth={2} /> Start delivering now
-        </GlassButton>
-      </GlassCard>
+        </Button>
+      </section>
     );
   }
 
   return (
-    <GlassCard glow="green" hover={false} className="mt-4">
-      <p className="font-medium text-brand-green-deep">
+    <section className={SECTION}>
+      <h3 className={HEADING}>
         {shoppingDoneAt ? 'Shopping done — what next?' : 'Finished shopping?'}
-      </p>
-      <p className="mt-1 text-sm text-brand-ink/60">
+      </h3>
+      <p className="mt-1 text-small text-ink-2">
         Starting the delivery begins the countdown the customer sees. If you agreed to drop it off later, schedule it instead.
       </p>
 
@@ -101,13 +104,19 @@ export function ShoppingDonePanel({
             value={eta}
             onChange={(e) => setEta(e.target.value)}
           />
-          <div className="flex flex-wrap gap-2">
-            <GlassButton disabled={busy} onClick={() => submit(true)}>
-              <Truck size={16} strokeWidth={2} /> Set off now — start the customer's countdown
-            </GlassButton>
-            <GlassButton variant="secondary" disabled={busy} onClick={() => setMode('defer')}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button
+              fullWidth
+              disabled={busy}
+              onClick={() => submit(true)}
+              className="!h-auto min-h-[44px] py-2.5 sm:w-auto"
+            >
+              <Truck size={16} strokeWidth={2} className="shrink-0" />
+              <span className="whitespace-normal">Set off now — start the customer's countdown</span>
+            </Button>
+            <Button fullWidth variant="secondary" disabled={busy} onClick={() => setMode('defer')} className="sm:w-auto">
               <Clock size={16} strokeWidth={2} /> Deliver later
-            </GlassButton>
+            </Button>
           </div>
         </div>
       ) : (
@@ -119,15 +128,15 @@ export function ShoppingDonePanel({
             onChange={(e) => setDeferTo(e.target.value)}
           />
           <div className="flex flex-wrap gap-2">
-            <GlassButton disabled={busy} onClick={() => submit(false)}>
+            <Button disabled={busy} onClick={() => submit(false)}>
               Save scheduled time
-            </GlassButton>
-            <GlassButton variant="ghost" disabled={busy} onClick={() => setMode('idle')}>
+            </Button>
+            <Button variant="tertiary" disabled={busy} onClick={() => setMode('idle')}>
               Cancel
-            </GlassButton>
+            </Button>
           </div>
         </div>
       )}
-    </GlassCard>
+    </section>
   );
 }

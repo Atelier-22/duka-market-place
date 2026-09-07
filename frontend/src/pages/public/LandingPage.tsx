@@ -1,7 +1,24 @@
-import { Link } from 'react-router-dom';
-import { ArrowRight, Bike, Broccoli, CheckCircle2, Footprints, Handshake, Lightbulb, MapPin, MessageCircle, Percent, Search, ShoppingBag, Smartphone, Star, Clock } from 'lucide-react';
-import { GlassCard } from '../../components/ui/GlassCard';
-import { GlassButton } from '../../components/ui/GlassButton';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  ArrowRight,
+  Bike,
+  Broccoli,
+  Camera,
+  Check,
+  Clock,
+  Footprints,
+  Handshake,
+  MapPin,
+  MessageCircle,
+  Percent,
+  Search,
+  ShoppingBag,
+  Smartphone,
+  Star,
+  Store,
+} from 'lucide-react';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { HeroCarousel } from '../../components/domain/HeroCarousel';
 import { BRAND } from '../../config/brand';
 
@@ -10,7 +27,7 @@ const HOW_IT_WORKS = [
   { icon: MapPin, title: 'Choose where to get it', body: 'Pick a specific market or shop, paste a social seller link, or let a shopper find the best option.' },
   { icon: Handshake, title: 'A nearby shopper accepts', body: 'A verified shopper close to that location picks up your request.' },
   { icon: ShoppingBag, title: 'They find and buy it', body: 'Real photos and the real price, uploaded before anything is purchased.' },
-  { icon: CheckCircle2, title: 'You approve the purchase', body: 'See the exact price breakdown and approve before the shopper pays.' },
+  { icon: Check, title: 'You approve the purchase', body: 'See the exact price breakdown and approve before the shopper pays.' },
   { icon: Bike, title: 'They deliver it', body: 'Straight to the address you choose, tracked every step of the way.' },
 ];
 
@@ -21,165 +38,244 @@ const USE_CASES = [
   { icon: Search, title: 'Best price search', body: '"Find me the cheapest good-quality version of this item."' },
 ];
 
+const TRUST = [
+  { icon: Camera, title: 'Trust', body: 'Every purchase is backed by a real photo, a real receipt, and your explicit approval before payment.' },
+  { icon: Bike, title: 'Speed', body: 'Requests are matched with nearby shoppers who already know the market.' },
+  { icon: Store, title: 'Local knowledge', body: 'Shoppers know which stall has it cheaper, and which seller to avoid.' },
+];
+
+const SHOPPER_PERKS = [
+  { icon: Clock, label: 'Flexible hours' },
+  { icon: MapPin, label: 'Choose your area' },
+  { icon: Percent, label: 'Transparent fees' },
+  { icon: Star, label: 'Build your rating' },
+];
+
+const HERO_PROMISES = ['Photo before purchase', 'You approve the price', 'Pay on delivery'];
+
+const EXAMPLE_ORDER = [
+  { label: 'Item', amount: '55,000' },
+  { label: 'Shopping fee', amount: '8,000' },
+  { label: 'Delivery', amount: '6,000' },
+];
+
+const SECTION = 'mx-auto mt-16 max-w-6xl px-4 sm:px-6 lg:mt-24';
+const ICON_WELL = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-green-mist text-brand-green-deep';
+
+function SectionIntro({ eyebrow, title, body }: { eyebrow: string; title: string; body: string }) {
+  return (
+    <div className="mx-auto max-w-xl text-center">
+      <p className="text-label font-semibold uppercase text-ink-3">{eyebrow}</p>
+      <h2 className="mt-2 font-display text-h2 font-medium text-brand-green-deep sm:text-h1">{title}</h2>
+      <p className="mt-3 text-body text-ink-2">{body}</p>
+    </div>
+  );
+}
+
 export function LandingPage() {
+  const navigate = useNavigate();
+
   return (
     <div>
-      
-      <section className="mx-auto max-w-6xl px-4 pt-10 md:pt-20">
-        <div className="grid items-center gap-12 md:grid-cols-2">
-          <div className="animate-fade-up">
-            <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold text-brand-green-deep">
-              <MapPin size={13} strokeWidth={2.25} aria-hidden="true" />
-              Now live in towns across Uganda
-            </span>
-            <h1 className="mt-6 font-display text-4xl font-medium leading-[1.1] text-brand-green-deep md:text-6xl">
-              Tell us what you need.<br />
-              <span className="text-gradient-brand">We'll find someone nearby</span><br />
-              to get it for you.
-            </h1>
-            <p className="mt-6 max-w-md text-lg text-brand-ink/65">
-              {BRAND.name} connects you with a verified local shopper who goes to the market, shop,
-              or seller you name — buys it, and brings it to your door.
+      {/* Hero */}
+      <section className="mx-auto max-w-6xl px-4 pt-12 sm:px-6 lg:pt-20">
+        <div className="grid animate-fade-up items-center gap-10 lg:grid-cols-2 lg:gap-16">
+          <div className="min-w-0">
+            <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-small font-medium text-ink-2">
+              <MapPin size={14} strokeWidth={2} className="text-brand-green" aria-hidden="true" />
+              Now live in towns across {BRAND.country}
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/register?role=customer">
-                <GlassButton size="lg">Create a shopping request <ArrowRight size={17} strokeWidth={2} /></GlassButton>
-              </Link>
-              <Link to="/become-a-shopper">
-                <GlassButton size="lg" variant="secondary">Become a shopper</GlassButton>
-              </Link>
+            <h1 className="mt-5 max-w-lg font-display text-h1 font-medium text-brand-green-deep md:text-display">
+              Tell us what you need. We&rsquo;ll find someone nearby to get it for you.
+            </h1>
+            <p className="mt-5 max-w-md text-body text-ink-2">
+              {BRAND.name} connects you with a verified local shopper who goes to the market, shop or
+              seller you name, buys it, and brings it to your door.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button size="lg" fullWidth className="sm:w-auto" onClick={() => navigate('/register?role=customer')}>
+                Create a shopping request <ArrowRight size={18} strokeWidth={2} aria-hidden="true" />
+              </Button>
+              <Button size="lg" variant="secondary" fullWidth className="sm:w-auto" onClick={() => navigate('/become-a-shopper')}>
+                Become a shopper
+              </Button>
             </div>
-            
+            <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-small text-ink-2">
+              {HERO_PROMISES.map((promise) => (
+                <li key={promise} className="flex items-center gap-1.5">
+                  <Check size={15} strokeWidth={2.5} className="text-brand-green" aria-hidden="true" />
+                  {promise}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div className="relative animate-fade-up [animation-delay:150ms]">
-            <GlassCard glow="green" padding="lg" className="animate-float">
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Active request</p>
-              <p className="mt-2 font-display text-lg font-medium text-brand-green-deep">Black shoes, size 42</p>
-              <p className="mt-1 text-sm text-brand-ink/60">Owino Market · Budget: 100,000 UGX</p>
-              <div className="mt-4 flex items-center gap-2 rounded-xl bg-brand-green-mist p-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green-fresh text-white"><ShoppingBag size={18} strokeWidth={1.75} /></span>
-                <div>
-                  <p className="text-sm font-semibold text-brand-green-deep">Nakato is shopping for you</p>
-                  <p className="text-xs text-brand-ink/50">Found the item — 55,000 UGX</p>
+          <div
+            className="w-full min-w-0 lg:max-w-md lg:justify-self-end"
+            role="img"
+            aria-label="An example order: black shoes, size 42, from Owino Market. Shopper Nakato found them for 55,000 UGX; the total with fees is 69,000 UGX and is waiting for your approval."
+          >
+            <Card padding="lg">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-label font-semibold uppercase text-ink-3">Active request</p>
+                <span className="rounded-full bg-brand-green-mist px-2.5 py-1 text-caption font-semibold text-brand-green-deep">
+                  Shopping
+                </span>
+              </div>
+              <p className="mt-3 font-display text-h3 font-medium text-brand-green-deep">Black shoes, size 42</p>
+              <p className="mt-1 text-small text-ink-2">Owino Market · Budget 100,000 UGX</p>
+
+              <div className="mt-5 flex items-center gap-3 border-t border-line pt-5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-green-mist text-body font-semibold text-brand-green-deep">
+                  N
+                </span>
+                <div className="min-w-0">
+                  <p className="text-body font-medium text-ink">Nakato is shopping for you</p>
+                  <p className="text-small text-ink-2">Verified shopper · Found the item</p>
                 </div>
               </div>
-              <div className="mt-4 rounded-xl bg-brand-yellow/15 p-3 text-sm text-yellow-800">
-                <Lightbulb size={15} strokeWidth={2} className="mr-1 inline" /> Item is 45,000 UGX under your budget — approve to continue.
-              </div>
-            </GlassCard>
-            <GlassCard glow="yellow" padding="sm" className="absolute -bottom-8 -left-8 hidden w-48 animate-float [animation-delay:1s] md:block">
-              <p className="text-xs font-semibold text-brand-ink/50">This week's earnings</p>
-              <p className="font-display text-xl font-semibold text-brand-green-deep">142,000 UGX</p>
-            </GlassCard>
+
+              <dl className="mt-5 rounded-xl border border-line bg-surface-2 p-4 text-small">
+                {EXAMPLE_ORDER.map((line) => (
+                  <div key={line.label} className="flex items-baseline justify-between gap-4 py-1">
+                    <dt className="text-ink-2">{line.label}</dt>
+                    <dd className="font-medium tabular-nums text-ink">{line.amount} UGX</dd>
+                  </div>
+                ))}
+                <div className="mt-2 flex items-baseline justify-between gap-4 border-t border-line pt-3 text-body">
+                  <dt className="font-semibold text-ink">Total</dt>
+                  <dd className="font-semibold tabular-nums text-brand-green-deep">69,000 UGX</dd>
+                </div>
+              </dl>
+
+              <p className="mt-4 flex items-start gap-2 text-small text-ink-2">
+                <Check size={16} strokeWidth={2.5} className="mt-0.5 shrink-0 text-brand-green" aria-hidden="true" />
+                31,000 UGX under your budget. Approve, and Nakato pays and heads your way.
+              </p>
+            </Card>
           </div>
         </div>
       </section>
 
-      
-      <section className="mx-auto mt-32 max-w-6xl px-4">
+      {/* Statement panel */}
+      <section className={SECTION}>
         <HeroCarousel />
       </section>
 
-      
-      <section className="mx-auto mt-32 max-w-6xl px-4">
-        <div className="mx-auto max-w-xl text-center">
-          <h2 className="font-display text-3xl font-medium text-brand-green-deep md:text-4xl">How it works</h2>
-          <p className="mt-3 text-brand-ink/60">From a message to a delivery, in six transparent steps.</p>
-        </div>
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
+      {/* How it works */}
+      <section className={SECTION}>
+        <SectionIntro
+          eyebrow="How it works"
+          title="From a message to a delivery"
+          body="Six transparent steps. You see the item and the real price before anything is bought."
+        />
+        <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {HOW_IT_WORKS.map((step, i) => (
-            <GlassCard key={step.title} className="animate-fade-up" style={{ animationDelay: `${i * 80}ms` }}>
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-green-mist text-xl">
-                <step.icon size={22} strokeWidth={1.5} />
-              </span>
-              <p className="mt-4 font-display text-base font-medium text-brand-green-deep">{step.title}</p>
-              <p className="mt-1.5 text-sm text-brand-ink/60">{step.body}</p>
-            </GlassCard>
+            <li key={step.title} className="min-w-0">
+              <Card className="h-full">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green-mist font-display text-h3 font-medium text-brand-green-deep">
+                    {i + 1}
+                  </span>
+                  <step.icon size={20} strokeWidth={1.75} className="text-brand-green" aria-hidden="true" />
+                </div>
+                <h3 className="mt-4 font-display text-h3 font-medium text-brand-green-deep">{step.title}</h3>
+                <p className="mt-1.5 text-small text-ink-2">{step.body}</p>
+              </Card>
+            </li>
           ))}
-        </div>
+        </ol>
+        <p className="mt-6 text-center text-body">
+          <Link to="/how-it-works" className="font-medium text-brand-green hover:underline">
+            See the full walkthrough
+          </Link>
+        </p>
       </section>
 
-      
-      <section className="mx-auto mt-32 max-w-6xl px-4">
-        <div className="glass-deep grid gap-8 rounded-xl3 p-10 md:grid-cols-3 md:p-14">
-          {[
-            { title: 'Trust', body: 'Every purchase is backed by a real photo, a real receipt, and your explicit approval before payment.' },
-            { title: 'Speed', body: 'Requests are matched with nearby shoppers who already know the market.' },
-            { title: 'Local knowledge', body: 'Shoppers know which stall has it cheaper, and which seller to avoid.' },
-          ].map((item) => (
-            <div key={item.title}>
-              <p className="font-display text-xl font-medium text-brand-yellow">{item.title}</p>
-              <p className="mt-2 text-sm text-white/70">{item.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      
-      <section className="mx-auto mt-32 max-w-6xl px-4">
-        <div className="mx-auto max-w-xl text-center">
-          <h2 className="font-display text-3xl font-medium text-brand-green-deep md:text-4xl">Popular use cases</h2>
-          <p className="mt-3 text-brand-ink/60">If it can be found in a market, a shop, or online — we can get it.</p>
-        </div>
-        <div className="mt-12 grid gap-5 sm:grid-cols-2">
+      {/* Use cases */}
+      <section className={SECTION}>
+        <SectionIntro
+          eyebrow="Popular requests"
+          title="If it can be found, we can get it"
+          body="A market stall, a small shop, a supermarket, or a seller you found online."
+        />
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2">
           {USE_CASES.map((uc) => (
-            <GlassCard key={uc.title} className="flex gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-yellow/15 text-2xl">
-                <uc.icon size={22} strokeWidth={1.5} />
-              </span>
-              <div>
-                <p className="font-display text-base font-medium text-brand-green-deep">{uc.title}</p>
-                <p className="mt-1 text-sm italic text-brand-ink/60">{uc.body}</p>
-              </div>
-            </GlassCard>
+            <li key={uc.title} className="min-w-0">
+              <Card className="flex h-full gap-4">
+                <span className={ICON_WELL}>
+                  <uc.icon size={20} strokeWidth={1.75} aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="font-display text-h3 font-medium text-brand-green-deep">{uc.title}</h3>
+                  <p className="mt-1 text-small text-ink-2">{uc.body}</p>
+                </div>
+              </Card>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
-      
-      <section className="mx-auto mt-32 max-w-6xl px-4">
-        <GlassCard glow="yellow" padding="lg" className="grid items-center gap-8 md:grid-cols-2">
-          <div>
-            <h2 className="font-display text-3xl font-medium text-brand-green-deep">Earn on your own schedule</h2>
-            <p className="mt-3 text-brand-ink/60">
-              Choose your area, accept the jobs that work for you, and get paid transparently for every
-              shop and delivery. No inventory, no shop rent — just your time and local knowledge.
-            </p>
-            <Link to="/become-a-shopper" className="mt-6 inline-block">
-              <GlassButton>Start earning <ArrowRight size={17} strokeWidth={2} /></GlassButton>
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: 'Flexible hours', icon: Clock },
-              { label: 'Choose your area', icon: MapPin },
-              { label: 'Transparent fees', icon: Percent },
-              { label: 'Build your rating', icon: Star },
-            ].map((f) => (
-              <div key={f.label} className="glass rounded-xl2 p-4 text-center">
-                <f.icon size={22} strokeWidth={1.5} className="text-brand-green-fresh" />
-                <p className="mt-2 text-sm font-medium text-brand-green-deep">{f.label}</p>
+      {/* Trust panel */}
+      <section className={SECTION}>
+        <div className="surface-deep rounded-3xl px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
+          <p className="text-label font-semibold uppercase text-white/60">Why people trust {BRAND.name}</p>
+          <div className="mt-8 grid gap-8 md:grid-cols-3 md:gap-10">
+            {TRUST.map((item) => (
+              <div key={item.title} className="min-w-0">
+                <item.icon size={24} strokeWidth={1.5} className="text-brand-green-fresh" aria-hidden="true" />
+                <h3 className="mt-4 font-display text-h3 font-medium text-white">{item.title}</h3>
+                <p className="mt-2 text-small text-white/70">{item.body}</p>
               </div>
             ))}
           </div>
-        </GlassCard>
+        </div>
       </section>
 
-      
+      {/* For shoppers */}
+      <section className={SECTION}>
+        <Card padding="lg" className="grid items-center gap-8 md:grid-cols-2 md:gap-12">
+          <div className="min-w-0">
+            <p className="text-label font-semibold uppercase text-ink-3">For shoppers</p>
+            <h2 className="mt-2 font-display text-h2 font-medium text-brand-green-deep sm:text-h1">
+              Earn on your own schedule
+            </h2>
+            <p className="mt-3 text-body text-ink-2">
+              Choose your area, accept the jobs that work for you, and get paid transparently for
+              every shop and delivery. No inventory, no shop rent — just your time and local knowledge.
+            </p>
+            <div className="mt-6">
+              <Button onClick={() => navigate('/become-a-shopper')}>
+                Start earning <ArrowRight size={17} strokeWidth={2} aria-hidden="true" />
+              </Button>
+            </div>
+          </div>
+          <ul className="grid grid-cols-2 gap-3">
+            {SHOPPER_PERKS.map((perk) => (
+              <li key={perk.label} className="min-w-0 rounded-xl border border-line bg-surface-2 p-4">
+                <perk.icon size={20} strokeWidth={1.75} className="text-brand-green" aria-hidden="true" />
+                <p className="mt-3 text-small font-medium text-brand-green-deep">{perk.label}</p>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </section>
 
-      
-      <section className="mx-auto mt-32 max-w-4xl px-4 text-center">
-        <h2 className="font-display text-3xl font-medium text-brand-green-deep md:text-4xl">
-          Ready to get something you can't go get yourself?
+      {/* Final CTA */}
+      <section className="mx-auto mt-16 max-w-3xl px-4 text-center sm:px-6 lg:mt-24">
+        <h2 className="font-display text-h2 font-medium text-brand-green-deep sm:text-h1">
+          Ready to get something you can&rsquo;t go and get yourself?
         </h2>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link to="/register?role=customer">
-            <GlassButton size="lg">Create Shopping Request</GlassButton>
-          </Link>
-          <Link to="/register?role=shopper">
-            <GlassButton size="lg" variant="secondary">Become a Shopper</GlassButton>
-          </Link>
+        <p className="mt-3 text-body text-ink-2">
+          Create a request in a minute. A nearby shopper takes it from there.
+        </p>
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <Button size="lg" fullWidth className="sm:w-auto" onClick={() => navigate('/register?role=customer')}>
+            Create a shopping request
+          </Button>
+          <Button size="lg" variant="secondary" fullWidth className="sm:w-auto" onClick={() => navigate('/register?role=shopper')}>
+            Become a shopper
+          </Button>
         </div>
       </section>
     </div>

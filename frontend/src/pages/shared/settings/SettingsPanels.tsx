@@ -9,8 +9,8 @@ import { useAuth } from '../../../context/AuthContext';
 import {
   Accent, DeliveryContact, DeliveryHandoff, Language, Theme, usePreferences,
 } from '../../../context/PreferencesContext';
-import { GlassCard } from '../../../components/ui/GlassCard';
-import { GlassButton } from '../../../components/ui/GlassButton';
+import { Card } from '../../../components/ui/Card';
+import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Textarea } from '../../../components/ui/Textarea';
@@ -32,11 +32,11 @@ import { SourcingType } from '../../../types';
 
 export function Panel({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <GlassCard padding="lg" hover={false} className="mb-5">
-      <h2 className="font-display text-lg font-medium text-brand-green-deep">{title}</h2>
-      {description && <p className="mt-1 text-sm text-brand-ink/55">{description}</p>}
+    <Card padding="lg" className="mb-5">
+      <h2 className="font-display text-h3 font-medium text-brand-green-deep">{title}</h2>
+      {description && <p className="mt-1 text-sm text-ink-2">{description}</p>}
       <div className="mt-5">{children}</div>
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -50,11 +50,11 @@ export function Toggle({ checked, onChange, label, description, disabled }: {
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="flex min-h-[56px] w-full items-center justify-between gap-4 border-b border-brand-green/10 py-3 text-left last:border-0 disabled:opacity-60"
+      className="flex min-h-[56px] w-full items-center justify-between gap-4 border-b border-line py-3 text-left last:border-0 disabled:opacity-60"
     >
       <span>
-        <span className="block text-sm font-medium text-brand-ink">{label}</span>
-        {description && <span className="mt-0.5 block text-xs text-brand-ink/45">{description}</span>}
+        <span className="block text-sm font-medium text-ink">{label}</span>
+        {description && <span className="mt-0.5 block text-xs text-ink-3">{description}</span>}
       </span>
       <span className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? 'bg-brand-green-fresh' : 'bg-brand-ink/20'}`}>
         <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? 'left-[22px]' : 'left-0.5'}`} />
@@ -82,14 +82,14 @@ function Choice<T extends string>({ value, options, onChange, columns = 1 }: {
             onClick={() => onChange(o.value)}
             aria-pressed={selected}
             className={[
-              'flex min-h-[52px] items-center gap-3 rounded-xl2 border p-3 text-left transition-[background-color,border-color,transform] active:scale-[0.99]',
-              selected ? 'border-brand-green-fresh bg-brand-green-mist' : 'border-brand-green/15 hover:bg-brand-green-mist/50',
+              'flex min-h-[52px] items-center gap-3 rounded-2xl border p-3 text-left transition-[background-color,border-color,transform] active:scale-[0.99]',
+              selected ? 'border-brand-green-fresh bg-brand-green-mist' : 'border-line hover:bg-surface-2',
             ].join(' ')}
           >
-            {Icon && <Icon size={19} strokeWidth={1.7} className={selected ? 'text-brand-green-deep' : 'text-brand-ink/50'} />}
+            {Icon && <Icon size={19} strokeWidth={1.7} className={selected ? 'text-brand-green-deep' : 'text-ink-3'} />}
             <span className="min-w-0">
               <span className="block text-sm font-semibold text-brand-green-deep">{o.label}</span>
-              {o.description && <span className="mt-0.5 block text-xs text-brand-ink/50">{o.description}</span>}
+              {o.description && <span className="mt-0.5 block text-xs text-ink-3">{o.description}</span>}
             </span>
           </button>
         );
@@ -101,12 +101,12 @@ function Choice<T extends string>({ value, options, onChange, columns = 1 }: {
 /** Honest placeholder for a feature that has no backend yet. */
 function NotYet({ icon: Icon, title, body, cta }: { icon: LucideIcon; title: string; body: string; cta?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center rounded-xl2 border border-dashed border-brand-green/20 bg-brand-green-mist/30 px-6 py-10 text-center">
-      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-green-mist text-brand-green">
+    <div className="flex flex-col items-center rounded-2xl border border-dashed border-line-strong bg-surface-2 px-6 py-10 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-brand-green shadow-card">
         <Icon size={22} strokeWidth={1.6} />
       </span>
       <p className="mt-4 font-medium text-brand-green-deep">{title}</p>
-      <p className="mt-1.5 max-w-sm text-sm text-brand-ink/55">{body}</p>
+      <p className="mt-1.5 max-w-sm text-sm text-ink-2">{body}</p>
       {cta && <div className="mt-5">{cta}</div>}
     </div>
   );
@@ -152,13 +152,13 @@ export function PersonalInfoPanel() {
           <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           <Input label="Phone number" type="tel" hint="This is what you log in with." value={phone} onChange={(e) => setPhone(e.target.value)} />
           <div>
-            <GlassButton size="sm" disabled={saving} onClick={save}>{saving ? 'Saving…' : 'Save changes'}</GlassButton>
+            <Button size="sm" disabled={saving} onClick={save}>{saving ? 'Saving…' : 'Save changes'}</Button>
           </div>
         </div>
         {user?.role === 'shopper' && (
-          <Link to="/shopper/profile" className="mt-5 flex items-center justify-between rounded-xl2 border border-brand-green/15 px-4 py-3 text-sm font-medium text-brand-green-deep transition-colors hover:bg-brand-green-mist/50">
+          <Link to="/shopper/profile" className="mt-5 flex items-center justify-between rounded-2xl border border-line px-4 py-3 text-sm font-medium text-brand-green-deep transition-colors hover:bg-surface-2">
             Shopper profile: bio and operating area
-            <ChevronRight size={17} strokeWidth={2} className="text-brand-ink/35" />
+            <ChevronRight size={17} strokeWidth={2} className="text-ink-3" />
           </Link>
         )}
       </Panel>
@@ -205,9 +205,9 @@ export function SecurityPanel() {
         <PasswordInput label="Current password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
         <PasswordInput label="New password" hint="At least 8 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
         <div>
-          <GlassButton size="sm" disabled={saving || !currentPassword || newPassword.length < 8} onClick={save}>
+          <Button size="sm" disabled={saving || !currentPassword || newPassword.length < 8} onClick={save}>
             {saving ? 'Updating…' : 'Change password'}
-          </GlassButton>
+          </Button>
         </div>
       </div>
     </Panel>
@@ -241,21 +241,21 @@ export function LocationPanel() {
 export function PaymentMethodsPanel() {
   return (
     <Panel title="Payment methods" description="How you pay for what your shopper buys.">
-      <div className="rounded-xl2 border border-brand-green-fresh bg-brand-green-mist p-4">
+      <div className="rounded-2xl border border-brand-green-fresh bg-brand-green-mist p-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-brand-green-deep">
           <Wallet size={17} strokeWidth={1.8} /> Pay on delivery
           <span className="ml-auto rounded-full bg-brand-green px-2 py-0.5 text-[11px] font-semibold text-white">Current</span>
         </p>
-        <p className="mt-2 text-sm text-brand-ink/65">
+        <p className="mt-2 text-sm text-ink-2">
           You pay your shopper in cash or by mobile money when they hand over the item. The exact amount is shown to you before you approve any purchase, and again when the order is on its way.
         </p>
       </div>
-      <p className="mt-4 text-xs text-brand-ink/45">
+      <p className="mt-4 text-xs text-ink-3">
         Paying inside the app with mobile money or a card is not available yet. When it is, you will be able to add it here.
       </p>
-      <Link to="/app/payments" className="mt-5 flex items-center justify-between rounded-xl2 border border-brand-green/15 px-4 py-3 text-sm font-medium text-brand-green-deep transition-colors hover:bg-brand-green-mist/50">
+      <Link to="/app/payments" className="mt-5 flex items-center justify-between rounded-2xl border border-line px-4 py-3 text-sm font-medium text-brand-green-deep transition-colors hover:bg-surface-2">
         Payment history
-        <ChevronRight size={17} strokeWidth={2} className="text-brand-ink/35" />
+        <ChevronRight size={17} strokeWidth={2} className="text-ink-3" />
       </Link>
     </Panel>
   );
@@ -268,7 +268,7 @@ export function WalletPanel() {
         icon={Wallet}
         title="Duka Wallet is not available yet"
         body="When it launches you will be able to keep money in Duka and pay for orders in one tap. For now, you pay your shopper on delivery."
-        cta={<Link to="/app/payments"><GlassButton size="sm" variant="secondary">See payment history</GlassButton></Link>}
+        cta={<Link to="/app/payments"><Button size="sm" variant="secondary">See payment history</Button></Link>}
       />
     </Panel>
   );
@@ -282,7 +282,7 @@ export function DeliveryPreferencesPanel() {
   const { preferences, update, saving } = usePreferences();
   return (
     <Panel title="Delivery preferences" description="Your shopper sees these on every order so they know how you like the handover.">
-      <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">When your shopper arrives</p>
+      <p className="text-label font-semibold uppercase text-ink-3">When your shopper arrives</p>
       <div className="mt-3">
         <Choice<DeliveryHandoff>
           value={preferences.delivery_handoff}
@@ -295,7 +295,7 @@ export function DeliveryPreferencesPanel() {
         />
       </div>
 
-      <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">How to reach you</p>
+      <p className="mt-6 text-label font-semibold uppercase text-ink-3">How to reach you</p>
       <div className="mt-3">
         <Choice<DeliveryContact>
           value={preferences.delivery_contact}
@@ -308,7 +308,7 @@ export function DeliveryPreferencesPanel() {
           ]}
         />
       </div>
-      {saving && <p className="mt-3 text-xs text-brand-ink/45">Saving…</p>}
+      {saving && <p className="mt-3 text-xs text-ink-3">Saving…</p>}
     </Panel>
   );
 }
@@ -342,9 +342,9 @@ export function DeliveryInstructionsPanel() {
         hint="Only what a shopper needs to find you and hand over the item. Your phone number is already shared with them."
       />
       <div className="mt-4">
-        <GlassButton size="sm" disabled={saving || text === (preferences.delivery_instructions ?? '')} onClick={save}>
+        <Button size="sm" disabled={saving || text === (preferences.delivery_instructions ?? '')} onClick={save}>
           {saving ? 'Saving…' : 'Save instructions'}
-        </GlassButton>
+        </Button>
       </div>
     </Panel>
   );
@@ -432,7 +432,7 @@ function NavStylePreview({ navStyle }: { navStyle: NavStyle }) {
       aria-hidden
       className={[
         'relative flex h-11 w-20 shrink-0 items-end justify-around rounded-2xl px-2 pb-2',
-        dark ? 'bg-[rgb(var(--nav-dark-bg))]' : 'bg-brand-white ring-1 ring-brand-green/15',
+        dark ? 'bg-[rgb(var(--nav-dark-bg))]' : 'bg-surface ring-1 ring-brand-green/15',
       ].join(' ')}
     >
       {[0, 1, 2, 3].map((i) => {
@@ -462,7 +462,7 @@ export function AppearancePanel() {
   const [navStyle, setNavStyle] = useNavStyle();
   return (
     <Panel title="Appearance" description="Applies instantly and is remembered on this account.">
-      <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Theme</p>
+      <p className="text-label font-semibold uppercase text-ink-3">Theme</p>
       <div className="mt-3 grid grid-cols-3 gap-2">
         {THEMES.map((t) => {
           const Icon = t.icon;
@@ -474,8 +474,8 @@ export function AppearancePanel() {
               onClick={() => update({ theme: t.value })}
               aria-pressed={selected}
               className={[
-                'flex flex-col items-center gap-2 rounded-xl2 border py-4 text-sm font-medium transition-[background-color,border-color,transform] active:scale-[0.98]',
-                selected ? 'border-brand-green-fresh bg-brand-green-mist text-brand-green-deep' : 'border-brand-green/15 text-brand-ink/60 hover:bg-brand-green-mist/50',
+                'flex flex-col items-center gap-2 rounded-2xl border py-4 text-sm font-medium transition-[background-color,border-color,transform] active:scale-[0.98]',
+                selected ? 'border-brand-green-fresh bg-brand-green-mist text-brand-green-deep' : 'border-line text-ink-2 hover:bg-surface-2',
               ].join(' ')}
             >
               <Icon size={20} strokeWidth={1.6} />
@@ -485,7 +485,7 @@ export function AppearancePanel() {
         })}
       </div>
 
-      <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Accent colour</p>
+      <p className="mt-6 text-label font-semibold uppercase text-ink-3">Accent colour</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {ACCENTS.map((a) => (
           <button
@@ -494,8 +494,8 @@ export function AppearancePanel() {
             onClick={() => update({ accent: a.value })}
             aria-pressed={preferences.accent === a.value}
             className={[
-              'flex items-center gap-3 rounded-xl2 border p-3 text-left transition-[background-color,border-color,transform] active:scale-[0.99]',
-              preferences.accent === a.value ? 'border-brand-green-fresh bg-brand-green-mist' : 'border-brand-green/15 hover:bg-brand-green-mist/50',
+              'flex items-center gap-3 rounded-2xl border p-3 text-left transition-[background-color,border-color,transform] active:scale-[0.99]',
+              preferences.accent === a.value ? 'border-brand-green-fresh bg-brand-green-mist' : 'border-line hover:bg-surface-2',
             ].join(' ')}
           >
             <span className="h-8 w-8 shrink-0 rounded-full" style={{ background: `linear-gradient(135deg, ${a.swatch[0]}, ${a.swatch[1]})` }} />
@@ -504,8 +504,8 @@ export function AppearancePanel() {
         ))}
       </div>
 
-      <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Phone navigation</p>
-      <p className="mt-1 text-xs text-brand-ink/45">The bar at the bottom of the screen on a phone. Kept on this device.</p>
+      <p className="mt-6 text-label font-semibold uppercase text-ink-3">Phone navigation</p>
+      <p className="mt-1 text-xs text-ink-3">The bar at the bottom of the screen on a phone. Kept on this device.</p>
       <div className="mt-3 flex flex-col gap-2">
         {NAV_STYLES.map((s) => (
           <button
@@ -514,14 +514,14 @@ export function AppearancePanel() {
             onClick={() => setNavStyle(s.key)}
             aria-pressed={navStyle === s.key}
             className={[
-              'flex items-center gap-3 rounded-xl2 border p-3 text-left transition-[background-color,border-color,transform] active:scale-[0.99]',
-              navStyle === s.key ? 'border-brand-green-fresh bg-brand-green-mist' : 'border-brand-green/15 hover:bg-brand-green-mist/50',
+              'flex items-center gap-3 rounded-2xl border p-3 text-left transition-[background-color,border-color,transform] active:scale-[0.99]',
+              navStyle === s.key ? 'border-brand-green-fresh bg-brand-green-mist' : 'border-line hover:bg-surface-2',
             ].join(' ')}
           >
             <NavStylePreview navStyle={s.key} />
             <span className="min-w-0">
               <span className="block text-sm font-semibold text-brand-green-deep">{s.label}</span>
-              <span className="mt-0.5 block text-xs text-brand-ink/50">{s.description}</span>
+              <span className="mt-0.5 block text-xs text-ink-3">{s.description}</span>
             </span>
           </button>
         ))}
@@ -548,12 +548,12 @@ export function LanguagePanel() {
             onClick={() => update({ language: l.value })}
             aria-pressed={preferences.language === l.value}
             className={[
-              'flex min-h-[52px] items-center justify-between rounded-xl2 border px-4 py-3 text-left transition-[background-color,border-color,transform] active:scale-[0.99]',
-              preferences.language === l.value ? 'border-brand-green-fresh bg-brand-green-mist' : 'border-brand-green/15 hover:bg-brand-green-mist/50',
+              'flex min-h-[52px] items-center justify-between rounded-2xl border px-4 py-3 text-left transition-[background-color,border-color,transform] active:scale-[0.99]',
+              preferences.language === l.value ? 'border-brand-green-fresh bg-brand-green-mist' : 'border-line hover:bg-surface-2',
             ].join(' ')}
           >
             <span className="text-sm font-semibold text-brand-green-deep">{l.label}</span>
-            <span className="text-xs text-brand-ink/45">{l.note}</span>
+            <span className="text-xs text-ink-3">{l.note}</span>
           </button>
         ))}
       </div>
@@ -578,7 +578,7 @@ export function ShoppingPreferencesPanel() {
 
   return (
     <Panel title="Shopping preferences" description="Defaults for new requests. You can always change them on the request itself.">
-      <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Where to buy, by default</p>
+      <p className="text-label font-semibold uppercase text-ink-3">Where to buy, by default</p>
       <div className="mt-3">
         <Choice<SourcingType>
           value={(preferences.default_sourcing as SourcingType) ?? 'shopper_choice'}
@@ -598,9 +598,9 @@ export function ShoppingPreferencesPanel() {
             <option key={c.city} value={c.city}>{c.city} ({c.count} places)</option>
           ))}
         </Select>
-        <p className="mt-1.5 text-xs text-brand-ink/45">Markets and shops in this town are listed first when you make a request.</p>
+        <p className="mt-1.5 text-xs text-ink-3">Markets and shops in this town are listed first when you make a request.</p>
       </div>
-      {saving && <p className="mt-3 text-xs text-brand-ink/45">Saving…</p>}
+      {saving && <p className="mt-3 text-xs text-ink-3">Saving…</p>}
     </Panel>
   );
 }
@@ -682,19 +682,19 @@ export function PrivacyPanel() {
   return (
     <Panel title="Privacy" description="What Duka holds about you, and how to take it with you or remove it.">
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-4 rounded-xl2 border border-brand-green/15 p-4">
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-line p-4">
           <div>
-            <p className="text-sm font-medium text-brand-ink">Download your data</p>
-            <p className="mt-0.5 text-xs text-brand-ink/50">Your account, addresses, requests, orders, ratings and notifications as one file.</p>
+            <p className="text-sm font-medium text-ink">Download your data</p>
+            <p className="mt-0.5 text-xs text-ink-3">Your account, addresses, requests, orders, ratings and notifications as one file.</p>
           </div>
-          <GlassButton size="sm" variant="secondary" disabled={exporting} onClick={exportData}>
+          <Button size="sm" variant="secondary" disabled={exporting} onClick={exportData}>
             <Download size={15} strokeWidth={2} /> {exporting ? 'Preparing…' : 'Download'}
-          </GlassButton>
+          </Button>
         </div>
-        <div className="flex items-center justify-between gap-4 rounded-xl2 border border-brand-red/20 p-4">
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-brand-red/20 p-4">
           <div>
-            <p className="text-sm font-medium text-brand-ink">Delete your account</p>
-            <p className="mt-0.5 text-xs text-brand-ink/50">Handled by a person, within a few days. Open orders must finish first.</p>
+            <p className="text-sm font-medium text-ink">Delete your account</p>
+            <p className="mt-0.5 text-xs text-ink-3">Handled by a person, within a few days. Open orders must finish first.</p>
           </div>
           <a href={deleteHref} className="shrink-0 rounded-xl border border-brand-red/30 px-4 py-2 text-sm font-semibold text-brand-red transition-colors hover:bg-brand-red/10">
             Request deletion
@@ -730,20 +730,20 @@ export function DevicesPanel({ onLogout }: { onLogout: () => void }) {
   const device = describeDevice();
   return (
     <Panel title="Devices" description="Where you are signed in to Duka.">
-      <div className="flex items-center gap-3 rounded-xl2 border border-brand-green-fresh bg-brand-green-mist p-4">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-white text-brand-green">
+      <div className="flex items-center gap-3 rounded-2xl border border-brand-green-fresh bg-brand-green-mist p-4">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface text-brand-green">
           <Smartphone size={19} strokeWidth={1.7} />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-brand-green-deep">{device.name}</p>
-          <p className="text-xs text-brand-ink/50">{device.detail} · signed in now</p>
+          <p className="text-xs text-ink-3">{device.detail} · signed in now</p>
         </div>
       </div>
-      <p className="mt-4 text-xs text-brand-ink/45">
+      <p className="mt-4 text-xs text-ink-3">
         Duka does not keep a list of your other devices yet, so logging out here signs out this device only. If you think someone else is using your account, change your password: that locks out everyone.
       </p>
       <div className="mt-4">
-        <GlassButton size="sm" variant="secondary" onClick={onLogout}>Log out of this device</GlassButton>
+        <Button size="sm" variant="secondary" onClick={onLogout}>Log out of this device</Button>
       </div>
     </Panel>
   );
@@ -801,22 +801,22 @@ export function PermissionsPanel() {
           const Icon = p.icon;
           const tone = state === 'granted' ? 'bg-brand-green/15 text-brand-green-deep'
             : state === 'denied' ? 'bg-brand-red/10 text-brand-red'
-            : 'bg-brand-ink/8 text-brand-ink/55';
+            : 'bg-brand-ink/8 text-ink-2';
           return (
-            <div key={p.key} className="flex min-h-[64px] items-center gap-3 border-b border-brand-green/10 py-3 last:border-0">
+            <div key={p.key} className="flex min-h-[64px] items-center gap-3 border-b border-line py-3 last:border-0">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-green-mist text-brand-green">
                 <Icon size={17} strokeWidth={1.7} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-brand-ink">{p.label}</p>
-                <p className="text-xs text-brand-ink/50">{p.why}</p>
+                <p className="text-sm font-medium text-ink">{p.label}</p>
+                <p className="text-xs text-ink-3">{p.why}</p>
               </div>
               <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${tone}`}>{PERM_LABEL[state]}</span>
             </div>
           );
         })}
       </div>
-      <p className="mt-4 text-xs text-brand-ink/45">
+      <p className="mt-4 text-xs text-ink-3">
         Location is also controlled inside Duka under <Link to="../location" relative="path" className="font-medium text-brand-green-deep hover:underline">Location settings</Link>.
       </p>
     </Panel>
@@ -834,7 +834,7 @@ export function HelpCenterPanel() {
     <Panel title="Help Center" description="Answers to the questions we hear most often.">
       {categories.map((cat) => (
         <div key={cat} className="mb-5 last:mb-0">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">{cat}</p>
+          <p className="mb-2 text-label font-semibold uppercase text-ink-3">{cat}</p>
           <div className="flex flex-col gap-2">
             {FAQS.filter((f) => f.category === cat).map((faq) => {
               const idx = FAQS.indexOf(faq);
@@ -845,22 +845,22 @@ export function HelpCenterPanel() {
                   type="button"
                   onClick={() => setOpen(isOpen ? null : idx)}
                   aria-expanded={isOpen}
-                  className="rounded-xl2 border border-brand-green/15 px-4 py-3 text-left transition-colors hover:bg-brand-green-mist/40"
+                  className="rounded-2xl border border-line px-4 py-3 text-left transition-colors hover:bg-surface-2"
                 >
                   <span className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium text-brand-ink">{faq.q}</span>
+                    <span className="text-sm font-medium text-ink">{faq.q}</span>
                     <span className="shrink-0 text-brand-green-fresh">{isOpen ? '−' : '+'}</span>
                   </span>
-                  {isOpen && <span className="mt-2 block text-sm text-brand-ink/60">{faq.a}</span>}
+                  {isOpen && <span className="mt-2 block text-sm text-ink-2">{faq.a}</span>}
                 </button>
               );
             })}
           </div>
         </div>
       ))}
-      <Link to="/how-it-works" className="mt-2 flex items-center justify-between rounded-xl2 border border-brand-green/15 px-4 py-3 text-sm font-medium text-brand-green-deep transition-colors hover:bg-brand-green-mist/50">
+      <Link to="/how-it-works" className="mt-2 flex items-center justify-between rounded-2xl border border-line px-4 py-3 text-sm font-medium text-brand-green-deep transition-colors hover:bg-surface-2">
         How Duka works, step by step
-        <ExternalLink size={16} strokeWidth={2} className="text-brand-ink/35" />
+        <ExternalLink size={16} strokeWidth={2} className="text-ink-3" />
       </Link>
     </Panel>
   );
@@ -884,24 +884,24 @@ export function ContactSupportPanel() {
               href={r.href}
               target={r.href.startsWith('http') ? '_blank' : undefined}
               rel="noreferrer"
-              className="flex min-h-[60px] items-center gap-3 rounded-xl2 border border-brand-green/15 px-4 py-3 transition-[background-color,transform] hover:bg-brand-green-mist/50 active:scale-[0.99]"
+              className="flex min-h-[60px] items-center gap-3 rounded-2xl border border-line px-4 py-3 transition-[background-color,transform] hover:bg-surface-2 active:scale-[0.99]"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-green-mist text-brand-green">
                 <Icon size={17} strokeWidth={1.7} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium text-brand-ink">{r.label}</span>
-                <span className="block truncate text-xs text-brand-ink/50">{r.value}</span>
+                <span className="block text-sm font-medium text-ink">{r.label}</span>
+                <span className="block truncate text-xs text-ink-3">{r.value}</span>
               </span>
-              <ChevronRight size={17} strokeWidth={2} className="text-brand-ink/35" />
+              <ChevronRight size={17} strokeWidth={2} className="text-ink-3" />
             </a>
           );
         })}
       </div>
-      <p className="mt-4 text-xs text-brand-ink/45">
+      <p className="mt-4 text-xs text-ink-3">
         Duka is run by {BRAND.operatorName} in {BRAND.country}. Something wrong with an order in progress? Open the order and tap "Something went wrong" so support sees the details.
       </p>
-      <div className="mt-4 flex items-center gap-2 text-xs text-brand-ink/45">
+      <div className="mt-4 flex items-center gap-2 text-xs text-ink-3">
         <ShieldCheck size={14} strokeWidth={2} className="text-brand-green" /> Support will never ask for your password.
       </div>
     </Panel>

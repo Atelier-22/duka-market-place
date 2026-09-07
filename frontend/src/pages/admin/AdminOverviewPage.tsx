@@ -5,9 +5,13 @@ import {
   Radio, Scale, Search, ShieldCheck, ShoppingBag, Star, UserPlus, Users,
 } from 'lucide-react';
 import { api } from '../../services/api';
-import { GlassCard } from '../../components/ui/GlassCard';
+import { Card } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
+import { PageHeader, SectionHeader } from '../../components/ui/PageHeader';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { DashboardStat } from '../../components/domain/DashboardStat';
-import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
+import { Bone, SkeletonHeading, SkeletonRegion, SkeletonRows, SkeletonStats } from '../../components/ui/Skeleton';
+import { formatUgx } from './AdminDetailShell';
 
 interface ActivityItem {
   type: string;
@@ -42,17 +46,13 @@ const ICON_FOR: Record<string, LucideIcon> = {
 
 const TONE_FOR: Record<string, string> = {
   user_registered: 'text-brand-green-fresh',
-  request_created: 'text-brand-ink/45',
-  offer_created: 'text-brand-ink/45',
+  request_created: 'text-ink-3',
+  offer_created: 'text-ink-3',
   order_status: 'text-brand-green',
   dispute_opened: 'text-brand-red',
-  rating_left: 'text-brand-yellow',
+  rating_left: 'text-warning',
   verification_submitted: 'text-brand-green-fresh',
 };
-
-function formatUgx(n: number) {
-  return new Intl.NumberFormat('en-UG').format(n) + ' UGX';
-}
 
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -76,6 +76,10 @@ function linkFor(item: ActivityItem): string | null {
   if (item.type === 'verification_submitted' && item.actor_id) return `/admin/shoppers/${item.actor_id}`;
   return null;
 }
+
+const RESULT_ROW =
+  'flex w-full items-center gap-3 border-b border-line px-4 py-2.5 text-left transition-colors last:border-0 hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none';
+const RESULT_GROUP = 'border-b border-line bg-surface-2 px-4 py-2 text-label font-semibold uppercase text-ink-3';
 
 function GlobalSearch() {
   const navigate = useNavigate();
@@ -115,37 +119,38 @@ function GlobalSearch() {
 
   return (
     <div className="relative" ref={boxRef}>
-      <Search size={16} strokeWidth={1.75} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-ink/35" />
-      <input
+      <Input
+        aria-label="Search people and orders"
+        icon={<Search size={18} strokeWidth={1.75} />}
         value={q}
         onChange={(e) => setQ(e.target.value)}
         onFocus={() => results && setOpen(true)}
         placeholder="Search any user by name, phone or email — or an order by its ID…"
-        className="w-full rounded-full border border-brand-green/15 bg-brand-white/70 py-2.5 pl-10 pr-4 text-sm text-brand-ink outline-none transition-colors placeholder:text-brand-ink/35 focus:border-brand-green-fresh"
+        autoComplete="off"
       />
 
       {open && results && (
-        <div className="glass absolute left-0 right-0 z-30 mt-2 max-h-96 overflow-y-auto rounded-xl2 shadow-glass-lg">
-          {empty && <p className="px-4 py-6 text-center text-sm text-brand-ink/45">Nothing matches "{q}".</p>}
+        <Card elevated padding="none" className="absolute left-0 right-0 z-30 mt-2 max-h-96 overflow-y-auto">
+          {empty && <p className="px-4 py-6 text-center text-sm text-ink-3">Nothing matches "{q}".</p>}
 
           {results.users.length > 0 && (
             <>
-              <p className="border-b border-brand-green/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-brand-ink/40">People</p>
+              <p className={RESULT_GROUP}>People</p>
               {results.users.map((u) => (
                 <button
                   key={u.id}
                   type="button"
                   onClick={() => go(u.role === 'shopper' ? `/admin/shoppers/${u.id}` : `/admin/customers/${u.id}`)}
-                  className="flex w-full items-center gap-3 border-b border-brand-green/5 px-4 py-2.5 text-left last:border-0 hover:bg-brand-green-mist/60"
+                  className={RESULT_ROW}
                 >
                   {u.role === 'shopper'
-                    ? <ShoppingBag size={15} strokeWidth={1.75} className="shrink-0 text-brand-ink/40" />
-                    : <Users size={15} strokeWidth={1.75} className="shrink-0 text-brand-ink/40" />}
+                    ? <ShoppingBag size={16} strokeWidth={1.75} className="shrink-0 text-ink-3" />
+                    : <Users size={16} strokeWidth={1.75} className="shrink-0 text-ink-3" />}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-brand-green-deep">{u.full_name}</span>
-                    <span className="block truncate text-xs text-brand-ink/45">{u.phone}{u.email ? ` · ${u.email}` : ''}</span>
+                    <span className="block truncate text-caption text-ink-3">{u.phone}{u.email ? ` · ${u.email}` : ''}</span>
                   </span>
-                  <span className="shrink-0 text-[11px] uppercase tracking-wide text-brand-ink/35">{u.role}</span>
+                  <span className="shrink-0 text-label font-semibold uppercase text-ink-3">{u.role}</span>
                 </button>
               ))}
             </>
@@ -153,30 +158,44 @@ function GlobalSearch() {
 
           {results.orders.length > 0 && (
             <>
-              <p className="border-b border-brand-green/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-brand-ink/40">Orders</p>
+              <p className={RESULT_GROUP}>Orders</p>
               {results.orders.map((o) => (
                 <button
                   key={o.id}
                   type="button"
                   onClick={() => go(`/admin/orders/${o.id}`)}
-                  className="flex w-full items-center gap-3 border-b border-brand-green/5 px-4 py-2.5 text-left last:border-0 hover:bg-brand-green-mist/60"
+                  className={RESULT_ROW}
                 >
-                  <Package size={15} strokeWidth={1.75} className="shrink-0 text-brand-ink/40" />
+                  <Package size={16} strokeWidth={1.75} className="shrink-0 text-ink-3" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-brand-green-deep">
                       #{o.id.slice(0, 8)} — {o.request_title ?? 'Order'}
                     </span>
-                    <span className="block truncate text-xs text-brand-ink/45">
+                    <span className="block truncate text-caption text-ink-3">
                       {o.customer_name} → {o.shopper_name ?? 'unassigned'}
                     </span>
                   </span>
-                  <span className="shrink-0 text-[11px] uppercase tracking-wide text-brand-ink/35">{o.status.replace(/_/g, ' ')}</span>
+                  <span className="shrink-0 text-label font-semibold uppercase text-ink-3">{o.status.replace(/_/g, ' ')}</span>
                 </button>
               ))}
             </>
           )}
-        </div>
+        </Card>
       )}
+    </div>
+  );
+}
+
+function LiveFigure({ value, label, sub, tone = 'default' }: {
+  value: number; label: string; sub?: string; tone?: 'default' | 'danger';
+}) {
+  return (
+    <div>
+      <p className={`font-display text-2xl font-semibold tracking-tight ${tone === 'danger' ? 'text-brand-red' : 'text-brand-green-deep'}`}>
+        {value}
+        {sub && <span className="ml-1 font-sans text-small font-normal text-ink-3">{sub}</span>}
+      </p>
+      <p className="mt-0.5 text-caption text-ink-3">{label}</p>
     </div>
   );
 }
@@ -219,119 +238,109 @@ export function AdminOverviewPage() {
 
   if (loading) {
     return (
-      <SkeletonRegion label="Loading" className="pb-10">
-        <SkeletonHeading subtitle={false} />
-        <div className="mt-6"><SkeletonStats /></div><div className="mt-6"><SkeletonRows count={5} /></div>
+      <SkeletonRegion label="Loading" className="pb-16">
+        <SkeletonHeading />
+        <Bone className="mt-6 h-11 w-full rounded-lg" />
+        <div className="mt-6"><SkeletonStats /></div>
+        <div className="mt-6"><SkeletonRows count={5} /></div>
       </SkeletonRegion>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-16">
-      <div>
-        <h1 className="font-display text-2xl font-medium text-brand-green-deep">Control centre</h1>
-        <p className="text-sm text-brand-ink/50">Everything happening across the platform, right now.</p>
-      </div>
+    <div className="pb-16">
+      <PageHeader title="Control centre" subtitle="Everything happening across the platform, right now." />
 
-      <GlobalSearch />
+      <div className="flex flex-col gap-6">
+        <GlobalSearch />
 
-      <GlassCard padding="lg" hover={false}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">
-            <Radio size={14} strokeWidth={2} className="text-brand-green-fresh" />
-            In motion now
-          </p>
-          <span className="text-[11px] text-brand-ink/35">
-            updated {timeAgo(new Date(lastRefresh).toISOString())}
-          </span>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div>
-            <p className="font-display text-2xl font-semibold text-brand-green-deep">
-              {presence?.shoppersOnline ?? 0}
-              <span className="ml-1 text-sm font-normal text-brand-ink/40">/ {presence?.shoppersTotal ?? 0}</span>
+        <Card padding="lg" hover={false}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="flex items-center gap-2 text-label font-semibold uppercase text-ink-3">
+              <Radio size={14} strokeWidth={2} className="text-brand-green-fresh" />
+              In motion now
             </p>
-            <p className="text-xs text-brand-ink/45">shoppers online</p>
+            <span className="text-caption text-ink-3">
+              updated {timeAgo(new Date(lastRefresh).toISOString())}
+            </span>
           </div>
-          <div>
-            <p className="font-display text-2xl font-semibold text-brand-green-deep">{presence?.ordersInFlight ?? 0}</p>
-            <p className="text-xs text-brand-ink/45">orders in flight</p>
-          </div>
-          <div>
-            <p className="font-display text-2xl font-semibold text-brand-green-deep">{presence?.transitionsLast15Min ?? 0}</p>
-            <p className="text-xs text-brand-ink/45">status changes / 15 min</p>
-          </div>
-          <div>
-            <p className="font-display text-2xl font-semibold text-brand-red">{stats?.openDisputes ?? 0}</p>
-            <p className="text-xs text-brand-ink/45">open disputes</p>
-          </div>
-        </div>
 
-        {busiest.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2 border-t border-brand-green/10 pt-4">
-            {busiest.map((s) => (
-              <span key={s.status} className="rounded-full bg-brand-green-mist px-3 py-1 text-xs font-medium text-brand-green-deep">
-                {s.count} {s.status.replace(/_/g, ' ')}
-              </span>
-            ))}
+          <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+            <LiveFigure value={presence?.shoppersOnline ?? 0} sub={`/ ${presence?.shoppersTotal ?? 0}`} label="shoppers online" />
+            <LiveFigure value={presence?.ordersInFlight ?? 0} label="orders in flight" />
+            <LiveFigure value={presence?.transitionsLast15Min ?? 0} label="status changes / 15 min" />
+            <LiveFigure value={stats?.openDisputes ?? 0} label="open disputes" tone="danger" />
           </div>
-        )}
-      </GlassCard>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <DashboardStat label="Customers" value={String(stats?.customers ?? 0)} icon={<Users size={18} strokeWidth={1.75} />} />
-        <DashboardStat label="Shoppers" value={String(stats?.shoppers ?? 0)} icon={<ShoppingBag size={18} strokeWidth={1.75} />} />
-        <DashboardStat label="Completed today" value={String(stats?.completedToday ?? 0)} icon={<CheckCircle2 size={18} strokeWidth={1.75} />} />
-        <DashboardStat label="GMV (completed)" value={formatUgx(stats?.grossMerchandiseValueUgx ?? 0)} icon={<Coins size={18} strokeWidth={1.75} />} accent="yellow" />
-      </div>
-
-      {(stats?.pendingVerifications ?? 0) > 0 && (
-        <Link to="/admin/verifications">
-          <GlassCard glow="yellow" padding="md">
-            <p className="flex items-center gap-2 text-sm font-medium text-brand-green-deep">
-              <AlertTriangle size={16} strokeWidth={2} className="text-brand-yellow" />
-              {stats.pendingVerifications} shopper verification{stats.pendingVerifications === 1 ? '' : 's'} waiting for review
-            </p>
-          </GlassCard>
-        </Link>
-      )}
-
-      <div>
-        <h2 className="mb-3 font-display text-lg font-medium text-brand-green-deep">Activity</h2>
-        <GlassCard padding="md" hover={false}>
-          {activity.length === 0 ? (
-            <p className="py-12 text-center text-sm text-brand-ink/40">Nothing has happened yet.</p>
-          ) : (
-            <div className="flex flex-col">
-              {activity.map((item, i) => {
-                const Icon = ICON_FOR[item.type] ?? Package;
-                const to = linkFor(item);
-                const inner = (
-                  <>
-                    <Icon size={16} strokeWidth={1.75} className={`mt-0.5 shrink-0 ${TONE_FOR[item.type] ?? 'text-brand-ink/40'}`} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm text-brand-ink/80">{item.summary}</span>
-                      <span className="mt-0.5 block text-[11px] text-brand-ink/35">
-                        {item.type.replace(/_/g, ' ')}
-                        {item.actor_name ? ` · ${item.actor_name}` : ''}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-[11px] text-brand-ink/35">{timeAgo(item.at)}</span>
-                  </>
-                );
-                const cls = 'flex items-start gap-3 border-b border-brand-green/5 px-1 py-3 text-left last:border-0';
-                return to ? (
-                  <Link key={`${item.type}-${item.at}-${i}`} to={to} className={`${cls} transition-colors hover:bg-brand-green-mist/50`}>
-                    {inner}
-                  </Link>
-                ) : (
-                  <div key={`${item.type}-${item.at}-${i}`} className={cls}>{inner}</div>
-                );
-              })}
+          {busiest.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4">
+              {busiest.map((s) => (
+                <span key={s.status} className="rounded-full bg-brand-green-mist px-3 py-1 text-caption font-medium text-brand-green-deep">
+                  {s.count} {s.status.replace(/_/g, ' ')}
+                </span>
+              ))}
             </div>
           )}
-        </GlassCard>
+        </Card>
+
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <DashboardStat label="Customers" value={String(stats?.customers ?? 0)} icon={<Users size={18} strokeWidth={1.75} />} />
+          <DashboardStat label="Shoppers" value={String(stats?.shoppers ?? 0)} icon={<ShoppingBag size={18} strokeWidth={1.75} />} />
+          <DashboardStat label="Completed today" value={String(stats?.completedToday ?? 0)} icon={<CheckCircle2 size={18} strokeWidth={1.75} />} />
+          <DashboardStat label="GMV (completed)" value={formatUgx(stats?.grossMerchandiseValueUgx ?? 0)} icon={<Coins size={18} strokeWidth={1.75} />} accent="yellow" />
+        </div>
+
+        {(stats?.pendingVerifications ?? 0) > 0 && (
+          <Link to="/admin/verifications" className="block rounded-2xl focus-visible:outline-none focus-visible:shadow-focus">
+            <Card tone="warning" padding="md" hover>
+              <p className="flex items-center gap-2 text-sm font-medium text-brand-green-deep">
+                <AlertTriangle size={16} strokeWidth={2} className="shrink-0 text-warning" />
+                {stats.pendingVerifications} shopper verification{stats.pendingVerifications === 1 ? '' : 's'} waiting for review
+              </p>
+            </Card>
+          </Link>
+        )}
+
+        <section>
+          <SectionHeader title="Activity" />
+          {activity.length === 0 ? (
+            <EmptyState
+              size="sm"
+              title="Nothing has happened yet"
+              description="Sign-ups, requests, offers and order updates will show here as they happen."
+            />
+          ) : (
+            <Card padding="none" hover={false} className="overflow-hidden">
+              <div className="flex flex-col">
+                {activity.map((item, i) => {
+                  const Icon = ICON_FOR[item.type] ?? Package;
+                  const to = linkFor(item);
+                  const inner = (
+                    <>
+                      <Icon size={16} strokeWidth={1.75} className={`mt-0.5 shrink-0 ${TONE_FOR[item.type] ?? 'text-ink-3'}`} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm text-ink">{item.summary}</span>
+                        <span className="mt-0.5 block text-caption text-ink-3">
+                          {item.type.replace(/_/g, ' ')}
+                          {item.actor_name ? ` · ${item.actor_name}` : ''}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-caption text-ink-3">{timeAgo(item.at)}</span>
+                    </>
+                  );
+                  const cls = 'flex items-start gap-3 border-b border-line px-4 py-3 text-left last:border-0';
+                  return to ? (
+                    <Link key={`${item.type}-${item.at}-${i}`} to={to} className={`${cls} transition-colors hover:bg-surface-2`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div key={`${item.type}-${item.at}-${i}`} className={cls}>{inner}</div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
+        </section>
       </div>
     </div>
   );

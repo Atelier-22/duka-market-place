@@ -8,7 +8,7 @@ interface AuthContextValue {
 
   linkedAccounts: LinkedAccount[];
   isLoading: boolean;
-  login: (identifier: string, password: string) => Promise<User>;
+  login: (identifier: string, password: string, remember?: boolean) => Promise<User>;
   register: (input: { role: UserRole; fullName: string; phone: string; email?: string; password: string }) => Promise<void>;
   switchRole: (role: UserRole) => Promise<void>;
   switchAccount: (userId: string) => Promise<UserRole>;
@@ -54,10 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLinkedAccounts(data.linkedAccounts ?? []);
   }
 
-  async function login(identifier: string, password: string): Promise<User> {
+  async function login(identifier: string, password: string, remember = true): Promise<User> {
     try {
       const res = await api.post('/auth/login', { identifier, password });
-      adoptSession(res.data);
+      adoptSession(res.data, remember);
       return res.data.user as User;
     } catch (err) {
       throw new Error(apiErrorMessage(err));

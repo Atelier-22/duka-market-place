@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Crosshair } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { GlassButton } from '../ui/GlassButton';
+import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 
 interface PinLocationButtonProps {
@@ -50,9 +50,9 @@ export function PinLocationButton({ addressId, pinned, onPinned }: PinLocationBu
   }
 
   return (
-    <GlassButton size="sm" variant={pinned ? 'secondary' : 'primary'} disabled={working} onClick={pinHere}>
-      <Crosshair size={15} strokeWidth={2} />
+    <Button size="sm" variant="secondary" loading={working} onClick={pinHere}>
+      {!working && <Crosshair size={15} strokeWidth={2} />}
       {working ? 'Finding you…' : pinned ? 'Update pinned location' : 'Pin my exact location'}
-    </GlassButton>
+    </Button>
   );
 }

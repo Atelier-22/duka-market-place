@@ -1,10 +1,11 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { BRAND } from '../../config/brand';
-import { DukaLockup } from '../ui/DukaLogo';
-import { GlassButton } from '../ui/GlassButton';
+import { DukaMark } from '../ui/DukaLogo';
+import { Button } from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
+import { homeFor } from '../../utils/home';
 
 const LINKS = [
   { to: '/how-it-works', label: 'How it works' },
@@ -18,58 +19,76 @@ export function PublicNavbar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const homePath = user ? (user.role === 'shopper' ? '/shopper' : '/app') : '/';
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previous; };
+  }, [open]);
+
+  const homePath = user ? homeFor(user.role) : '/';
+  const link = ({ isActive }: { isActive: boolean }) =>
+    `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive ? 'text-brand-green-deep' : 'text-ink-2 hover:text-ink'}`;
 
   return (
-    <header className="sticky top-0 z-40 px-4 pt-4">
-      <nav className="glass mx-auto flex max-w-6xl items-center justify-between rounded-3xl px-5 py-2.5">
-        <Link to="/" aria-label={`${BRAND.name} home`}>
-          <DukaLockup markSize={30} />
+    <header className="sticky top-0 z-40 border-b border-line bg-surface">
+      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6" aria-label="Site">
+        <Link to="/" aria-label={`${BRAND.name} home`} className="flex items-center gap-2.5">
+          <DukaMark size={32} />
+          <span className="font-display text-xl font-semibold leading-none text-brand-green-deep">{BRAND.name}</span>
         </Link>
 
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="hidden items-center gap-1 md:flex">
           {LINKS.map((l) => (
-            <Link key={l.to} to={l.to} className="text-sm font-medium text-brand-ink/70 hover:text-brand-green-deep">
+            <NavLink key={l.to} to={l.to} className={link}>
               {l.label}
-            </Link>
+            </NavLink>
           ))}
         </div>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-2 md:flex">
           {user ? (
-            <GlassButton size="sm" onClick={() => navigate(homePath)}>Go to dashboard</GlassButton>
+            <Button size="sm" onClick={() => navigate(homePath)}>Go to dashboard</Button>
           ) : (
             <>
-              <Link to="/login" className="text-sm font-semibold text-brand-green-deep">Log in</Link>
-              <GlassButton size="sm" onClick={() => navigate('/register')}>Get started</GlassButton>
+              <Button size="sm" variant="tertiary" onClick={() => navigate('/login')}>Log in</Button>
+              <Button size="sm" onClick={() => navigate('/register')}>Get started</Button>
             </>
           )}
         </div>
 
         <button
-          className="flex h-9 w-9 items-center justify-center rounded-full text-brand-green-deep md:hidden"
+          type="button"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-brand-green-deep transition-colors hover:bg-surface-2 md:hidden"
           onClick={() => setOpen(!open)}
           aria-label={open ? 'Close menu' : 'Open menu'}
           aria-expanded={open}
         >
-          {open ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
+          {open ? <X size={22} strokeWidth={2} /> : <Menu size={22} strokeWidth={2} />}
         </button>
       </nav>
 
       {open && (
-        <div className="glass mx-auto mt-2 flex max-w-6xl flex-col gap-1 rounded-2xl p-4 md:hidden">
-          {LINKS.map((l) => (
-            <Link key={l.to} to={l.to} onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-brand-ink/70 hover:bg-brand-green-mist">
-              {l.label}
-            </Link>
-          ))}
-          <div className="mt-2 flex gap-2 border-t border-brand-green/10 pt-3">
+        <div className="fixed inset-x-0 bottom-0 top-16 z-40 flex flex-col border-t border-line bg-surface p-4 md:hidden">
+          <div className="flex flex-col">
+            {LINKS.map((l) => (
+              <Link
+                key={l.to}
+                to={l.to}
+                onClick={() => setOpen(false)}
+                className="min-h-[52px] border-b border-line py-3 text-[17px] font-medium text-ink last:border-0"
+              >
+                {l.label}
+              </Link>
+            ))}
+          </div>
+          <div className="mt-auto flex flex-col gap-2 pb-4">
             {user ? (
-              <GlassButton size="sm" fullWidth onClick={() => navigate(homePath)}>Dashboard</GlassButton>
+              <Button size="lg" fullWidth onClick={() => { setOpen(false); navigate(homePath); }}>Go to dashboard</Button>
             ) : (
               <>
-                <GlassButton size="sm" variant="secondary" fullWidth onClick={() => navigate('/login')}>Log in</GlassButton>
-                <GlassButton size="sm" fullWidth onClick={() => navigate('/register')}>Sign up</GlassButton>
+                <Button size="lg" fullWidth onClick={() => { setOpen(false); navigate('/register'); }}>Get started</Button>
+                <Button size="lg" variant="secondary" fullWidth onClick={() => { setOpen(false); navigate('/login'); }}>Log in</Button>
               </>
             )}
           </div>

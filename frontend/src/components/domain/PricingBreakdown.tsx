@@ -38,23 +38,21 @@ export function PricingBreakdown({
   ];
 
   return (
-    <div className="rounded-xl2 bg-brand-green-mist/60 p-5">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-green-deep/60">
-        Price breakdown
-      </p>
-      <dl className="flex flex-col gap-2.5">
+    <div className="surface-2 rounded-xl p-4">
+      <p className="text-label font-semibold uppercase text-ink-3">Price breakdown</p>
+      <dl className="mt-3 flex flex-col gap-2.5">
         {rows.map((row) => (
-          <div key={row.label} className="flex items-center justify-between text-sm">
-            <dt className="text-brand-ink/70">
-              {row.label} <span className="text-brand-ink/40">· {row.hint}</span>
+          <div key={row.label} className="flex items-baseline justify-between gap-3 text-small">
+            <dt className="min-w-0 text-ink-2">
+              {row.label} <span className="text-ink-3">· {row.hint}</span>
             </dt>
-            <dd className="font-medium text-brand-ink">{formatUgx(row.value)}</dd>
+            <dd className="shrink-0 font-medium tabular-nums text-ink">{formatUgx(row.value)}</dd>
           </div>
         ))}
       </dl>
-      <div className="mt-3 flex items-center justify-between border-t border-brand-green/15 pt-3">
-        <span className="font-display text-base font-medium text-brand-green-deep">Total</span>
-        <span className="font-display text-lg font-semibold text-brand-green-deep">{formatUgx(total)}</span>
+      <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-line pt-3">
+        <span className="text-body font-medium text-ink">Total</span>
+        <span className="font-display text-h3 font-semibold tabular-nums text-brand-green-deep">{formatUgx(total)}</span>
       </div>
     </div>
   );

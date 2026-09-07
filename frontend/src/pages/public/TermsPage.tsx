@@ -1,5 +1,6 @@
+import { Link } from 'react-router-dom';
 import { BRAND } from '../../config/brand';
-import { Clause, LegalDoc, Pending } from '../../components/layout/LegalDoc';
+import { Clause, LegalDoc, Pending, PROSE_LINK } from '../../components/layout/LegalDoc';
 
 export function TermsPage() {
   return (
@@ -64,7 +65,7 @@ export function TermsPage() {
         <p>
           Because we never receive your money, we cannot return it. What we can do when something
           goes wrong is set out in the{' '}
-          <a className="font-medium text-brand-green-fresh underline" href="/refunds">Refund Policy</a>.
+          <Link className={PROSE_LINK} to="/refunds">Refund Policy</Link>.
         </p>
       </Clause>
 
@@ -72,7 +73,7 @@ export function TermsPage() {
         <p>
           We are responsible for running the service honestly: matching you fairly, keeping the
           record of what was agreed, holding your data as described in the{' '}
-          <a className="font-medium text-brand-green-fresh underline" href="/privacy">Privacy Policy</a>,
+          <Link className={PROSE_LINK} to="/privacy">Privacy Policy</Link>,
           and reviewing a dispute properly when one is raised.
         </p>
         <p>
@@ -125,10 +126,8 @@ export function TermsPage() {
         </p>
         <p>
           You can close your account at any time by emailing{' '}
-          <a className="font-medium text-brand-green-fresh underline" href={`mailto:${BRAND.supportEmail}`}>
-            {BRAND.supportEmail}
-          </a>
-          . Orders still in progress must be finished or cancelled first. As explained in the Privacy
+          <a className={PROSE_LINK} href={`mailto:${BRAND.supportEmail}`}>{BRAND.supportEmail}</a>.
+          Orders still in progress must be finished or cancelled first. As explained in the Privacy
           Policy, the hashed record of a verified identity document is kept after closure so it
           cannot be reused to open another account.
         </p>

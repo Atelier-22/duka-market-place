@@ -1,5 +1,5 @@
 import { BRAND } from '../../config/brand';
-import { Clause, LegalDoc, Pending } from '../../components/layout/LegalDoc';
+import { Clause, LegalDoc, Pending, PROSE_LINK } from '../../components/layout/LegalDoc';
 
 const UPDATED = '7 September 2026';
 
@@ -25,9 +25,7 @@ export function PrivacyPolicyPage() {
         </p>
         <p>
           Email{' '}
-          <a className="font-medium text-brand-green-fresh underline" href={`mailto:${BRAND.supportEmail}`}>
-            {BRAND.supportEmail}
-          </a>
+          <a className={PROSE_LINK} href={`mailto:${BRAND.supportEmail}`}>{BRAND.supportEmail}</a>
           {BRAND.supportPhone ? `, or call ${BRAND.supportPhone}` : ''}.
         </p>
         <Pending>
@@ -168,9 +166,7 @@ export function PrivacyPolicyPage() {
         </p>
         <p>
           Email{' '}
-          <a className="font-medium text-brand-green-fresh underline" href={`mailto:${BRAND.supportEmail}`}>
-            {BRAND.supportEmail}
-          </a>{' '}
+          <a className={PROSE_LINK} href={`mailto:${BRAND.supportEmail}`}>{BRAND.supportEmail}</a>{' '}
           and we will respond. Two honest limits: we may need to confirm who you are before handing
           over account data, and deleting an account does not erase the hashed identity record, for
           the fraud-prevention reason given above. That record cannot identify you on its own.

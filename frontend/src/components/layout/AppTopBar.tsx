@@ -1,19 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Camera, Image as ImageIcon, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Camera, Image as ImageIcon, LogOut, Settings, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { DukaLockup } from '../ui/DukaLogo';
+import { DukaMark } from '../ui/DukaLogo';
+import { Avatar } from '../ui/Avatar';
 import { NotificationBell } from '../domain/NotificationBell';
 import { useToast } from '../ui/Toast';
-
-function initials(name: string): string {
-  return name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
-}
+import { homeFor } from '../../utils/home';
+import { BRAND } from '../../config/brand';
 
 export function AppTopBar({ roleLabel }: { roleLabel: string }) {
-  const { user, refresh } = useAuth();
+  const { user, refresh, logout } = useAuth();
   const { push } = useToast();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -69,88 +69,94 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
     }
   }
 
-  const home = user?.role === 'shopper' ? '/shopper' : '/app';
-  const item = 'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-brand-ink/75 transition-colors hover:bg-brand-green-mist disabled:opacity-50';
+  const home = homeFor(user?.role);
+  const settings = `${home}/settings`;
+  const item =
+    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-ink transition-colors hover:bg-surface-2 disabled:opacity-50';
 
   return (
-
     <header
-      className="glass-liquid sticky top-2 z-40 mx-2 mb-4 flex items-center justify-between gap-3 rounded-2xl px-2 py-2 sm:mx-3 sm:px-2.5"
-      style={{ marginTop: 'max(0.5rem, env(safe-area-inset-top))' }}
+      className="sticky top-0 z-40 border-b border-line bg-surface"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
-
-      <Link
-        to={home}
-        aria-label="Duka home"
-        className="glass-chip rounded-xl px-3 py-1.5 transition-transform active:scale-[0.98]"
-      >
-        <DukaLockup markSize={26} roleLabel={roleLabel} />
-      </Link>
-
-      <div className="flex shrink-0 items-center gap-2">
-      <NotificationBell />
-      <div className="relative shrink-0">
-        <button
-          ref={buttonRef}
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-label="Your profile picture"
-          aria-expanded={open}
-          className="block rounded-full ring-2 ring-white/80 shadow-[0_2px_12px_-2px_rgba(11,61,46,0.35)] transition-transform active:scale-95"
+      <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between gap-3 px-3 sm:px-5 lg:px-8">
+        <Link
+          to={home}
+          aria-label={`${BRAND.name} home`}
+          className="-ml-1 flex items-center gap-2.5 rounded-lg px-1 py-1 transition-transform active:scale-[0.98]"
         >
-          {user?.avatarUrl ? (
-            <img src={user.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
-          ) : (
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-green text-sm font-semibold text-white">
-              {initials(user?.fullName ?? '')}
-            </span>
-          )}
-        </button>
+          <DukaMark size={30} />
+          <span className="font-display text-[19px] font-semibold leading-none text-brand-green-deep">{BRAND.name}</span>
+          <span className="ml-0.5 hidden rounded-full bg-brand-green-mist px-2 py-0.5 text-caption font-semibold text-brand-green-deep sm:inline-flex">
+            {roleLabel}
+          </span>
+        </Link>
 
-        {open && (
-          <div
-            ref={menuRef}
-            className="glass absolute right-0 z-40 mt-2 w-56 rounded-xl2 p-1.5 shadow-glass-lg"
-          >
-            <p className="px-3 pb-1.5 pt-2 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">
-              Profile picture
-            </p>
-            <button type="button" className={item} disabled={busy} onClick={() => libraryRef.current?.click()}>
-              <ImageIcon size={16} strokeWidth={1.9} /> Choose from library
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <NotificationBell />
+          <div className="relative">
+            <button
+              ref={buttonRef}
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              aria-label="Account menu"
+              aria-expanded={open}
+              aria-haspopup="menu"
+              className="flex items-center rounded-full ring-2 ring-transparent transition-[transform,box-shadow] hover:ring-line-strong active:scale-95 focus-visible:outline-none focus-visible:shadow-focus"
+            >
+              <Avatar name={user?.fullName ?? ''} src={user?.avatarUrl} size={36} />
             </button>
-            <button type="button" className={item} disabled={busy} onClick={() => cameraRef.current?.click()}>
-              <Camera size={16} strokeWidth={1.9} /> Take a photo
-            </button>
-            {user?.avatarUrl && (
-              <button
-                type="button"
-                className={`${item} text-brand-red hover:bg-brand-red/10`}
-                disabled={busy}
-                onClick={removePicture}
+
+            {open && (
+              <div
+                ref={menuRef}
+                role="menu"
+                className="surface absolute right-0 z-40 mt-2 w-60 animate-scale-in origin-top-right rounded-xl p-1.5 shadow-raised"
               >
-                <X size={16} strokeWidth={1.9} /> Remove picture
-              </button>
+                <div className="px-3 pb-2 pt-2">
+                  <p className="truncate text-sm font-semibold text-ink">{user?.fullName}</p>
+                  <p className="truncate text-caption text-ink-3">{user?.phone}</p>
+                </div>
+                <p className="px-3 pb-1 text-label font-semibold uppercase text-ink-3">Profile picture</p>
+                <button type="button" role="menuitem" className={item} disabled={busy} onClick={() => libraryRef.current?.click()}>
+                  <ImageIcon size={16} strokeWidth={1.9} /> Choose from library
+                </button>
+                <button type="button" role="menuitem" className={item} disabled={busy} onClick={() => cameraRef.current?.click()}>
+                  <Camera size={16} strokeWidth={1.9} /> Take a photo
+                </button>
+                {user?.avatarUrl && (
+                  <button type="button" role="menuitem" className={item} disabled={busy} onClick={removePicture}>
+                    <X size={16} strokeWidth={1.9} /> Remove picture
+                  </button>
+                )}
+                {busy && <p className="px-3 py-2 text-caption text-ink-3">Working…</p>}
+                <div className="my-1.5 border-t border-line" />
+                <button type="button" role="menuitem" className={item} onClick={() => { setOpen(false); navigate(settings); }}>
+                  <Settings size={16} strokeWidth={1.9} /> Settings
+                </button>
+                <button type="button" role="menuitem" className={`${item} text-brand-red hover:bg-danger-soft/40`} onClick={() => { logout(); navigate('/'); }}>
+                  <LogOut size={16} strokeWidth={1.9} /> Log out
+                </button>
+              </div>
             )}
-            {busy && <p className="px-3 py-2 text-xs text-brand-ink/45">Working…</p>}
-          </div>
-        )}
 
-        <input
-          ref={libraryRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }}
-        />
-        <input
-          ref={cameraRef}
-          type="file"
-          accept="image/*"
-          capture="user"
-          className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }}
-        />
-      </div>
+            <input
+              ref={libraryRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }}
+            />
+            <input
+              ref={cameraRef}
+              type="file"
+              accept="image/*"
+              capture="user"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }}
+            />
+          </div>
+        </div>
       </div>
     </header>
   );

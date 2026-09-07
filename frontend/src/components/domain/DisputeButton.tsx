@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CircleAlert } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { GlassButton } from '../ui/GlassButton';
+import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
@@ -62,12 +62,12 @@ export function DisputeButton({ orderId, perspective, onRaised, size = 'sm' }: D
 
   return (
     <>
-      <GlassButton variant="ghost" size={size} onClick={() => setOpen(true)} className="text-brand-ink/60">
+      <Button variant="ghost" size={size} onClick={() => setOpen(true)} className="text-ink-2">
         <CircleAlert size={16} strokeWidth={2} /> Something went wrong
-      </GlassButton>
+      </Button>
 
       <Modal open={open} onClose={() => !busy && setOpen(false)} title="What went wrong?">
-        <p className="text-sm text-brand-ink/60">
+        <p className="text-sm text-ink-2">
           This pauses the order and sends it to Duka support with the photos, receipts and messages already on it. A person will look at it and get back to both of you.
         </p>
         <div className="mt-4 flex flex-col gap-3">
@@ -83,10 +83,10 @@ export function DisputeButton({ orderId, perspective, onRaised, size = 'sm' }: D
           />
         </div>
         <div className="mt-5 flex flex-wrap justify-end gap-2">
-          <GlassButton variant="ghost" size="sm" disabled={busy} onClick={() => setOpen(false)}>Not now</GlassButton>
-          <GlassButton variant="danger" size="sm" disabled={busy} onClick={submit}>
+          <Button variant="ghost" size="sm" disabled={busy} onClick={() => setOpen(false)}>Not now</Button>
+          <Button variant="danger" size="sm" disabled={busy} onClick={submit}>
             {busy ? 'Sending…' : 'Send to support'}
-          </GlassButton>
+          </Button>
         </div>
       </Modal>
     </>

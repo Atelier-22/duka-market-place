@@ -21,7 +21,7 @@ export function ConsentCheckbox({ checked, onChange, children, error }: ConsentC
           aria-describedby={error ? `${id}-error` : undefined}
           className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded border-brand-green/30 text-brand-green accent-brand-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green-fresh focus-visible:ring-offset-2"
         />
-        <label htmlFor={id} className="cursor-pointer text-sm leading-relaxed text-brand-ink/75">
+        <label htmlFor={id} className="cursor-pointer text-sm leading-relaxed text-ink-2">
           {children}
         </label>
       </div>

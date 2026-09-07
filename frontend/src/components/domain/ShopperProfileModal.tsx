@@ -60,7 +60,7 @@ export function ShopperProfileModal({ shopperId, onClose }: ShopperProfileModalP
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="glass max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-brand-green/15 p-6 shadow-xl sm:rounded-2xl"
+        className="surface max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-brand-green/15 p-6 shadow-xl sm:rounded-2xl"
       >
         <div className="flex justify-end">
           <button

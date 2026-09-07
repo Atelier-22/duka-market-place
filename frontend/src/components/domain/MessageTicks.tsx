@@ -20,24 +20,25 @@ const LABEL: Record<TickState, string> = {
   read: 'Read',
 };
 
+/** Delivery state of one message: clock, one tick, two ticks, two green ticks. */
 export function MessageTicks({ state }: { state: TickState }) {
   const label = LABEL[state];
 
   if (state === 'pending') {
-    return <Clock size={13} strokeWidth={2} className="text-brand-ink/30" aria-label={label} />;
+    return <Clock size={13} strokeWidth={2} className="shrink-0 text-ink-3" aria-label={label} />;
   }
   if (state === 'sent') {
-    return <Check size={14} strokeWidth={2.5} className="text-brand-ink/35" aria-label={label} />;
+    return <Check size={14} strokeWidth={2.5} className="shrink-0 text-ink-3" aria-label={label} />;
   }
   if (state === 'delivered') {
-    return <CheckCheck size={14} strokeWidth={2.5} className="text-brand-ink/70" aria-label={label} />;
+    return <CheckCheck size={14} strokeWidth={2.5} className="shrink-0 text-ink-2" aria-label={label} />;
   }
-  return <CheckCheck size={14} strokeWidth={2.5} className="text-brand-green-fresh" aria-label={label} />;
+  return <CheckCheck size={14} strokeWidth={2.5} className="shrink-0 text-brand-green-fresh" aria-label={label} />;
 }
 
 export function MessageReceipt({ state }: { state: TickState }) {
   return (
-    <span title={LABEL[state]} className="inline-flex items-center">
+    <span title={LABEL[state]} className="inline-flex shrink-0 items-center">
       <MessageTicks state={state} />
     </span>
   );

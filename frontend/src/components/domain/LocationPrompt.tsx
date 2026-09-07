@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { MapPin, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { usePreferences } from '../../context/PreferencesContext';
 import { useLocationPermission } from '../../hooks/useLocationPermission';
-import { GlassButton } from '../ui/GlassButton';
+import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
 import { useToast } from '../ui/Toast';
 
 const SNOOZE_DAYS = 7;
@@ -31,10 +30,10 @@ export function LocationPrompt() {
     return () => clearTimeout(t);
   }, [user, loaded, preferences.share_location, preferences.location_prompt_dismissed_at, state]);
 
-  async function snooze() {
+  const snooze = useCallback(async () => {
     setVisible(false);
     await update({ locationPromptDismissedAt: new Date().toISOString() });
-  }
+  }, [update]);
 
   async function enable() {
     const outcome = await request();
@@ -48,55 +47,29 @@ export function LocationPrompt() {
     push('Location on — your shopper can find you.', 'success');
   }
 
-  if (!visible) return null;
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-brand-ink/40 p-0 sm:items-center sm:p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="location-prompt-title"
+  return (
+    <Modal
+      open={visible}
+      onClose={snooze}
+      title="Turn on location?"
+      description={
+        user?.role === 'shopper'
+          ? 'It lets your customer watch you arrive, and shows you where you are taking each order. Without it you only get a written address.'
+          : 'It lets your shopper find you and lets you watch your order arrive. A written address alone is not a point on a map.'
+      }
+      maxWidth="max-w-md"
     >
-      <div
-        className="glass w-full max-w-md rounded-t-2xl p-6 sm:rounded-2xl"
-        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-green-mist text-brand-green-deep">
-            <MapPin size={20} strokeWidth={1.9} />
-          </span>
-          <button
-            type="button"
-            onClick={snooze}
-            aria-label="Not now"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-brand-ink/40 hover:bg-brand-green-mist"
-          >
-            <X size={17} strokeWidth={2} />
-          </button>
-        </div>
-
-        <h2 id="location-prompt-title" className="mt-3 font-display text-lg font-medium text-brand-green-deep">
-          Turn on location?
-        </h2>
-        <p className="mt-1.5 text-sm text-brand-ink/60">
-          {user?.role === 'shopper'
-            ? 'It lets your customer watch you arrive, and shows you where you are taking each order. Without it you only get a written address.'
-            : 'It lets your shopper find you and lets you watch your order arrive. A written address alone is not a point on a map.'}
-        </p>
-
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
-          <GlassButton onClick={enable} disabled={busy} fullWidth>
-            {busy ? 'Asking…' : 'Turn on location'}
-          </GlassButton>
-          <GlassButton variant="secondary" onClick={snooze} fullWidth>
-            Not now
-          </GlassButton>
-        </div>
-        <p className="mt-3 text-center text-xs text-brand-ink/40">
-          You can change this any time in Settings.
-        </p>
+      <div className="flex flex-col gap-2 sm:flex-row-reverse">
+        <Button onClick={enable} loading={busy} fullWidth>
+          {busy ? 'Asking…' : 'Turn on location'}
+        </Button>
+        <Button variant="secondary" onClick={snooze} fullWidth>
+          Not now
+        </Button>
       </div>
-    </div>,
-    document.body
+      <p className="mt-3 text-center text-caption text-ink-3">
+        You can change this any time in Settings.
+      </p>
+    </Modal>
   );
 }

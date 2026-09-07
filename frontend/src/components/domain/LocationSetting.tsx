@@ -40,13 +40,19 @@ export function LocationSetting({ compact = false }: { compact?: boolean }) {
         aria-checked={on}
         disabled={busy || unsupported}
         onClick={() => toggle(!on)}
-        className="flex w-full items-center justify-between gap-4 rounded-xl2 border border-brand-green/15 px-4 py-3.5 text-left transition-colors hover:bg-brand-green-mist/50 disabled:opacity-60"
+        className={[
+          'flex w-full items-center justify-between gap-4 rounded-xl border border-line bg-surface px-4 py-3.5 text-left',
+          'transition-colors duration-150 hover:bg-surface-2 focus-visible:outline-none focus-visible:shadow-focus',
+          'disabled:opacity-60',
+        ].join(' ')}
       >
         <span className="flex min-w-0 items-start gap-3">
-          <MapPin size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-brand-green" />
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-green-mist text-brand-green">
+            <MapPin size={17} strokeWidth={1.8} />
+          </span>
           <span className="min-w-0">
-            <span className="block text-sm font-medium text-brand-ink">Share my location</span>
-            <span className="mt-0.5 block text-xs text-brand-ink/50">
+            <span className="block text-body font-medium text-ink">Share my location</span>
+            <span className="mt-0.5 block text-caption text-ink-3">
               {unsupported
                 ? 'This device cannot share its location.'
                 : on
@@ -56,12 +62,13 @@ export function LocationSetting({ compact = false }: { compact?: boolean }) {
           </span>
         </span>
         <span
-          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-            on ? 'bg-brand-green-fresh' : 'bg-brand-ink/20'
+          aria-hidden
+          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 ${
+            on ? 'bg-brand-green' : 'bg-line-strong'
           }`}
         >
           <span
-            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-card transition-[left] duration-200 ${
               on ? 'left-[22px]' : 'left-0.5'
             }`}
           />
@@ -69,10 +76,12 @@ export function LocationSetting({ compact = false }: { compact?: boolean }) {
       </button>
 
       {on && blocked && (
-        <p className="flex items-start gap-2 text-xs font-medium text-brand-red">
-          <CircleAlert size={13} strokeWidth={2} className="mt-0.5 shrink-0" />
-          You have this on, but your browser is blocking location for this site. Allow it in your
-          browser's site settings for Duka, or nothing will be shared.
+        <p role="alert" className={`flex items-start gap-2 text-small text-brand-red ${compact ? 'mt-3' : ''}`}>
+          <CircleAlert size={15} strokeWidth={2} className="mt-0.5 shrink-0" />
+          <span>
+            You have this on, but your browser is blocking location for this site. Allow it in your
+            browser's site settings for Duka, or nothing will be shared.
+          </span>
         </p>
       )}
     </div>
