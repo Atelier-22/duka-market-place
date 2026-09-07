@@ -98,7 +98,7 @@ export function useVoiceRecorder(onAutoStop?: (recording: Recording) => void) {
       startedAtRef.current = Date.now();
       setElapsedMs(0);
       setRecording(true);
-      recorder.start();
+      recorder.start(500);
 
       timerRef.current = setInterval(() => {
         const ms = Date.now() - startedAtRef.current;

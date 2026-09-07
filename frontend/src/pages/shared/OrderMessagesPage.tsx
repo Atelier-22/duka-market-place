@@ -34,6 +34,12 @@ interface PendingVoice {
   upload: Promise<string>;
 }
 
+interface OutgoingMessage {
+  text?: string;
+  imageUrl?: string;
+  note?: PendingVoice | null;
+}
+
 function safeDurationMs(ms: number): number | undefined {
   if (!Number.isFinite(ms)) return undefined;
   return Math.min(10 * 60_000, Math.max(0, Math.round(ms)));
@@ -61,11 +67,16 @@ export function OrderMessagesPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const deliverRef = useRef<((payload: OutgoingMessage) => void) | null>(null);
+  const objectUrls = useRef<string[]>([]);
+
   const holdRecording = useCallback((result: Recording) => {
     const upload = uploadBlob(result.blob, result.filename);
-
     upload.catch(() => undefined);
-    setVoice({ previewUrl: result.previewUrl, durationMs: result.durationMs, upload });
+    objectUrls.current.push(result.previewUrl);
+    deliverRef.current?.({
+      note: { previewUrl: result.previewUrl, durationMs: result.durationMs, upload },
+    });
   }, []);
 
   const recorder = useVoiceRecorder(holdRecording);
@@ -99,7 +110,7 @@ export function OrderMessagesPage() {
   useEffect(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }),
     [messages.length, pending.length]);
 
-  useEffect(() => () => { if (voice) URL.revokeObjectURL(voice.previewUrl); }, [voice]);
+  useEffect(() => () => { objectUrls.current.forEach((u) => URL.revokeObjectURL(u)); }, []);
 
   useLayoutEffect(() => {
     const el = textareaRef.current;
@@ -137,8 +148,14 @@ export function OrderMessagesPage() {
     void recorder.stop().then((result) => { if (result) holdRecording(result); });
   }
 
+  function sendHeldVoice() {
+    const note = voice;
+    if (!note) return;
+    setVoice(null);
+    void deliver({ note });
+  }
+
   function discardVoice() {
-    if (voice) URL.revokeObjectURL(voice.previewUrl);
     setVoice(null);
   }
 
@@ -149,21 +166,16 @@ export function OrderMessagesPage() {
   const composerDisabled = recorder.recording;
   const visible = [...messages, ...pending];
 
-  async function submit() {
-    if (!body.trim() && !attachment && !voice) return;
-    const text = body;
-    const image = attachment;
-    const note = voice;
-    setBody('');
-    setAttachment('');
-    setVoice(null);
+  const deliver = useCallback(async ({ text = '', imageUrl = '', note = null }: OutgoingMessage) => {
+    const trimmed = text.trim();
+    if (!trimmed && !imageUrl && !note) return;
 
-    const localId = `pending-${Date.now()}`;
+    const localId = `pending-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
     setPending((current) => [...current, {
       id: localId,
-      body: text.trim() || null,
-      attachment_url: note ? note.previewUrl : image || null,
-      attachment_type: note ? 'audio' : image ? 'image' : null,
+      body: trimmed || null,
+      attachment_url: note ? note.previewUrl : imageUrl || null,
+      attachment_type: note ? 'audio' : imageUrl ? 'image' : null,
       attachment_duration_ms: note ? Math.round(note.durationMs) : null,
       sender_id: user?.id,
       sender_name: user?.fullName ?? 'You',
@@ -172,32 +184,44 @@ export function OrderMessagesPage() {
     }]);
 
     try {
-      const uploadedUrl = note ? await note.upload : image;
+      const uploadedUrl = note ? await note.upload : imageUrl;
 
       if (uploadedUrl && uploadedUrl.startsWith('blob:')) {
         throw new Error('That attachment did not finish uploading — try again.');
       }
-      if (!text.trim() && !uploadedUrl) {
+      if (!trimmed && !uploadedUrl) {
         throw new Error('That attachment did not finish uploading — try again.');
       }
 
       await api.post(`/orders/${id}/messages`, {
-        body: text.trim() || undefined,
+        body: trimmed || undefined,
         attachmentUrl: uploadedUrl || undefined,
-        attachmentType: note ? 'audio' : image ? 'image' : undefined,
-
+        attachmentType: note ? 'audio' : imageUrl ? 'image' : undefined,
         attachmentDurationMs: note ? safeDurationMs(note.durationMs) : undefined,
       });
+
       setPending((current) => current.filter((m) => m.id !== localId));
-      if (note) URL.revokeObjectURL(note.previewUrl);
       load();
     } catch (err) {
       setPending((current) => current.filter((m) => m.id !== localId));
-      setBody(text);
-      setAttachment(image);
-      setVoice(note);
+      if (trimmed) setBody((b) => b || trimmed);
+      if (imageUrl) setAttachment(imageUrl);
+      if (note) setVoice(note);
       push(apiErrorMessage(err), 'error');
     }
+  }, [id, load, push, user?.id, user?.fullName]);
+
+  deliverRef.current = deliver;
+
+  async function submit() {
+    if (!body.trim() && !attachment && !voice) return;
+    const text = body;
+    const image = attachment;
+    const note = voice;
+    setBody('');
+    setAttachment('');
+    setVoice(null);
+    await deliver({ text, imageUrl: image, note });
   }
 
   function handleSend(e: FormEvent) {
@@ -340,6 +364,15 @@ export function OrderMessagesPage() {
         {voice && (
           <div className="mb-2 flex items-center gap-3 rounded-xl border border-line bg-surface-2 p-2 pl-3">
             <VoiceNotePlayer src={voice.previewUrl} durationMs={voice.durationMs} tone="other" />
+            <button
+              type="button"
+              onClick={sendHeldVoice}
+              aria-label="Send voice note"
+              title="Send voice note"
+              className="flex h-9 shrink-0 items-center rounded-full bg-brand-green px-3 text-caption font-semibold text-white transition-transform active:scale-95"
+            >
+              Send
+            </button>
             <button type="button" onClick={discardVoice} aria-label="Discard voice note" className={REMOVE_BUTTON}>
               <X size={16} strokeWidth={2} />
             </button>
@@ -363,7 +396,7 @@ export function OrderMessagesPage() {
                 {formatDuration(recorder.elapsedMs)}
               </span>
               <span className="truncate text-caption text-ink-3">
-                Recording — tap the square to stop
+                Recording — tap the square to send
               </span>
             </div>
             <button
