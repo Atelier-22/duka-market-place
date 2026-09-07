@@ -7,6 +7,7 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
 import { BoneText, SkeletonRegion } from '../ui/Skeleton';
+import { internalPath } from '../../utils/safePath';
 
 interface Notification {
   id: string;
@@ -117,7 +118,8 @@ export function NotificationBell() {
       setUnread((u) => Math.max(0, u - 1));
       api.post(`/notifications/${n.id}/read`).catch(() => undefined);
     }
-    if (n.link) navigate(n.link);
+    const target = internalPath(n.link);
+    if (target) navigate(target);
   }
 
   async function handleReadAll() {

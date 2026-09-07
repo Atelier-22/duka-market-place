@@ -329,7 +329,7 @@ const broadcastSchema = z.object({
   audience: z.enum(['all', 'customers', 'shoppers']),
   title: z.string().min(3).max(120),
   body: z.string().max(500).optional(),
-  link: z.string().max(200).optional(),
+  link: z.string().max(200).regex(/^\/(?![/\\])[^\\\s]*$/, 'Link must be a path inside Duka, such as /app/orders').optional(),
 });
 
 export async function broadcast(req: Request, res: Response) {
