@@ -6,7 +6,6 @@ export function PublicLayout() {
   return (
     <div className="min-h-screen">
       <div className="atmosphere" />
-      <div className="atmosphere-blob-red" />
       <PublicNavbar />
       <main>
         <Outlet />

@@ -253,34 +253,11 @@ body {
    Colours come from the accent variables, so it follows whatever palette
    the person picked instead of being hard-coded green.
    ------------------------------------------------------------------------ */
-body::before {
-  content: '';
-  position: fixed;
-  inset: -25%;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.5;
-  background:
-    radial-gradient(38% 42% at 18% 22%, rgb(var(--brand-green-fresh) / 0.16), transparent 70%),
-    radial-gradient(34% 38% at 82% 18%, rgb(var(--brand-yellow) / 0.14), transparent 70%),
-    radial-gradient(42% 46% at 60% 88%, rgb(var(--brand-green) / 0.12), transparent 70%);
-  filter: blur(40px);
-  animation: duka-drift 120s ease-in-out infinite alternate;
-}
-
-[data-theme='dark'] body::before,
-body[data-theme='dark']::before {
-  /* Dark surfaces need less of it — the same wash reads as haze on black. */
-  opacity: 0.32;
-}
-
-@keyframes duka-drift {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  25%  { transform: translate3d(2%, -1.5%, 0) scale(1.06); }
-  50%  { transform: translate3d(-1.5%, 2%, 0) scale(1.03); }
-  75%  { transform: translate3d(1%, 1.5%, 0) scale(1.07); }
-  100% { transform: translate3d(-2%, -1%, 0) scale(1.02); }
-}
+/* Three blurred coloured orbs used to drift behind every page on a two-minute
+   loop. They said nothing about Duka, they moved while people were reading,
+   and they cost a full-viewport 40px blur on phones that have better things to
+   spend a frame on. The background is now a flat surface colour, which is what
+   the palette was for. */
 
 /* Marks the panel a timeline step just sent you to. Scrolling there is not
    enough on a long order page — you arrive and still have to work out which
@@ -406,55 +383,17 @@ body[data-theme='dark']::before {
    Atmospheric background: soft green/white gradient with subtle colored
    blobs. Applied once at the app shell level, sits behind everything.
    ---------------------------------------------------------------------- */
+/* The page ground.
+   This used to carry two large blurred circles — 42vw of green top-left, 34vw
+   of yellow bottom-right — plus a third red one floating over the middle of
+   every public page. Flat now, in the surface colour the palette already
+   defines. The colour still follows the theme and the accent; what has gone is
+   three blurred shapes that were decoration and nothing else. */
 .atmosphere {
   position: fixed;
   inset: 0;
   z-index: -1;
-  overflow: hidden;
-  /* Built from the accent's own hues so the backdrop follows the theme. */
-  background:
-    radial-gradient(120% 90% at 15% 0%, rgb(var(--brand-green-mist)) 0%, transparent 55%),
-    radial-gradient(90% 70% at 100% 10%, rgb(var(--brand-yellow-soft) / 0.55) 0%, transparent 50%),
-    var(--app-bg);
-}
-
-.atmosphere::before,
-.atmosphere::after {
-  content: '';
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(70px);
-  opacity: 0.5;
-}
-
-.atmosphere::before {
-  width: 42vw;
-  height: 42vw;
-  background: radial-gradient(circle, rgb(var(--brand-green-fresh) / 0.35), transparent 70%);
-  top: -10%;
-  left: -8%;
-}
-
-.atmosphere::after {
-  width: 34vw;
-  height: 34vw;
-  background: radial-gradient(circle, rgba(242,183,5,0.28), transparent 70%);
-  bottom: -12%;
-  right: -6%;
-}
-
-.atmosphere-blob-red {
-  position: fixed;
-  z-index: -1;
-  width: 26vw;
-  height: 26vw;
-  border-radius: 999px;
-  filter: blur(80px);
-  opacity: 0.16;
-  background: radial-gradient(circle, rgba(214,73,59,0.6), transparent 70%);
-  top: 35%;
-  left: 45%;
-  pointer-events: none;
+  background: var(--app-bg);
 }
 
 /* ----------------------------------------------------------------------

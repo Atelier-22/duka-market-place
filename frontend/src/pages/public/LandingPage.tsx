@@ -29,7 +29,8 @@ export function LandingPage() {
         <div className="grid items-center gap-12 md:grid-cols-2">
           <div className="animate-fade-up">
             <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold text-brand-green-deep">
-              🇺🇬 Now live in towns across Uganda
+              <MapPin size={13} strokeWidth={2.25} aria-hidden="true" />
+              Now live in towns across Uganda
             </span>
             <h1 className="mt-6 font-display text-4xl font-medium leading-[1.1] text-brand-green-deep md:text-6xl">
               Tell us what you need.<br />
@@ -48,20 +49,13 @@ export function LandingPage() {
                 <GlassButton size="lg" variant="secondary">Become a shopper</GlassButton>
               </Link>
             </div>
-            <div className="mt-10 flex gap-8">
-              <div>
-                <p className="font-display text-2xl font-semibold text-brand-green-deep">1,200+</p>
-                <p className="text-xs text-brand-ink/50">Requests fulfilled</p>
-              </div>
-              <div>
-                <p className="font-display text-2xl font-semibold text-brand-green-deep">300+</p>
-                <p className="text-xs text-brand-ink/50">Verified shoppers</p>
-              </div>
-              <div>
-                <p className="font-display text-2xl font-semibold text-brand-green-deep">4.8★</p>
-                <p className="text-xs text-brand-ink/50">Average rating</p>
-              </div>
-            </div>
+            {/* A counter row stood here claiming 1,200+ requests fulfilled,
+                300+ verified shoppers and a 4.8 average rating. None of those
+                numbers came from anywhere. Duka is new, and saying so is
+                better than opening with three figures a customer could
+                disprove by asking one shopper how busy they are. When the
+                real numbers are worth showing, they can be read from the
+                admin analytics that already count them. */}
           </div>
 
           <div className="relative animate-fade-up [animation-delay:150ms]">
@@ -178,25 +172,10 @@ export function LandingPage() {
         </GlassCard>
       </section>
 
-      {/* TESTIMONIALS */}
-      <section className="mx-auto mt-32 max-w-6xl px-4">
-        <div className="mx-auto max-w-xl text-center">
-          <h2 className="font-display text-3xl font-medium text-brand-green-deep md:text-4xl">What people are saying</h2>
-        </div>
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {[
-            { quote: 'I needed shoes from Owino but couldn\u2019t leave work. My shopper had them delivered before 5pm.', name: 'Brenda, Kampala' },
-            { quote: 'I make more in a good week here than I used to selling airtime. The app is straightforward.', name: 'Ivan, Shopper' },
-            { quote: 'The price breakdown is what won me over — no surprises when the item arrives.', name: 'Patricia, Kampala' },
-          ].map((t) => (
-            <GlassCard key={t.name} hover={false}>
-              <p className="text-brand-yellow">★★★★★</p>
-              <p className="mt-3 text-sm italic text-brand-ink/70">"{t.quote}"</p>
-              <p className="mt-4 text-xs font-semibold text-brand-green-deep">{t.name}</p>
-            </GlassCard>
-          ))}
-        </div>
-      </section>
+      {/* A testimonials section stood here: three invented quotes from three
+          invented people, under five stars nobody had given. Deleted rather
+          than hidden or swapped for placeholders. It belongs back only when
+          real customers have said something real and agreed to be named. */}
 
       {/* FINAL CTA */}
       <section className="mx-auto mt-32 max-w-4xl px-4 text-center">

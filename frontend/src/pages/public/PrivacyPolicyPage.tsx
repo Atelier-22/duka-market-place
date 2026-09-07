@@ -11,19 +11,24 @@ export function PrivacyPolicyPage() {
       intro={`This explains what ${BRAND.name} collects, why, how long it is kept, and who sees it. It describes what the service actually does today — not what it might do later.`}
     >
       <Pending>
-        {BRAND.name} is not yet incorporated as a company. This policy is published by the operator
-        of {BRAND.name} as an individual trader in {BRAND.country}. When the business is registered,
-        the legal entity name and registered address must be added here and in the footer.
+        {BRAND.name} is not yet incorporated as a company. This policy is published by{' '}
+        {BRAND.operatorName}, operating {BRAND.name} as an individual trader in {BRAND.country}. When
+        the business is registered, the legal entity name and registered address must be added here
+        and in the footer.
       </Pending>
 
       <Clause heading="Who is responsible">
         <p>
-          {BRAND.name} decides what personal data is collected and why, which makes it the data
-          controller under Uganda&rsquo;s Data Protection and Privacy Act 2019. Contact:{' '}
+          {BRAND.operatorName}, operating {BRAND.name}, decides what personal data is collected and
+          why. That makes him the data controller under Uganda&rsquo;s Data Protection and Privacy
+          Act 2019.
+        </p>
+        <p>
+          Email{' '}
           <a className="font-medium text-brand-green-fresh underline" href={`mailto:${BRAND.supportEmail}`}>
             {BRAND.supportEmail}
           </a>
-          .
+          {BRAND.supportPhone ? `, or call ${BRAND.supportPhone}` : ''}.
         </p>
         <Pending>
           The Act requires data collectors and processors to register with the Personal Data

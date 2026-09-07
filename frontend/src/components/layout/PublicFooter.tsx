@@ -49,7 +49,9 @@ export function PublicFooter() {
         </div>
         <div className="mt-10 flex flex-col items-center justify-between gap-2 border-t border-white/10 pt-6 text-xs text-white/40 md:flex-row">
           <span>© {new Date().getFullYear()} {BRAND.name}. All rights reserved.</span>
-          <span>Operating in {BRAND.country}. Not yet incorporated as a company.</span>
+          <span>
+            Operated by {BRAND.operatorName} in {BRAND.country}. Not yet incorporated as a company.
+          </span>
         </div>
       </div>
     </footer>

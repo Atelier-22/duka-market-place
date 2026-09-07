@@ -9,10 +9,10 @@ export function TermsPage() {
       intro={`These are the rules for using ${BRAND.name}. Using the service means accepting them. They are written to be read, not to be impenetrable.`}
     >
       <Pending>
-        {BRAND.name} is not yet incorporated. These terms are published by the operator of{' '}
-        {BRAND.name} as an individual trader in {BRAND.country}, and have not been reviewed by a
-        lawyer. The liability, contractor-status and dispute clauses below are the ones most likely
-        to need professional review before launch.
+        {BRAND.name} is not yet incorporated. These terms are published by {BRAND.operatorName},
+        operating {BRAND.name} as an individual trader in {BRAND.country}, and have not been
+        reviewed by a lawyer. The liability, contractor-status and dispute clauses below are the
+        ones most likely to need professional review before launch.
       </Pending>
 
       <Clause heading="What Duka is">
