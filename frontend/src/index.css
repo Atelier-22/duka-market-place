@@ -200,7 +200,9 @@ body {
 }
 
 .glass-liquid {
-  background: rgb(var(--glass-bg));
+  background: rgb(var(--glass-bg) / 0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid rgb(var(--brand-green) / 0.12);
 }
 
@@ -264,12 +266,16 @@ body {
 }
 
 .glass {
-  background: rgb(var(--glass-bg));
+  background: rgb(var(--glass-bg) / 0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid rgb(var(--brand-green) / 0.12);
 }
 
 .glass-deep {
-  background: rgb(11 61 46);
+  background: rgb(11 61 46 / 0.94);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.10);
   color: white;
 }

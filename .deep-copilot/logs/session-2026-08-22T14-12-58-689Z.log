@@ -1,6 +1,0 @@
-[2026-08-22T14:12:58.690Z] [INIT] Deep Copilot debug log started. file=c:\Users\hp\Downloads\PROJESCTS\duka-marketplace-mvp\project\.deep-copilot\logs\session-2026-08-22T14-12-58-689Z.log
-[2026-08-22T14:12:58.690Z] [ACTIVATE] {"version":"0.43.1"}
-[2026-08-22T14:12:58.709Z] [PROVIDERS_LOADED] {"count":4,"ids":["anthropic","custom","deepseek","openai"]}
-[2026-08-22T14:12:58.711Z] [TERMINAL_MONITOR_STARTED] {}
-[2026-08-22T14:12:58.711Z] [STATUSBAR_REGISTERED] {"id":"deepseekAgent.statusBar"}
-[2026-08-22T14:12:58.729Z] [INLINE_COMPLETION_REGISTERED]
