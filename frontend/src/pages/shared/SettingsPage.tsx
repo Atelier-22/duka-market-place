@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Bell, ChevronLeft, ChevronRight, Globe, LucideIcon, MapPin, Monitor, Moon, Palette,
+  Bell, ChevronLeft, ChevronRight, Globe, Home, LucideIcon, MapPin, Monitor, Moon, Palette,
   Search, ShieldCheck, Sparkles, Sun, User,
 } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
@@ -12,10 +12,11 @@ import { Input } from '../../components/ui/Input';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { ImageUpload } from '../../components/ui/ImageUpload';
 import { LocationSetting } from '../../components/domain/LocationSetting';
+import { AddressBook } from '../../components/domain/AddressBook';
 import { NAV_STYLES, NavStyle, useNavStyle } from '../../hooks/useNavStyle';
 import { useToast } from '../../components/ui/Toast';
 
-type SectionId = 'personalization' | 'account' | 'appearance' | 'general' | 'location' | 'notifications' | 'security';
+type SectionId = 'personalization' | 'account' | 'addresses' | 'appearance' | 'general' | 'location' | 'notifications' | 'security';
 
 interface Section {
   id: SectionId;
@@ -28,6 +29,7 @@ interface Section {
 const SECTIONS: Section[] = [
   { id: 'personalization', label: 'Personalization', icon: Sparkles, keywords: 'style tone voice traits warm friendly professional candid efficient encouraging' },
   { id: 'account', label: 'Account', icon: User, keywords: 'email phone number profile picture avatar name photo' },
+  { id: 'addresses', label: 'Saved addresses', icon: Home, keywords: 'address delivery home work place where deliver landmark town' },
   { id: 'appearance', label: 'Appearance', icon: Palette, keywords: 'theme dark light system colour color accent navigation nav bar tabs phone bottom' },
   { id: 'general', label: 'General', icon: Globe, keywords: 'language english swahili luganda region' },
   { id: 'location', label: 'Location', icon: MapPin, keywords: 'location gps map delivery address share tracking find me nearby' },
@@ -197,7 +199,11 @@ export function SettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false);
 
   const sections = useMemo(
-    () => SECTIONS.filter((s) => s.id !== 'location' || user?.role !== 'admin'),
+    () => SECTIONS.filter((s) => {
+      if (s.id === 'location' && user?.role === 'admin') return false;
+      if (s.id === 'addresses' && user?.role !== 'customer') return false;
+      return true;
+    }),
     [user?.role]
   );
 
@@ -413,6 +419,15 @@ export function SettingsPage() {
                   </GlassButton>
                 </div>
               </div>
+            </SectionCard>
+          )}
+
+          {shown.some((s) => s.id === 'addresses') && (
+            <SectionCard
+              title="Saved addresses"
+              description="Where your orders get delivered. Change them here rather than mid-order."
+            >
+              <AddressBook />
             </SectionCard>
           )}
 

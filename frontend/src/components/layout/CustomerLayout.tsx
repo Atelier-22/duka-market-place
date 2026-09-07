@@ -1,4 +1,4 @@
-import { ClipboardList, CreditCard, Home, MessageCircle, Package, PlusCircle, Settings, User } from 'lucide-react';
+import { Home, MessageCircle, Package, PlusCircle, User } from 'lucide-react';
 import { AppShell } from './AppShell';
 import { NavItem } from './MobileNav';
 
@@ -7,10 +7,7 @@ const ITEMS: NavItem[] = [
   { to: '/app/requests/new', label: 'Request', icon: PlusCircle },
   { to: '/app/orders', label: 'Orders', icon: Package },
   { to: '/app/messages', label: 'Chats', icon: MessageCircle, badge: 'messages' as const },
-  { to: '/app/requests', label: 'My requests', icon: ClipboardList },
-  { to: '/app/payments', label: 'Payments', icon: CreditCard },
-  { to: '/app/profile', label: 'Profile', icon: User },
-  { to: '/app/settings', label: 'Settings', icon: Settings },
+  { to: '/app/account', label: 'Account', icon: User },
 ];
 
 export function CustomerLayout() {

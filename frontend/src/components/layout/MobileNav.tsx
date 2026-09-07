@@ -17,7 +17,7 @@ interface MobileNavProps {
   items: NavItem[];
 }
 
-const TAB_COUNT = 4;
+const TAB_COUNT = 5;
 
 function isActivePath(to: string, pathname: string): boolean {
   if (to.split('/').length <= 2) return pathname === to;

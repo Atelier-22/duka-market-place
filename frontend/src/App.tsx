@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { ToastProvider } from './components/ui/Toast';
 import { PublicLayout } from './components/layout/PublicLayout';
 import { CustomerLayout } from './components/layout/CustomerLayout';
@@ -21,12 +21,12 @@ import { CookiePolicyPage } from './pages/public/CookiePolicyPage';
 
 import { CustomerDashboardPage } from './pages/customer/CustomerDashboardPage';
 import { CreateRequestPage } from './pages/customer/CreateRequestPage';
-import { MyRequestsPage } from './pages/customer/MyRequestsPage';
 import { RequestDetailsPage } from './pages/customer/RequestDetailsPage';
 import { ActiveOrderPage } from './pages/customer/ActiveOrderPage';
 import { OrdersListPage } from './pages/customer/OrderHistoryPage';
 import { PaymentsPage } from './pages/customer/PaymentsPage';
 import { CustomerProfilePage } from './pages/customer/CustomerProfilePage';
+import { AccountPage } from './pages/customer/AccountPage';
 
 import { ShopperDashboardPage } from './pages/shopper/ShopperDashboardPage';
 import { AvailableRequestsPage } from './pages/shopper/AvailableRequestsPage';
@@ -81,7 +81,8 @@ export default function App() {
           <Route element={<CustomerLayout />}>
             <Route path="/app" element={<CustomerDashboardPage />} />
             <Route path="/app/requests/new" element={<CreateRequestPage />} />
-            <Route path="/app/requests" element={<MyRequestsPage />} />
+            <Route path="/app/requests" element={<Navigate to="/app/orders?view=requests" replace />} />
+            <Route path="/app/account" element={<AccountPage />} />
             <Route path="/app/requests/:id" element={<RequestDetailsPage />} />
             <Route path="/app/orders" element={<OrdersListPage />} />
             <Route path="/app/orders/:id" element={<ActiveOrderPage />} />
