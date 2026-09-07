@@ -1,4 +1,4 @@
-import { Home, MessageCircle, Package, PlusCircle, User } from 'lucide-react';
+import { Heart, Home, MessageCircle, Package, PlusCircle, ShoppingBag, Store, User } from 'lucide-react';
 import { AppShell } from './AppShell';
 import { NavItem } from './MobileNav';
 
@@ -8,6 +8,9 @@ const ITEMS: NavItem[] = [
   { to: '/app/orders', label: 'Orders', icon: Package, tint: 'green' },
   { to: '/app/messages', label: 'Chats', icon: MessageCircle, badge: 'messages' as const, tint: 'deep' },
   { to: '/app/settings', label: 'Account', icon: User, tint: 'ink' },
+  { to: '/marketplace', label: 'Shop', icon: Store },
+  { to: '/app/purchases', label: 'Purchases', icon: ShoppingBag },
+  { to: '/app/following', label: 'Following', icon: Heart },
 ];
 
 export function CustomerLayout() {

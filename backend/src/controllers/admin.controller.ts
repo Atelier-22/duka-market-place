@@ -2,9 +2,10 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { query, queryOne } from '../db/pool';
 import { ApiError } from '../middleware/errorHandler';
+import { adminSellerStats } from '../seller/analytics';
 
 export async function getDashboard(_req: Request, res: Response) {
-  const [users, orders, gmv, disputes, pendingVerifications] = await Promise.all([
+  const [users, orders, gmv, disputes, pendingVerifications, sellerStats] = await Promise.all([
     queryOne<{ customers: string; shoppers: string }>(
       `SELECT
          COUNT(*) FILTER (WHERE role = 'customer') AS customers,
@@ -22,11 +23,18 @@ export async function getDashboard(_req: Request, res: Response) {
     ),
     queryOne<{ open: string }>(`SELECT COUNT(*) AS open FROM disputes WHERE status = 'open'`),
     queryOne<{ count: string }>(`SELECT COUNT(*) AS count FROM shopper_profiles WHERE verification_status = 'pending'`),
+    adminSellerStats(),
   ]);
 
   res.json({
     customers: Number(users?.customers ?? 0),
     shoppers: Number(users?.shoppers ?? 0),
+    sellers: sellerStats.sellers.total,
+    activeSellers: sellerStats.sellers.active,
+    pendingSellerVerifications: sellerStats.pendingVerifications,
+    sellerProducts: sellerStats.products.published,
+    sellerOrdersOpen: sellerStats.orders.open,
+    sellerRevenueUgx: sellerStats.orders.revenueUgx,
     activeOrders: Number(orders?.active ?? 0),
     completedToday: Number(orders?.completed_today ?? 0),
     grossMerchandiseValueUgx: Number(gmv?.total ?? 0),

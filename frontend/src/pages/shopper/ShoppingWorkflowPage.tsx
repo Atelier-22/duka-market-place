@@ -19,6 +19,7 @@ import { ImageUpload } from '../../components/ui/ImageUpload';
 import { RatingStars } from '../../components/ui/RatingStars';
 import { useToast } from '../../components/ui/Toast';
 import { useBroadcastPosition, useOrderTracking } from '../../hooks/useOrderTracking';
+import { MarketplaceMatches } from '../../components/market/MarketplaceMatches';
 
 const BROADCAST_STATUSES = ['shopper_assigned', 'shopping', 'item_found', 'awaiting_customer_approval', 'purchased', 'out_for_delivery'];
 const DISPUTABLE: OrderStatus[] = ['shopping', 'item_found', 'awaiting_customer_approval', 'purchased', 'out_for_delivery', 'delivered', 'completed'];
@@ -219,6 +220,8 @@ export function ShoppingWorkflowPage() {
         actions={<StatusBadge status={order.status} />}
         className="mb-0"
       />
+
+      <MarketplaceMatches requestId={order.request_id} className="mt-4" />
 
       <ActionNeededBanner
         status={order.status}

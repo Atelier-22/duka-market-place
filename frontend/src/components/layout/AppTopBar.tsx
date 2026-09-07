@@ -9,6 +9,7 @@ import { NotificationBell } from '../domain/NotificationBell';
 import { homeFor } from '../../utils/home';
 import { useSignOut } from '../../hooks/useSignOut';
 import { BRAND } from '../../config/brand';
+import { CartButton } from '../market/CartButton';
 
 export function AppTopBar({ roleLabel }: { roleLabel: string }) {
   const { user, linkedAccounts } = useAuth();
@@ -62,6 +63,7 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
         </Link>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {(user?.role === 'customer' || user?.role === 'shopper') && <CartButton />}
           <NotificationBell />
           <div className="relative">
             <button

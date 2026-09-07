@@ -50,7 +50,7 @@ export async function upload(req: Request, res: Response) {
   res.status(201).json({ url, key, mimeType: mime, size: file.size });
 }
 
-const FOLDERS_REQUIRING_PRIVATE_STORAGE = ['verification', 'identity', 'id', 'kyc'];
+const FOLDERS_REQUIRING_PRIVATE_STORAGE = ['verification', 'seller-verification', 'identity', 'id', 'kyc'];
 
 function folderOf(req: Request): string {
   const folder = typeof req.query.folder === 'string' ? req.query.folder : 'misc';

@@ -13,6 +13,7 @@ export interface PreferencesRow {
   notify_marketing: boolean;
 
   notify_new_requests: boolean;
+  notify_store_updates: boolean;
 
   share_location: boolean;
   location_prompt_dismissed_at: string | null;
@@ -44,7 +45,7 @@ export async function getOrCreatePreferences(userId: string): Promise<Preference
 
 const UPDATABLE = [
   'theme', 'accent', 'language', 'tone', 'traits',
-  'notify_messages', 'notify_orders', 'notify_offers', 'notify_marketing', 'notify_new_requests',
+  'notify_messages', 'notify_orders', 'notify_offers', 'notify_marketing', 'notify_new_requests', 'notify_store_updates',
   'share_location', 'location_prompt_dismissed_at',
   'notify_security', 'delivery_instructions', 'delivery_handoff', 'delivery_contact',
   'default_city', 'default_sourcing',

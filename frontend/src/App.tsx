@@ -5,6 +5,8 @@ import { PublicLayout } from './components/layout/PublicLayout';
 import { CustomerLayout } from './components/layout/CustomerLayout';
 import { ShopperLayout } from './components/layout/ShopperLayout';
 import { AdminLayout } from './components/layout/AdminLayout';
+import { SellerLayout } from './components/layout/SellerLayout';
+import { MarketLayout } from './components/layout/MarketLayout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { Canonical } from './components/seo/Canonical';
 import { ScrollRestoration } from './components/ui/ScrollRestoration';
@@ -60,6 +62,35 @@ const AdminOpsPage = lazy(() => import('./pages/admin/AdminOpsPage').then((m) =>
 const AdminStaffPage = lazy(() => import('./pages/admin/AdminStaffPage').then((m) => ({ default: m.AdminStaffPage })));
 const AdminGodViewPage = lazy(() => import('./pages/admin/AdminGodViewPage').then((m) => ({ default: m.AdminGodViewPage })));
 
+const SellPage = lazy(() => import('./pages/public/SellPage').then((m) => ({ default: m.SellPage })));
+const MarketplacePage = lazy(() => import('./pages/market/MarketplacePage').then((m) => ({ default: m.MarketplacePage })));
+const StorePage = lazy(() => import('./pages/market/StorePage').then((m) => ({ default: m.StorePage })));
+const ProductPage = lazy(() => import('./pages/market/ProductPage').then((m) => ({ default: m.ProductPage })));
+const CartPage = lazy(() => import('./pages/market/CartPage').then((m) => ({ default: m.CartPage })));
+const CheckoutPage = lazy(() => import('./pages/market/CheckoutPage').then((m) => ({ default: m.CheckoutPage })));
+const PurchasesPage = lazy(() => import('./pages/customer/PurchasesPage').then((m) => ({ default: m.PurchasesPage })));
+const PurchaseDetailPage = lazy(() => import('./pages/customer/PurchaseDetailPage').then((m) => ({ default: m.PurchaseDetailPage })));
+const FollowingPage = lazy(() => import('./pages/customer/FollowingPage').then((m) => ({ default: m.FollowingPage })));
+
+const SellerDashboardPage = lazy(() => import('./pages/seller/SellerDashboardPage').then((m) => ({ default: m.SellerDashboardPage })));
+const SellerProductsPage = lazy(() => import('./pages/seller/SellerProductsPage').then((m) => ({ default: m.SellerProductsPage })));
+const SellerProductFormPage = lazy(() => import('./pages/seller/SellerProductFormPage').then((m) => ({ default: m.SellerProductFormPage })));
+const SellerOrdersPage = lazy(() => import('./pages/seller/SellerOrdersPage').then((m) => ({ default: m.SellerOrdersPage })));
+const SellerOrderDetailPage = lazy(() => import('./pages/seller/SellerOrderDetailPage').then((m) => ({ default: m.SellerOrderDetailPage })));
+const SellerInventoryPage = lazy(() => import('./pages/seller/SellerInventoryPage').then((m) => ({ default: m.SellerInventoryPage })));
+const SellerCustomersPage = lazy(() => import('./pages/seller/SellerCustomersPage').then((m) => ({ default: m.SellerCustomersPage })));
+const SellerStorePage = lazy(() => import('./pages/seller/SellerStorePage').then((m) => ({ default: m.SellerStorePage })));
+const SellerReviewsPage = lazy(() => import('./pages/seller/SellerReviewsPage').then((m) => ({ default: m.SellerReviewsPage })));
+const SellerFollowersPage = lazy(() => import('./pages/seller/SellerFollowersPage').then((m) => ({ default: m.SellerFollowersPage })));
+const SellerAnalyticsPage = lazy(() => import('./pages/seller/SellerAnalyticsPage').then((m) => ({ default: m.SellerAnalyticsPage })));
+const SellerForecastPage = lazy(() => import('./pages/seller/SellerForecastPage').then((m) => ({ default: m.SellerForecastPage })));
+const SellerPromotionsPage = lazy(() => import('./pages/seller/SellerPromotionsPage').then((m) => ({ default: m.SellerPromotionsPage })));
+const SellerPaymentsPage = lazy(() => import('./pages/seller/SellerPaymentsPage').then((m) => ({ default: m.SellerPaymentsPage })));
+
+const AdminSellersPage = lazy(() => import('./pages/admin/AdminSellersPage').then((m) => ({ default: m.AdminSellersPage })));
+const AdminSellerDetailPage = lazy(() => import('./pages/admin/AdminSellerDetailPage').then((m) => ({ default: m.AdminSellerDetailPage })));
+const AdminSellerProductsPage = lazy(() => import('./pages/admin/AdminSellerProductsPage').then((m) => ({ default: m.AdminSellerProductsPage })));
+
 export default function App() {
   return (
     <ToastProvider>
@@ -79,7 +110,16 @@ export default function App() {
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/refunds" element={<RefundPolicyPage />} />
           <Route path="/cookies" element={<CookiePolicyPage />} />
+          <Route path="/sell" element={<SellPage />} />
           <Route path="*" element={<NotFoundPage />} />
+        </Route>
+
+        <Route element={<MarketLayout />}>
+          <Route path="/marketplace" element={<MarketplacePage />} />
+          <Route path="/store/:slug" element={<StorePage />} />
+          <Route path="/product/:id" element={<ProductPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
         </Route>
 
         <Route path="/login" element={<AuthPage mode="login" />} />
@@ -99,6 +139,9 @@ export default function App() {
             <Route path="/app/profile" element={<Navigate to="/app/settings/personal" replace />} />
             <Route path="/app/messages" element={<ChatListPage />} />
             <Route path="/app/settings/:section?" element={<SettingsPage />} />
+            <Route path="/app/purchases" element={<PurchasesPage />} />
+            <Route path="/app/purchases/:id" element={<PurchaseDetailPage />} />
+            <Route path="/app/following" element={<FollowingPage />} />
           </Route>
         </Route>
 
@@ -114,6 +157,28 @@ export default function App() {
             <Route path="/shopper/profile" element={<ShopperProfilePage />} />
             <Route path="/shopper/messages" element={<ChatListPage />} />
             <Route path="/shopper/settings/:section?" element={<SettingsPage />} />
+          </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute allow={['seller']} />}>
+          <Route element={<SellerLayout />}>
+            <Route path="/seller" element={<SellerDashboardPage />} />
+            <Route path="/seller/products" element={<SellerProductsPage />} />
+            <Route path="/seller/products/new" element={<SellerProductFormPage />} />
+            <Route path="/seller/products/:id/edit" element={<SellerProductFormPage />} />
+            <Route path="/seller/orders" element={<SellerOrdersPage />} />
+            <Route path="/seller/orders/:id" element={<SellerOrderDetailPage />} />
+            <Route path="/seller/inventory" element={<SellerInventoryPage />} />
+            <Route path="/seller/customers" element={<SellerCustomersPage />} />
+            <Route path="/seller/store" element={<SellerStorePage />} />
+            <Route path="/seller/reviews" element={<SellerReviewsPage />} />
+            <Route path="/seller/followers" element={<SellerFollowersPage />} />
+            <Route path="/seller/analytics" element={<SellerAnalyticsPage />} />
+            <Route path="/seller/forecast" element={<SellerForecastPage />} />
+            <Route path="/seller/promotions" element={<SellerPromotionsPage />} />
+            <Route path="/seller/payments" element={<SellerPaymentsPage />} />
+            <Route path="/seller/messages" element={<Navigate to="/seller/orders" replace />} />
+            <Route path="/seller/settings/:section?" element={<SettingsPage />} />
           </Route>
         </Route>
 
@@ -135,6 +200,9 @@ export default function App() {
             <Route path="/admin/staff" element={<AdminStaffPage />} />
             <Route path="/admin/god-view" element={<AdminGodViewPage />} />
             <Route path="/admin/fees" element={<AdminFeesPage />} />
+            <Route path="/admin/sellers" element={<AdminSellersPage />} />
+            <Route path="/admin/sellers/:id" element={<AdminSellerDetailPage />} />
+            <Route path="/admin/seller-products" element={<AdminSellerProductsPage />} />
             <Route path="/admin/settings/:section?" element={<SettingsPage />} />
           </Route>
         </Route>

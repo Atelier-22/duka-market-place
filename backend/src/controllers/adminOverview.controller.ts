@@ -166,7 +166,7 @@ export async function search(req: Request, res: Response) {
   const like = `%${q.toLowerCase()}%`;
   const digits = q.replace(/[^0-9+]/g, '');
 
-  const [users, orders] = await Promise.all([
+  const [users, orders, stores, products] = await Promise.all([
     query(
       `SELECT id, full_name, phone, email, role::text AS role, avatar_url, is_active, created_at
          FROM users
@@ -190,9 +190,23 @@ export async function search(req: Request, res: Response) {
         LIMIT 20`,
       [`${q.toLowerCase()}%`, like]
     ),
+    query(
+      `SELECT s.id, s.name, s.slug, s.status, s.owner_id, s.product_count, s.follower_count, u.full_name AS seller_name
+         FROM seller_stores s JOIN users u ON u.id = s.owner_id
+        WHERE LOWER(s.name) LIKE $1 OR s.slug LIKE $1
+        ORDER BY s.created_at DESC LIMIT 10`,
+      [like]
+    ),
+    query(
+      `SELECT p.id, p.name, p.status, p.price_ugx, s.name AS store_name, s.slug AS store_slug
+         FROM seller_products p JOIN seller_stores s ON s.id = p.store_id
+        WHERE LOWER(p.name) LIKE $1 OR LOWER(COALESCE(p.brand, '')) LIKE $1
+        ORDER BY p.created_at DESC LIMIT 10`,
+      [like]
+    ),
   ]);
 
-  res.json({ users, orders });
+  res.json({ users, orders, stores, products });
 }
 
 export async function getCustomerDetail(req: Request, res: Response) {

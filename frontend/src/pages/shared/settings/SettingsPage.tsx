@@ -1,8 +1,8 @@
 import { ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  Bell, ChevronRight, CircleHelp, CreditCard, Gift, LogOut, LucideIcon, MapPin, Package,
-  Search, ShieldCheck, SlidersHorizontal, Truck, User, Wallet,
+  Bell, Boxes, ChevronRight, CircleHelp, CreditCard, Gift, LogOut, LucideIcon, MapPin, Package,
+  Search, ShieldCheck, SlidersHorizontal, Store, Truck, User, Wallet,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { UserRole } from '../../../types';
@@ -19,6 +19,10 @@ import {
   PrivacyPanel, PromotionNotificationsPanel, RecommendationsPanel, SecurityNotificationsPanel,
   SecurityPanel, ShoppingPreferencesPanel, SwitchAccountPanel, WalletPanel,
 } from './SettingsPanels';
+import {
+  SellerInventoryPrefsPanel, SellerNotificationsPanel, SellerOrderPrefsPanel, SellerPayoutLinkPanel,
+  SellerVerificationSettingsPanel, StoreLinkPanel, StoreUpdatesPanel,
+} from './SellerSettingsPanels';
 
 type Role = UserRole;
 
@@ -40,6 +44,7 @@ interface Group {
 
 const CUSTOMER: Role[] = ['customer'];
 const PEOPLE: Role[] = ['customer', 'shopper'];
+const SELLER: Role[] = ['seller'];
 
 const GROUPS: Group[] = [
   {
@@ -55,6 +60,21 @@ const GROUPS: Group[] = [
     items: [
       { id: 'addresses', label: 'Saved addresses', description: 'Where your orders get delivered', keywords: 'address home work landmark town deliver', roles: CUSTOMER },
       { id: 'location', label: 'Location settings', description: 'Share where you are during an order', keywords: 'location gps map share tracking find me nearby' },
+    ],
+  },
+  {
+    id: 'store', label: 'Store', icon: Store, roles: SELLER,
+    items: [
+      { id: 'store-profile', label: 'Store profile', description: 'Name, address, logo, cover, contact, policies', keywords: 'store shop name logo cover address slug contact policies' },
+      { id: 'verification', label: 'Verification', description: 'Get the verified badge', keywords: 'verify verified badge business registration document trust' },
+    ],
+  },
+  {
+    id: 'selling', label: 'Selling', icon: Boxes, roles: SELLER,
+    items: [
+      { id: 'seller-orders', label: 'Order handling', description: 'Auto-confirm and processing time', keywords: 'orders confirm automatically processing days' },
+      { id: 'seller-inventory', label: 'Inventory', description: 'Low-stock alerts and stock rules', keywords: 'inventory stock low threshold reserved' },
+      { id: 'seller-payout', label: 'Payouts', description: 'Where Duka pays you', keywords: 'payout bank mobile money payments collected' },
     ],
   },
   {
@@ -74,7 +94,9 @@ const GROUPS: Group[] = [
   {
     id: 'notifications', label: 'Notifications', icon: Bell,
     items: [
-      { id: 'notify-orders', label: 'Orders', description: 'Requests, offers, messages and order updates', keywords: 'alerts orders offers messages reminders jobs' },
+      { id: 'notify-orders', label: 'Orders', description: 'Requests, offers, messages and order updates', keywords: 'alerts orders offers messages reminders jobs', roles: PEOPLE },
+      { id: 'notify-seller', label: 'Store activity', description: 'Orders, reviews, followers, low stock', keywords: 'seller store notifications orders reviews followers stock', roles: SELLER },
+      { id: 'notify-stores', label: 'Stores you follow', description: 'New products from stores you follow', keywords: 'follow store products marketplace new', roles: PEOPLE },
       { id: 'notify-promotions', label: 'Promotions', description: 'News and offers from Duka', keywords: 'marketing news promotions email' },
       { id: 'notify-security', label: 'Security', description: 'Sign-ins and password changes', keywords: 'security sign in alerts' },
     ],
@@ -210,7 +232,12 @@ export function SettingsPage() {
           { to: '/app/orders', label: 'Orders', icon: Package },
           { to: '/app/payments', label: 'Payments', icon: CreditCard },
         ]
-      : [];
+      : role === 'seller'
+        ? [
+            { to: '/seller/orders', label: 'Orders', icon: Boxes },
+            { to: '/seller/products', label: 'Products', icon: Package },
+          ]
+        : [];
 
   return (
     <div className="mx-auto max-w-5xl pb-16">
@@ -373,6 +400,13 @@ function PanelFor({ id, onLogout }: { id: string; onLogout: () => void }): React
   switch (id) {
     case 'personal': return <PersonalInfoPanel />;
     case 'security': return <SecurityPanel />;
+    case 'store-profile': return <StoreLinkPanel />;
+    case 'verification': return <SellerVerificationSettingsPanel />;
+    case 'seller-orders': return <SellerOrderPrefsPanel />;
+    case 'seller-inventory': return <SellerInventoryPrefsPanel />;
+    case 'seller-payout': return <SellerPayoutLinkPanel />;
+    case 'notify-seller': return <SellerNotificationsPanel />;
+    case 'notify-stores': return <StoreUpdatesPanel />;
     case 'switch-account': return <SwitchAccountPanel onLogout={onLogout} />;
     case 'addresses': return <AddressesPanel />;
     case 'location': return <LocationPanel />;

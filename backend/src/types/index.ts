@@ -1,4 +1,4 @@
-export type UserRole = 'customer' | 'shopper' | 'admin';
+export type UserRole = 'customer' | 'shopper' | 'seller' | 'admin';
 
 export type VerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
 

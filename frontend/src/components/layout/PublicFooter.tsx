@@ -6,8 +6,10 @@ const COLUMNS = [
   {
     title: 'Product',
     links: [
+      { to: '/marketplace', label: 'Marketplace' },
       { to: '/how-it-works', label: 'How it works' },
       { to: '/become-a-shopper', label: 'Become a shopper' },
+      { to: '/sell', label: 'Sell on Duka' },
       { to: '/register', label: 'Create a request' },
     ],
   },

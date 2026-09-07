@@ -8,6 +8,7 @@ import { useBrandTransition } from '../ui/BrandTransition';
 const HOME_FOR: Record<UserRole, string> = {
   customer: '/app',
   shopper: '/shopper',
+  seller: '/seller',
 
   admin: '/app',
   super_admin: '/app',
@@ -16,6 +17,7 @@ const HOME_FOR: Record<UserRole, string> = {
 const LABEL_FOR: Record<UserRole, string> = {
   customer: 'Customer',
   shopper: 'Shopper',
+  seller: 'Seller',
   admin: 'Admin',
   super_admin: 'Super admin',
 };

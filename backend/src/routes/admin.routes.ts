@@ -4,6 +4,7 @@ import * as overview from '../controllers/adminOverview.controller';
 import { requireAuth, requireRole, requireSuperAdmin } from '../middleware/auth';
 import * as ops from '../controllers/adminOps.controller';
 import * as staff from '../controllers/staff.controller';
+import * as sellers from '../seller/sellerAdmin.controller';
 import { asyncHandler } from '../middleware/errorHandler';
 
 const router = Router();
@@ -49,6 +50,21 @@ router.post('/locations/:id/toggle', asyncHandler(ops.toggleLocation));
 
 router.get('/analytics', asyncHandler(ops.analytics));
 router.get('/audit', asyncHandler(ops.auditLog));
+
+router.get('/sellers/stats', asyncHandler(sellers.stats));
+router.get('/sellers/verifications', asyncHandler(sellers.verificationQueue));
+router.get('/sellers/verifications/:id/document', asyncHandler(sellers.verificationDocument));
+router.post('/sellers/verifications/:id/decision', asyncHandler(sellers.decideVerification));
+router.get('/sellers/products', asyncHandler(sellers.products));
+router.post('/sellers/products/:id/unpublish', asyncHandler(sellers.unpublishProduct));
+router.post('/sellers/products/:id/flag', asyncHandler(sellers.flagProduct));
+router.post('/sellers/products/:id/unflag', asyncHandler(sellers.unflagProduct));
+router.get('/sellers/orders', asyncHandler(sellers.orders));
+router.get('/sellers/stores', asyncHandler(sellers.stores));
+router.get('/sellers', asyncHandler(sellers.list));
+router.get('/sellers/:id', asyncHandler(sellers.detail));
+router.post('/sellers/:id/suspend', asyncHandler(sellers.suspend));
+router.post('/sellers/:id/reactivate', asyncHandler(sellers.reactivate));
 
 router.get('/staff', requireSuperAdmin, asyncHandler(staff.listStaffAccounts));
 router.post('/staff', requireSuperAdmin, asyncHandler(staff.createStaffAccount));

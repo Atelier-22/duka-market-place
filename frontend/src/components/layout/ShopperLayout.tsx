@@ -1,4 +1,4 @@
-import { BadgeCheck, Home, Map, MessageCircle, Settings, ShoppingBag, User, Wallet } from 'lucide-react';
+import { BadgeCheck, Home, Map, MessageCircle, Settings, ShoppingBag, Store, User, Wallet } from 'lucide-react';
 import { AppShell } from './AppShell';
 import { NavItem } from './MobileNav';
 
@@ -10,6 +10,7 @@ const ITEMS: NavItem[] = [
   { to: '/shopper/earnings', label: 'Earnings', icon: Wallet, tint: 'ink' },
   { to: '/shopper/verification', label: 'Verification', icon: BadgeCheck },
   { to: '/shopper/profile', label: 'Profile', icon: User },
+  { to: '/marketplace', label: 'Marketplace', icon: Store },
   { to: '/shopper/settings', label: 'Settings', icon: Settings },
 ];
 

@@ -16,7 +16,7 @@ export function LocationPrompt() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!user || !loaded) return;
+    if (!user || !loaded || user.role === 'seller') return;
     if (preferences.share_location) return;
     if (state === 'granted' || state === 'denied' || state === 'unsupported') return;
 

@@ -23,6 +23,17 @@ const TONE_OF: Record<string, Tone> = {
   rejected: 'danger',
   paid: 'success',
   failed: 'danger',
+  confirmed: 'progress',
+  preparing: 'progress',
+  ready: 'progress',
+  draft: 'neutral',
+  published: 'success',
+  archived: 'neutral',
+  verified: 'success',
+  unverified: 'neutral',
+  active: 'success',
+  hidden: 'warning',
+  suspended: 'danger',
 };
 
 const STYLE: Record<Tone, { pill: string; dot: string }> = {
@@ -40,6 +51,8 @@ const LABELS: Record<string, string> = {
   cancelled: 'Cancelled', disputed: 'Disputed', refunded: 'Refunded', open: 'Open',
   offer_received: 'Offers received', assigned: 'Assigned', pending: 'Pending',
   approved: 'Approved', rejected: 'Rejected', paid: 'Paid', failed: 'Failed',
+  confirmed: 'Confirmed', preparing: 'Preparing', ready: 'Ready', draft: 'Draft', published: 'Published',
+  archived: 'Archived', verified: 'Verified', unverified: 'Unverified', active: 'Active', hidden: 'Hidden', suspended: 'Suspended',
 };
 
 export function StatusBadge({ status, className = '' }: { status: OrderStatus | string; className?: string }) {

@@ -30,6 +30,7 @@ const preferencesSchema = z.object({
   notifyOrders: z.boolean().optional(),
   notifyOffers: z.boolean().optional(),
   notifyNewRequests: z.boolean().optional(),
+  notifyStoreUpdates: z.boolean().optional(),
   notifyMarketing: z.boolean().optional(),
   shareLocation: z.boolean().optional(),
 
@@ -59,6 +60,7 @@ export async function patchPreferences(req: Request, res: Response) {
     notify_orders: input.notifyOrders,
     notify_offers: input.notifyOffers,
     notify_new_requests: input.notifyNewRequests,
+    notify_store_updates: input.notifyStoreUpdates,
     notify_marketing: input.notifyMarketing,
     share_location: input.shareLocation,
     location_prompt_dismissed_at: input.locationPromptDismissedAt,

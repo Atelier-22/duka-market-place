@@ -94,6 +94,8 @@ export async function createUser(input: {
     await query('INSERT INTO customer_profiles (user_id) VALUES ($1)', [row.id]);
   } else if (input.role === 'shopper') {
     await query('INSERT INTO shopper_profiles (user_id) VALUES ($1)', [row.id]);
+  } else if (input.role === 'seller') {
+    await query('INSERT INTO seller_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING', [row.id]);
   }
 
   return row;
@@ -109,6 +111,13 @@ export async function ensureCustomerProfile(userId: string): Promise<void> {
 export async function ensureShopperProfile(userId: string): Promise<void> {
   await query(
     'INSERT INTO shopper_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING',
+    [userId]
+  );
+}
+
+export async function ensureSellerProfile(userId: string): Promise<void> {
+  await query(
+    'INSERT INTO seller_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING',
     [userId]
   );
 }

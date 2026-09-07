@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, CheckCircle2, Coins, FileText, Handshake, LucideIcon, Package,
-  Radio, Scale, Search, ShieldCheck, ShoppingBag, Star, UserPlus, Users,
+  Radio, Scale, Search, ShieldCheck, ShoppingBag, Star, Store as StoreIcon, UserPlus, Users,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Card } from '../../components/ui/Card';
@@ -84,7 +84,7 @@ const RESULT_GROUP = 'border-b border-line bg-surface-2 px-4 py-2 text-label fon
 function GlobalSearch() {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
-  const [results, setResults] = useState<{ users: any[]; orders: any[] } | null>(null);
+  const [results, setResults] = useState<{ users: any[]; orders: any[]; stores?: any[]; products?: any[] } | null>(null);
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>();
@@ -115,7 +115,7 @@ function GlobalSearch() {
     navigate(path);
   }
 
-  const empty = results && results.users.length === 0 && results.orders.length === 0;
+  const empty = results && results.users.length === 0 && results.orders.length === 0 && !(results.stores?.length) && !(results.products?.length);
 
   return (
     <div className="relative" ref={boxRef}>
@@ -133,6 +133,28 @@ function GlobalSearch() {
         <Card elevated padding="none" className="absolute left-0 right-0 z-30 mt-2 max-h-96 overflow-y-auto">
           {empty && <p className="px-4 py-6 text-center text-sm text-ink-3">Nothing matches "{q}".</p>}
 
+          {(results.stores?.length ?? 0) > 0 && (
+            <>
+              <p className={RESULT_GROUP}>Stores</p>
+              {results.stores!.map((s) => (
+                <button key={s.id} type="button" onClick={() => go(`/admin/sellers/${s.owner_id}`)} className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-surface-2">
+                  <StoreIcon size={16} className="shrink-0 text-brand-green" />
+                  <span className="min-w-0 flex-1"><span className="block truncate font-medium text-ink">{s.name}</span><span className="block truncate text-caption text-ink-3">{s.seller_name} · {s.product_count} products · {s.status}</span></span>
+                </button>
+              ))}
+            </>
+          )}
+          {(results.products?.length ?? 0) > 0 && (
+            <>
+              <p className={RESULT_GROUP}>Seller products</p>
+              {results.products!.map((pr) => (
+                <button key={pr.id} type="button" onClick={() => go('/admin/seller-products')} className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-surface-2">
+                  <Package size={16} className="shrink-0 text-brand-green" />
+                  <span className="min-w-0 flex-1"><span className="block truncate font-medium text-ink">{pr.name}</span><span className="block truncate text-caption text-ink-3">{pr.store_name} · {pr.status} · {formatUgx(Number(pr.price_ugx))}</span></span>
+                </button>
+              ))}
+            </>
+          )}
           {results.users.length > 0 && (
             <>
               <p className={RESULT_GROUP}>People</p>
@@ -285,9 +307,21 @@ export function AdminOverviewPage() {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <DashboardStat label="Customers" value={String(stats?.customers ?? 0)} icon={<Users size={18} strokeWidth={1.75} />} />
           <DashboardStat label="Shoppers" value={String(stats?.shoppers ?? 0)} icon={<ShoppingBag size={18} strokeWidth={1.75} />} />
+          <DashboardStat label="Sellers" value={String(stats?.sellers ?? 0)} icon={<StoreIcon size={18} strokeWidth={1.75} />} trend={stats?.sellerProducts ? `${stats.sellerProducts} products live` : undefined} />
           <DashboardStat label="Completed today" value={String(stats?.completedToday ?? 0)} icon={<CheckCircle2 size={18} strokeWidth={1.75} />} />
           <DashboardStat label="GMV (completed)" value={formatUgx(stats?.grossMerchandiseValueUgx ?? 0)} icon={<Coins size={18} strokeWidth={1.75} />} accent="yellow" />
         </div>
+
+        {(stats?.pendingSellerVerifications ?? 0) > 0 && (
+          <Link to="/admin/sellers" className="block rounded-2xl focus-visible:outline-none focus-visible:shadow-focus">
+            <Card tone="warning" padding="md" hover>
+              <p className="flex items-center gap-2 text-sm font-medium text-brand-green-deep">
+                <StoreIcon size={16} strokeWidth={2} className="shrink-0 text-warning" />
+                {stats.pendingSellerVerifications} seller verification{stats.pendingSellerVerifications === 1 ? '' : 's'} waiting for review
+              </p>
+            </Card>
+          </Link>
+        )}
 
         {(stats?.pendingVerifications ?? 0) > 0 && (
           <Link to="/admin/verifications" className="block rounded-2xl focus-visible:outline-none focus-visible:shadow-focus">

@@ -25,6 +25,9 @@ import notificationRoutes from './routes/notification.routes';
 import settingsRoutes from './routes/settings.routes';
 import conversationRoutes from './routes/conversation.routes';
 import verificationRoutes from './routes/verification.routes';
+import sellerRoutes from './seller/seller.routes';
+import marketplaceRoutes from './seller/marketplace.routes';
+import * as marketplace from './seller/marketplace.controller';
 
 const app = express();
 
@@ -66,6 +69,8 @@ app.use(morgan(env.isProduction ? 'combined' : 'dev', {
 
 app.get(/^\/uploads\/(.+)$/, asyncHandler(fileController.serve));
 
+app.get('/sitemap-marketplace.xml', asyncHandler(marketplace.sitemap));
+
 app.get('/health', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.json({ status: 'ok' });
@@ -89,6 +94,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/messages', conversationRoutes);
 app.use('/api/verification', verificationRoutes);
+app.use('/api/seller', sellerRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 app.use(errorHandler);

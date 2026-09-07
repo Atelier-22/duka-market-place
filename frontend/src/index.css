@@ -150,10 +150,11 @@ body {
 }
 
 .app-main {
+  --duka-nav-height: calc(5.5rem + env(safe-area-inset-bottom));
   padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
 @media (min-width: 1024px) {
-  .app-main { padding-bottom: 1rem; }
+  .app-main { --duka-nav-height: 0px; padding-bottom: 1rem; }
 }
 
 .page-enter {

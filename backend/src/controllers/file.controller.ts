@@ -4,7 +4,7 @@ import { ApiError } from '../middleware/errorHandler';
 
 const CACHE_SECONDS = 60 * 60 * 24 * 365;
 
-const PRIVATE_FOLDERS = ['verification', 'identity', 'id', 'kyc'];
+const PRIVATE_FOLDERS = ['verification', 'seller-verification', 'identity', 'id', 'kyc'];
 const SAFE_KEY = /^[a-z0-9_-]+\/[a-z0-9-]+\.[a-z0-9]{1,5}$/i;
 
 export async function serve(req: Request, res: Response) {

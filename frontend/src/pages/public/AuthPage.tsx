@@ -1,6 +1,6 @@
 import { CSSProperties, FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Lock, Mail, MessageCircle, Phone, ShoppingBag, User } from 'lucide-react';
+import { ArrowLeft, Lock, Mail, MessageCircle, Phone, ShoppingBag, Store, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useBrandTransition } from '../../components/ui/BrandTransition';
 import { Input } from '../../components/ui/Input';
@@ -16,6 +16,7 @@ import { UserRole } from '../../types';
 import { homeFor } from '../../utils/home';
 import '../../styles/auth.css';
 import { usePageMeta } from '../../hooks/usePageMeta';
+import { internalPath } from '../../utils/safePath';
 
 export type AuthMode = 'login' | 'signup';
 type Phase = 'idle' | 'out' | 'trough' | 'in';
@@ -28,6 +29,16 @@ function firstName(full: string): string {
   return full.trim().split(' ')[0] ?? '';
 }
 
+function returnPath(): string | null {
+  try {
+    const raw = sessionStorage.getItem('duka_return_to');
+    sessionStorage.removeItem('duka_return_to');
+    return internalPath(raw);
+  } catch {
+    return null;
+  }
+}
+
 export function AuthPage({ mode }: { mode: AuthMode }) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -38,7 +49,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
 
   const [shown, setShown] = useState<AuthMode>(mode);
   const [phase, setPhase] = useState<Phase>('idle');
-  const [role, setRole] = useState<UserRole>(params.get('role') === 'shopper' ? 'shopper' : 'customer');
+  const [role, setRole] = useState<UserRole>(params.get('role') === 'shopper' ? 'shopper' : params.get('role') === 'seller' ? 'seller' : 'customer');
 
   useEffect(() => () => { timers.current.forEach(clearTimeout); }, []);
 
@@ -56,7 +67,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
 
   const switchTo = useCallback((next: AuthMode) => {
     if (next === shown || phase !== 'idle') return;
-    const url = next === 'login' ? '/login' : `/register${role === 'shopper' ? '?role=shopper' : ''}`;
+    const url = next === 'login' ? '/login' : `/register${role !== 'customer' ? `?role=${role}` : ''}`;
 
     if (prefersReducedMotion()) {
       setShown(next);
@@ -96,7 +107,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
       const first = firstName(me.fullName);
       await play({
         label: first ? `Welcome back, ${first}` : 'Welcome back',
-        task: () => navigate(homeFor(me.role), { replace: true }),
+        task: () => navigate(returnPath() ?? homeFor(me.role), { replace: true }),
       });
     } catch (err) {
       leaving.current = false;
@@ -142,7 +153,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
       const first = firstName(fullName);
       await play({
         label: first ? `Welcome to ${BRAND.name}, ${first}` : `Welcome to ${BRAND.name}`,
-        task: () => navigate(homeFor(role), { replace: true }),
+        task: () => navigate(returnPath() ?? homeFor(role), { replace: true }),
       });
     } catch (err) {
       leaving.current = false;
@@ -265,10 +276,11 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                 <p className="auth__lede">It takes about a minute.</p>
 
                 <form onSubmit={handleSignup} className="auth__form auth__stagger" noValidate>
-                  <div className="auth__row auth__row--always" role="radiogroup" aria-label="Account type">
+                  <div className="auth__row auth__row--always auth__row--roles" role="radiogroup" aria-label="Account type">
                     {([
                       { value: 'customer', label: 'Get things', icon: ShoppingBag },
                       { value: 'shopper', label: 'Shop for others', icon: User },
+                      { value: 'seller', label: 'Sell products', icon: Store },
                     ] as { value: UserRole; label: string; icon: typeof User }[]).map((opt) => {
                       const selected = role === opt.value;
                       return (
@@ -279,7 +291,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                           aria-checked={selected}
                           onClick={() => setRole(opt.value)}
                           className={[
-                            'flex min-h-[44px] items-center justify-center gap-2 rounded-full border px-3 text-sm font-medium transition-[background-color,border-color,box-shadow] duration-150',
+                            'flex min-h-[44px] items-center justify-center gap-1.5 rounded-full border px-2 text-[13px] font-medium transition-[background-color,border-color,box-shadow] duration-150',
                             selected
                               ? 'border-brand-green bg-brand-green-mist text-brand-green-deep shadow-focus'
                               : 'border-line bg-surface text-ink-2 hover:border-line-strong',
@@ -366,7 +378,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                     <Link to="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-green-deep underline underline-offset-2">
                       Terms &amp; Conditions
                     </Link>
-                    . My name and phone number are shown to the {role === 'shopper' ? 'customer' : 'shopper'} on an order I am part of.
+                    . My name and phone number are shown to the {role === 'shopper' ? 'customer' : role === 'seller' ? 'buyer' : 'shopper'} on an order I am part of.
                   </ConsentCheckbox>
                   {signupError && <p role="alert" className="auth__error">{signupError}</p>}
                   <Button type="submit" size="lg" fullWidth loading={signingUp} className="auth__submit">

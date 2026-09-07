@@ -13,6 +13,7 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { SkeletonHeading, SkeletonRegion, SkeletonRequestGrid, SkeletonStats } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useAuth } from '../../context/AuthContext';
+import { MarketplaceTeaser } from '../../components/market/MarketplaceTeaser';
 
 function formatUgx(n: number) {
   return new Intl.NumberFormat('en-UG').format(n) + ' UGX';
@@ -169,6 +170,7 @@ export function CustomerDashboardPage() {
           </div>
         )}
       </section>
+      <MarketplaceTeaser variant="dashboard" />
     </div>
   );
 }

@@ -8,8 +8,10 @@ import { useAuth } from '../../context/AuthContext';
 import { homeFor } from '../../utils/home';
 
 const LINKS = [
+  { to: '/marketplace', label: 'Marketplace' },
   { to: '/how-it-works', label: 'How it works' },
   { to: '/become-a-shopper', label: 'Become a shopper' },
+  { to: '/sell', label: 'Sell on Duka' },
   { to: '/about', label: 'About' },
   { to: '/help', label: 'Help' },
 ];

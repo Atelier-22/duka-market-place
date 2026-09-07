@@ -517,3 +517,7 @@
     animation: none !important;
   }
 }
+
+.auth__row--roles {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}

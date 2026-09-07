@@ -137,6 +137,10 @@ node scripts/purge-test-data.cjs          # dry run
 node scripts/purge-test-data.cjs --apply
 ```
 
+## Sellers and the marketplace
+
+Duka has a third category, sellers, who open a store and publish products that customers and shoppers buy on the marketplace. The architecture, tables, API, routes, permissions and tests are described in [docs/SELLER_PLATFORM.md](docs/SELLER_PLATFORM.md). Apply migrations `016` and `017`, and for local demo data run `database/seed-sellers.sql`.
+
 ## Notes
 
 - Payments are cash-on-delivery / manually confirmed in this MVP — see

@@ -11,6 +11,7 @@ import {
   UserRow,
   ensureCustomerProfile,
   ensureShopperProfile,
+  ensureSellerProfile,
   updateUserRole,
   toPublicUser,
   normalizePhone,
@@ -21,7 +22,7 @@ import { findStaffById, findStaffByPhone, findStaffByEmail, toPublicStaff, touch
 import { ApiError } from '../middleware/errorHandler';
 
 const registerSchema = z.object({
-  role: z.enum(['customer', 'shopper']),
+  role: z.enum(['customer', 'shopper', 'seller']),
   fullName: z.string().min(2).max(150),
   email: z.string().email().optional().nullable(),
   phone: z.string().min(9).max(30),
@@ -212,7 +213,7 @@ export async function me(req: Request, res: Response) {
   res.json({ user: toPublicUser(user), linkedAccounts: linkedRows.map(toLinkedAccount) });
 }
 
-const switchRoleSchema = z.object({ role: z.enum(['customer', 'shopper']) });
+const switchRoleSchema = z.object({ role: z.enum(['customer', 'shopper', 'seller']) });
 
 export async function switchRole(req: Request, res: Response) {
   const { role } = switchRoleSchema.parse(req.body);
@@ -227,8 +228,10 @@ export async function switchRole(req: Request, res: Response) {
 
   if (role === 'customer') {
     await ensureCustomerProfile(user.id);
-  } else {
+  } else if (role === 'shopper') {
     await ensureShopperProfile(user.id);
+  } else {
+    await ensureSellerProfile(user.id);
   }
 
   const updated = await updateUserRole(user.id, role);

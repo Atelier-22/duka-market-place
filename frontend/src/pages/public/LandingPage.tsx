@@ -23,6 +23,7 @@ import { HeroCarousel } from '../../components/domain/HeroCarousel';
 import { BRAND } from '../../config/brand';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { StructuredData } from '../../components/seo/StructuredData';
+import { MarketplaceTeaser } from '../../components/market/MarketplaceTeaser';
 
 const HOW_IT_WORKS = [
   { icon: MessageCircle, title: 'Tell us what you need', body: 'A product, a market, a shop, even a TikTok seller — describe it in your own words.' },
@@ -195,6 +196,10 @@ export function LandingPage() {
 
       <section className={SECTION}>
         <HeroCarousel />
+      </section>
+
+      <section className={SECTION}>
+        <MarketplaceTeaser />
       </section>
 
       <section className={SECTION}>

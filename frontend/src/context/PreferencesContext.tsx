@@ -23,6 +23,7 @@ export interface Preferences {
   notify_offers: boolean;
   notify_marketing: boolean;
   notify_new_requests: boolean;
+  notify_store_updates: boolean;
   share_location: boolean;
   location_prompt_dismissed_at: string | null;
   notify_security: boolean;
@@ -44,6 +45,7 @@ const DEFAULTS: Preferences = {
   notify_offers: true,
   notify_marketing: false,
   notify_new_requests: true,
+  notify_store_updates: true,
   share_location: false,
   location_prompt_dismissed_at: null,
   notify_security: true,
