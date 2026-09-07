@@ -1,20 +1,14 @@
 interface PresenceDotProps {
   online: boolean;
-  /** `avatar` pins the dot to the corner of an avatar; `inline` sits in text. */
+
   variant?: 'avatar' | 'inline';
   className?: string;
 }
 
-/**
- * Green when the person is at their phone, red when they are not.
- *
- * Colour alone would leave red/green colour-blind users with nothing, so the
- * dot always carries a title and a screen-reader label as well.
- */
 export function PresenceDot({ online, variant = 'inline', className = '' }: PresenceDotProps) {
   const label = online ? 'Online' : 'Offline';
   const colour = online
-    // A soft ring makes the online state read as "live" rather than decorative.
+
     ? 'bg-brand-green-fresh shadow-[0_0_0_3px_rgba(34,197,94,0.22)]'
     : 'bg-brand-red';
 
@@ -36,7 +30,6 @@ export function PresenceDot({ online, variant = 'inline', className = '' }: Pres
   );
 }
 
-/** "last seen 4m ago" — only worth showing when they are not online now. */
 export function lastSeenLabel(iso: string | null | undefined): string {
   if (!iso) return 'Offline';
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);

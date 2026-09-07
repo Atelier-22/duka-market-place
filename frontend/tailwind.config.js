@@ -1,12 +1,8 @@
-/** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
-      // Every brand colour resolves through a CSS variable holding space-separated
-      // RGB channels. That lets the accent picker and dark mode reskin the whole
-      // app by swapping variables, without a single class name changing.
-      // See the :root / [data-theme] / [data-accent] blocks in index.css.
+
       colors: {
         brand: {
           green: {

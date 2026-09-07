@@ -19,21 +19,9 @@ export interface StaffRow {
   created_at: string;
 }
 
-/**
- * How many of each kind may exist.
- *
- * Two super admins, because one is a single point of failure — lose that
- * password and nobody can ever create staff again — and three is no longer a
- * closed circle of trust.
- *
- * Twenty admins between them, not twenty each: the cap is on the platform, so
- * once twenty exist neither super admin can add a twenty-first. Freeing a slot
- * means removing someone.
- */
 export const MAX_SUPER_ADMINS = 2;
 export const MAX_ADMINS = 20;
 
-/** The public shape — never the password hash. */
 export function toPublicStaff(row: StaffRow) {
   return {
     id: row.id,
@@ -55,10 +43,6 @@ export async function findStaffById(id: string): Promise<StaffRow | null> {
   return queryOne<StaffRow>('SELECT * FROM staff WHERE id = $1', [id]);
 }
 
-/**
- * Normalised the same way user phones are, so "+256 779 276767" and
- * "0779276767" are not two different people.
- */
 export async function findStaffByPhone(phone: string): Promise<StaffRow | null> {
   return queryOne<StaffRow>(
     `SELECT * FROM staff
@@ -80,15 +64,6 @@ export async function touchStaffLogin(id: string) {
   await query('UPDATE staff SET last_login_at = now() WHERE id = $1', [id]);
 }
 
-/**
- * Creates a staff account, refusing if the cap for that role is already met.
- *
- * The count and the insert run inside one transaction behind an advisory lock,
- * because checking then inserting is a race: two super admins pressing "create"
- * at the same moment would both read nineteen and both write, giving
- * twenty-one. The lock makes the pair atomic — which is the only way a limit
- * like this actually holds.
- */
 export async function createStaffWithinCap(input: {
   role: StaffRole;
   fullName: string;
@@ -101,7 +76,7 @@ export async function createStaffWithinCap(input: {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    // One well-known key for all staff-cap work, so both roles serialise.
+
     await client.query('SELECT pg_advisory_xact_lock($1)', [572_001]);
 
     const existing = await client.query(
@@ -142,13 +117,6 @@ export async function createStaffWithinCap(input: {
   }
 }
 
-/**
- * Staff with their activity, for the super admin's overview.
- *
- * Super admins are excluded by default: an admin has no business knowing the
- * layer above them exists, which is the same reason customers and shoppers
- * cannot see staff at all.
- */
 export async function listStaff(includeSuperAdmins: boolean) {
   return query(
     `SELECT s.id, s.role, s.full_name, s.email, s.phone, s.avatar_url, s.is_active,

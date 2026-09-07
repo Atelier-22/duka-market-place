@@ -6,20 +6,11 @@ import { useToast } from '../ui/Toast';
 
 interface PinLocationButtonProps {
   addressId: string;
-  /** Already has coordinates — the wording changes from "set" to "update". */
+
   pinned: boolean;
   onPinned?: () => void;
 }
 
-/**
- * Saves the customer's current position onto the delivery address.
- *
- * Live position sharing only works while the customer happens to have the order
- * page open, which is not most of the time. A pinned address is permanent: the
- * shopper gets somewhere to navigate to whether or not the customer is looking
- * at their phone. This is the thing that actually makes the shopper's map
- * useful, so it is a deliberate button rather than a silent background attempt.
- */
 export function PinLocationButton({ addressId, pinned, onPinned }: PinLocationButtonProps) {
   const { push } = useToast();
   const [working, setWorking] = useState(false);

@@ -3,14 +3,6 @@ import { usePreferences } from '../../context/PreferencesContext';
 import { useLocationPermission } from '../../hooks/useLocationPermission';
 import { useToast } from '../ui/Toast';
 
-/**
- * The location switch, shared by Settings and the sign-in prompt so both agree
- * on what "on" means.
- *
- * Turning it on has to do two things in order: get the person's consent stored
- * on their account, and get the browser to actually hand over a position. Doing
- * only the first leaves a switch that says yes while nothing works.
- */
 export function LocationSetting({ compact = false }: { compact?: boolean }) {
   const { preferences, update } = usePreferences();
   const { state, busy, request } = useLocationPermission();
@@ -22,8 +14,7 @@ export function LocationSetting({ compact = false }: { compact?: boolean }) {
 
   async function toggle(next: boolean) {
     if (!next) {
-      // We can stop using it, but we cannot revoke the browser's permission —
-      // only the person can, in their site settings.
+
       await update({ shareLocation: false });
       return;
     }
@@ -77,7 +68,6 @@ export function LocationSetting({ compact = false }: { compact?: boolean }) {
         </span>
       </button>
 
-      {/* A switch that is on while the browser is blocking is a lie — say so. */}
       {on && blocked && (
         <p className="flex items-start gap-2 text-xs font-medium text-brand-red">
           <CircleAlert size={13} strokeWidth={2} className="mt-0.5 shrink-0" />

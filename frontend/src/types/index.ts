@@ -9,10 +9,6 @@ export interface User {
   avatarUrl: string | null;
 }
 
-/**
- * A separate account under another role that this session proved ownership of
- * at login — the same email/phone, opened by the same password.
- */
 export interface LinkedAccount {
   id: string;
   role: UserRole;
@@ -118,11 +114,6 @@ export const ORDER_STEP_LABELS: Record<OrderStatus, string> = {
   refunded: 'Refunded',
 };
 
-/**
- * The same statuses told from the shopper's side of the job. The customer
- * labels read as things happening *to* them ("Shopper accepted", "Awaiting
- * your approval"), which is wrong on the shopper's own workflow screen.
- */
 export const SHOPPER_STEP_LABELS: Record<OrderStatus, string> = {
   requested: 'Job posted',
   shopper_assigned: 'You accepted',

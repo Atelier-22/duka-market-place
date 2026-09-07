@@ -1,10 +1,3 @@
-/**
- * End-to-end walk of the full order lifecycle over real HTTP against the real
- * API, exercising both sides exactly as the UI does.
- *
- * Creates two throwaway accounts, drives every transition, then deletes them
- * and asserts every table is back to its starting row count.
- */
 require('dotenv/config');
 const { Pool } = require('pg');
 
@@ -34,12 +27,10 @@ async function call(method, path, { token, body } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
   let json = null;
-  try { json = await res.json(); } catch { /* empty body */ }
+  try { json = await res.json(); } catch {  }
   return { status: res.status, body: json };
 }
 
-// Smallest valid PNG (1x1 transparent) — a real image, not a text blob, so
-// the upload path is exercised the way the browser does it.
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 
 async function uploadProbe(token, folder) {
@@ -49,7 +40,7 @@ async function uploadProbe(token, folder) {
     method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form,
   });
   let body = null;
-  try { body = await res.json(); } catch { /* non-json */ }
+  try { body = await res.json(); } catch {  }
   return { status: res.status, body };
 }
 
@@ -69,7 +60,6 @@ async function tableCounts() {
   console.log(`\n=== E2E order lifecycle (${API}) ===\n`);
   const before = await tableCounts();
 
-  // ---- register both sides ------------------------------------------------
   const reg = async (who, role, name) =>
     call('POST', '/auth/register', {
       body: { role, fullName: name, phone: who.phone, email: who.email, password: PASSWORD },
@@ -86,7 +76,6 @@ async function tableCounts() {
   const custId = c.body.user.id;
   const shopId = s.body.user.id;
 
-  // ---- customer posts a request ------------------------------------------
   const addr = await call('POST', '/addresses', {
     token: cust,
     body: { line1: 'E2E Test Address, Kampala', isDefault: true },
@@ -106,7 +95,6 @@ async function tableCounts() {
   step('customer posts request', req.status === 201, `${req.status} ${JSON.stringify(req.body)}`);
   const requestId = req.body?.request?.id;
 
-  // ---- shopper offers, customer accepts -----------------------------------
   const offer = await call('POST', '/offers', {
     token: shop,
     body: { requestId, shoppingFeeUgx: 5000, deliveryFeeUgx: 3000, estimatedMinutes: 45 },
@@ -124,7 +112,6 @@ async function tableCounts() {
   const statusNow = async (token = cust) => (await call('GET', `/orders/${orderId}`, { token })).body?.order?.status;
   step('order starts as requested', (await statusNow()) === 'requested', await statusNow());
 
-  // ---- the lifecycle, step by step ----------------------------------------
   const walk = [
     ['shopper accepts job      (requested -> shopper_assigned)', () => call('POST', `/orders/${orderId}/assign`, { token: shop }), 'shopper_assigned'],
     ['shopper starts shopping  (-> shopping)', () => call('POST', `/orders/${orderId}/shopping`, { token: shop }), 'shopping'],
@@ -133,10 +120,7 @@ async function tableCounts() {
       body: { actualPriceUgx: 42000, photoUrl: 'https://example.test/item.jpg', shopName: 'E2E Shop' },
     }), 'awaiting_customer_approval'],
     ['customer approves        (-> purchased)', () => call('POST', `/orders/${orderId}/approve`, { token: cust }), 'purchased'],
-    // Deliberately sends NO amountUgx. That field used to be required, and the
-    // shopper's page sourced it from form state belonging to the earlier
-    // "item found" step — so after any reload the receipt was rejected with a
-    // message about the photo. The price is on the order; the server uses it.
+
     ['shopper marks delivering (-> out_for_delivery, no amount sent)', () => call('POST', `/orders/${orderId}/out-for-delivery`, {
       token: shop,
       body: { receiptPhotoUrl: 'https://example.test/receipt.jpg' },
@@ -149,28 +133,17 @@ async function tableCounts() {
     const r = await run();
     const got = await statusNow();
     step(label, r.status < 400 && got === expected, `http ${r.status}, status "${got}" ${r.status >= 400 ? JSON.stringify(r.body) : ''}`);
-    // The delivery panel only exists while the order is in flight, so its
-    // checks have to run here rather than after the walk completes.
+
     if (expected === 'purchased') { await deliveryClockChecks(); await moneyChecks(); }
   }
 
   await afterWalkChecks();
 
-  // ---- delivery clock: both buttons on the shopper's panel ----------------
-  /**
-   * The arithmetic, end to end.
-   *
-   * `pg` returns BIGINT as a string, and every money column here is BIGINT, so
-   * `a + b` concatenated instead of adding: a real order was stored and quoted
-   * to the customer as 10,000,050,005,000,500 UGX. These assertions compare
-   * against exact expected figures rather than "looks like a number", because
-   * the bug produced something that was still a number.
-   */
   async function moneyChecks() {
     const ITEM = 42000, SHOPPING = 5000, DELIVERY = 3000;
-    const PLATFORM = 500;                                   // 10% of the shopping fee
-    const TOTAL = ITEM + SHOPPING + DELIVERY + PLATFORM;    // 50500
-    const PAYOUT = SHOPPING + DELIVERY - PLATFORM;          // 7500
+    const PLATFORM = 500;
+    const TOTAL = ITEM + SHOPPING + DELIVERY + PLATFORM;
+    const PAYOUT = SHOPPING + DELIVERY - PLATFORM;
 
     const o = (await call('GET', `/orders/${orderId}`, { token: cust })).body?.order;
     step('item price is a number, not a string', typeof o?.item_price_ugx === 'number',
@@ -186,7 +159,6 @@ async function tableCounts() {
     step(`payment row is raised for ${TOTAL}`, Number(pay.rows[0]?.amount_ugx) === TOTAL,
       String(pay.rows[0]?.amount_ugx));
 
-    // Guard the payout too — the shopper is paid from it.
     step(`shopper payout would be ${PAYOUT}`,
       SHOPPING + DELIVERY - PLATFORM === PAYOUT, String(PAYOUT));
   }
@@ -228,9 +200,6 @@ async function tableCounts() {
   });
   step('shopper can publish a position', pos.status === 201, `${pos.status} ${JSON.stringify(pos.body)}`);
 
-  // The customer reports a position too. Without this the shopper's map had
-  // nothing on it but the shopper — every saved address in the database has a
-  // NULL lat/lng, so the delivery pin never existed either.
   const custPos = await call('POST', `/orders/${orderId}/location`, {
     token: cust, body: { lat: 0.3300, lng: 32.5700 },
   });
@@ -244,8 +213,7 @@ async function tableCounts() {
     JSON.stringify(both.body?.customer));
   step('the customer can still see where the shopper is',
     both.body?.shopper?.lat === 0.3476, JSON.stringify(both.body?.shopper));
-  // Kampala centre to that point is roughly 2.4 km — the check is that the
-  // distance is now measured to the customer, not to a NULL address.
+
   step('distance is measured to the customer, not the empty address',
     both.body?.distanceMetres > 1000 && both.body?.distanceMetres < 5000,
     String(both.body?.distanceMetres));
@@ -255,10 +223,6 @@ async function tableCounts() {
   });
   step('an anonymous caller cannot publish a position', outsider.status === 401, `${outsider.status}`);
 
-  // ---- pinning the delivery address ---------------------------------------
-  // Live sharing only works while the customer has the order open. A pinned
-  // address is what gives the shopper somewhere to go the rest of the time —
-  // and every address in the database was stored without coordinates.
   const addressId = addr.body?.address?.id;
   const beforePin = await call('GET', `/orders/${orderId}/tracking`, { token: shop });
   step('the shopper is told the address is written down but unpinned',
@@ -275,17 +239,14 @@ async function tableCounts() {
     afterPin.body?.destinationPinned === true && afterPin.body?.destination?.lat === 0.32,
     JSON.stringify(afterPin.body?.destination));
 
-  // Someone else's address must not be pinnable.
   const hijack = await call('PATCH', `/addresses/${addressId}/pin`, {
     token: shop, body: { lat: 1, lng: 1 },
   });
   step('another user cannot pin an address they do not own', hijack.status === 404, `${hijack.status}`);
   }
 
-  // ---- the extras the UI relies on ----------------------------------------
   async function afterWalkChecks() {
-  // Completion released the shopper's earnings and charged the customer —
-  // both derived from the same arithmetic that was concatenating strings.
+
   const earn = await pool.query('SELECT amount_ugx FROM shopper_earnings WHERE order_id = $1', [orderId]);
   step('shopper earnings released as 7500', Number(earn.rows[0]?.amount_ugx) === 7500,
     String(earn.rows[0]?.amount_ugx));
@@ -299,7 +260,6 @@ async function tableCounts() {
   const track = await call('GET', `/orders/${orderId}/tracking`, { token: cust });
   step('tracking endpoint responds', track.status === 200, `${track.status} ${JSON.stringify(track.body)}`);
 
-  // ---- the customer can look up who is shopping for them ------------------
   const prof = await call('GET', `/shoppers/${shopId}/public-profile`, { token: cust });
   step('customer can read the shopper profile', prof.status === 200 && !!prof.body?.profile?.full_name,
     `${prof.status} ${JSON.stringify(prof.body?.profile)}`);
@@ -309,8 +269,6 @@ async function tableCounts() {
     JSON.stringify(Object.keys(prof.body?.profile ?? {})));
   step('profile includes the review list', Array.isArray(prof.body?.reviews), '');
 
-  // This endpoint used to SELECT sp.*, which shipped the shopper's wallet
-  // balance and lifetime income to anyone who asked — unauthenticated.
   const leaked = ['available_balance_ugx', 'lifetime_earnings_ugx', 'operating_lat', 'operating_lng']
     .filter((k) => k in (prof.body?.profile ?? {}));
   step('profile leaks no balance, earnings or home coordinates', leaked.length === 0, leaked.join(', '));
@@ -325,7 +283,6 @@ async function tableCounts() {
   step('the order view leaks no shopper balance',
     !('available_balance_ugx' in (orderView.body?.shopper ?? {})), '');
 
-  // ---- uploads: the file, the URL it returns, and every consumer of it ----
   const up = await uploadProbe(shop, 'chat');
   step('upload returns 201', up.status === 201, `${up.status} ${JSON.stringify(up.body)}`);
 
@@ -346,7 +303,6 @@ async function tableCounts() {
     const avatar = await call('PATCH', '/settings/profile', { token: shop, body: { avatarUrl: fileUrl } });
     step('profile accepts an uploaded avatar', avatar.status === 200, `${avatar.status} ${JSON.stringify(avatar.body)}`);
 
-    // Rows written before uploads became absolute still hold this shape.
     const legacy = await call('PATCH', '/settings/profile', {
       token: shop, body: { avatarUrl: '/uploads/avatars/legacy.png' },
     });
@@ -389,7 +345,6 @@ async function tableCounts() {
   const dupe = await call('POST', `/ratings/order/${orderId}`, { token: cust, body: { stars: 3 } });
   step('re-rating updates rather than duplicating', dupe.status < 400, `${dupe.status}`);
 
-  // ---- guard rails: illegal moves must be refused --------------------------
   const skip = await call('POST', `/orders/${orderId}/shopping`, { token: shop });
   step('cannot re-enter shopping after completion', skip.status >= 400, `${skip.status}`);
 
@@ -398,21 +353,17 @@ async function tableCounts() {
   step('status history recorded every step', steps.length >= 7, JSON.stringify(steps));
   }
 
-  // ---- cleanup ------------------------------------------------------------
-  // orders/requests do not cascade from users, so unwind in dependency order.
   const ids = [custId, shopId];
   const orderIds = (await pool.query('SELECT id FROM orders WHERE customer_id = ANY($1) OR shopper_id = ANY($1)', [ids])).rows.map((r) => r.id);
   for (const t of ['ratings','messages','receipts','order_items','order_status_history','payments','transactions','shopper_earnings','deliveries','disputes','order_locations']) {
-    try { await pool.query('DELETE FROM "' + t + '" WHERE order_id = ANY($1)', [orderIds]); } catch (e) { /* table may not key on order_id */ }
+    try { await pool.query('DELETE FROM "' + t + '" WHERE order_id = ANY($1)', [orderIds]); } catch (e) {  }
   }
   await pool.query('DELETE FROM orders WHERE id = ANY($1)', [orderIds]);
   await pool.query('DELETE FROM shopping_request_items WHERE request_id IN (SELECT id FROM shopping_requests WHERE customer_id = ANY($1))', [ids]);
   await pool.query('DELETE FROM shopper_offers WHERE shopper_id = ANY($1) OR request_id IN (SELECT id FROM shopping_requests WHERE customer_id = ANY($1))', [ids]);
   await pool.query('DELETE FROM shopping_requests WHERE customer_id = ANY($1)', [ids]);
   await pool.query('DELETE FROM users WHERE id = ANY($1)', [ids]);
-  // Checks for rows still referencing the test accounts rather than comparing
-  // raw table counts: real users may be on the live site while this runs, and
-  // their activity legitimately moves those numbers.
+
   const stillThere = [];
   for (const [table, sql] of [
     ['users', 'SELECT count(*)::int n FROM users WHERE id = ANY($1)'],
@@ -439,6 +390,6 @@ async function tableCounts() {
   try {
     await pool.query('DELETE FROM users WHERE email LIKE $1', [`e2e-%${STAMP}@example.test`]);
     await pool.end();
-  } catch { /* best effort */ }
+  } catch {  }
   process.exit(1);
 });

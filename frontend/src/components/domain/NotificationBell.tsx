@@ -13,10 +13,8 @@ interface Notification {
   created_at: string;
 }
 
-/** Polling beats nothing; a websocket can replace this without touching the UI. */
 const POLL_MS = 30_000;
 
-/** Below this the panel becomes a bottom sheet instead of a dropdown. */
 const MOBILE_BREAKPOINT = 640;
 
 function timeAgo(iso: string): string {
@@ -29,11 +27,6 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-/**
- * The bell shown on both dashboards. Covers every event the backend raises —
- * offers, acceptances, each order status change, new messages and ratings —
- * not just messages.
- */
 export function NotificationBell() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -43,8 +36,7 @@ export function NotificationBell() {
     () => typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT
   );
   const wrapRef = useRef<HTMLDivElement>(null);
-  // The sheet lives in a portal, so it needs its own ref — sharing one with the
-  // wrapper would leave whichever unmounted last holding a null.
+
   const sheetRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -59,7 +51,7 @@ export function NotificationBell() {
       const res = await api.get('/notifications/unread-count');
       setUnread(res.data.unread);
     } catch {
-      // A failed poll should stay silent — the bell is ambient, not critical.
+
     }
   }, []);
 
@@ -79,12 +71,6 @@ export function NotificationBell() {
     return () => clearInterval(t);
   }, [loadCount]);
 
-  // Close when pressing anywhere outside the panel, and on Escape.
-  //
-  // `pointerdown` rather than `mousedown`: a tap on a touchscreen also emits a
-  // compatibility mousedown after the click, which was closing the panel in the
-  // same gesture that opened it — the bell appeared to flicker rather than open.
-  // The trigger is excluded too, so its own click is what toggles it.
   useEffect(() => {
     if (!open) return;
     function onDown(e: PointerEvent) {
@@ -105,7 +91,6 @@ export function NotificationBell() {
     };
   }, [open]);
 
-  // The sheet covers the page on a phone, so the page behind must not scroll.
   useEffect(() => {
     if (!open || !isMobile) return;
     const previous = document.body.style.overflow;
@@ -208,17 +193,6 @@ export function NotificationBell() {
         )}
       </button>
 
-      {/*
-        On a phone the old dropdown was a fixed 320px box anchored to the bell's
-        right edge, so it extended 320px leftward from a button that already sits
-        near the right of a ~360px screen — half of it hung off the left of the
-        viewport. It becomes a bottom sheet instead, matching the rest of the
-        mobile UI.
-
-        Through a portal because `.glass` uses backdrop-filter, which makes any
-        ancestor a containing block for fixed positioning — a `fixed` sheet
-        inside the header would be trapped inside the header.
-      */}
       {open && isMobile && createPortal(
         <div
           className="fixed inset-0 z-[70] flex items-end bg-brand-ink/40 backdrop-blur-sm"

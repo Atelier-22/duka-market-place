@@ -41,23 +41,13 @@ const pinSchema = z.object({
   lng: z.number().min(-180).max(180),
 });
 
-/**
- * Attach coordinates to an address that has none.
- *
- * Every address in this system was stored as typed text — "Mbalwa", "Ndejje" —
- * which is not somewhere a shopper can navigate to. Capturing coordinates when
- * the address is first created only helps new ones, and only if the customer
- * happened to allow the prompt at that moment. This lets them pin it whenever
- * they are actually standing there, which is when the answer is correct.
- */
 export async function pin(req: Request, res: Response) {
   const input = pinSchema.parse(req.body);
   const row = await queryOne(
     `UPDATE addresses SET lat = $3, lng = $4 WHERE id = $1 AND user_id = $2 RETURNING *`,
     [req.params.id, req.user!.id, input.lat, input.lng]
   );
-  // Scoped to the caller's own addresses: a missing row means it is not theirs,
-  // and that is deliberately indistinguishable from it not existing.
+
   if (!row) throw new ApiError(404, 'Address not found');
   res.json({ address: row });
 }

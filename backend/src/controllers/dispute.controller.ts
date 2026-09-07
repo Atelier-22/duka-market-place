@@ -47,7 +47,6 @@ const resolveSchema = z.object({
   finalOrderStatus: z.enum(['completed', 'cancelled', 'refunded']).optional(),
 });
 
-/** Admin-only: resolves a dispute and optionally forces the order to a terminal status. */
 export async function resolve(req: Request, res: Response) {
   const input = resolveSchema.parse(req.body);
   const dispute = await queryOne<{ id: string; order_id: string }>(

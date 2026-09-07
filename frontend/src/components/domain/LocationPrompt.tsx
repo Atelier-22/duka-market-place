@@ -7,18 +7,8 @@ import { useLocationPermission } from '../../hooks/useLocationPermission';
 import { GlassButton } from '../ui/GlassButton';
 import { useToast } from '../ui/Toast';
 
-/** How long a "not now" lasts before we may ask again. */
 const SNOOZE_DAYS = 7;
 
-/**
- * Asks once, on sign-in or refresh, if location has never been turned on.
- *
- * Occasional by construction: dismissing it records the time on the account, so
- * the next ask is a week away and follows the person to another device rather
- * than resetting every time they clear a browser. It never appears for someone
- * who has already said yes, and never for someone whose browser has denied it —
- * we cannot re-ask there, so a prompt would just be noise they cannot act on.
- */
 export function LocationPrompt() {
   const { user } = useAuth();
   const { preferences, loaded, update } = usePreferences();
@@ -36,7 +26,7 @@ export function LocationPrompt() {
       const days = (Date.now() - new Date(dismissed).getTime()) / 86_400_000;
       if (days < SNOOZE_DAYS) return;
     }
-    // A beat after load, so it does not fight the page painting itself.
+
     const t = setTimeout(() => setVisible(true), 1200);
     return () => clearTimeout(t);
   }, [user, loaded, preferences.share_location, preferences.location_prompt_dismissed_at, state]);

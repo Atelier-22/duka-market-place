@@ -15,7 +15,6 @@ export interface OrderRow {
   total_amount_ugx: number | null;
   delivery_address_id: string;
 
-  // Delivery clock — see migration 002_live_tracking.sql
   shopping_done_at: string | null;
   delivery_started_at: string | null;
   delivery_eta_minutes: number | null;
@@ -54,27 +53,13 @@ export async function createOrder(input: {
   return row;
 }
 
-/**
- * How many jobs a shopper may carry at once.
- *
- * Shoppers genuinely run several errands on one trip — three customers in the
- * same market is normal — and holding them to one job at a time made the app
- * slower than how they already work. Five is the cap because past that nobody
- * keeps the orders straight, and every one of them is somebody waiting.
- */
 export const MAX_ACTIVE_JOBS = 5;
 
-/** Statuses that occupy one of a shopper's job slots. */
 export const ACTIVE_JOB_STATUSES = [
   'requested', 'shopper_assigned', 'shopping', 'item_found',
   'awaiting_customer_approval', 'purchased', 'out_for_delivery', 'delivered', 'disputed',
 ] as const;
 
-/**
- * Jobs currently occupying a slot. `excludeOrderId` is for the case where the
- * order being acted on is already one of them — accepting the fifth job must
- * not count that job against itself.
- */
 export async function countActiveJobs(shopperId: string, excludeOrderId?: string): Promise<number> {
   const row = await queryOne<{ n: number }>(
     `SELECT count(*)::int AS n FROM orders
@@ -84,7 +69,6 @@ export async function countActiveJobs(shopperId: string, excludeOrderId?: string
   return row?.n ?? 0;
 }
 
-/** Every job a shopper is currently carrying, with who it is for. */
 export async function listActiveJobsForShopper(shopperId: string) {
   return query(
     `SELECT o.*,

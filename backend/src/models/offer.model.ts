@@ -52,9 +52,7 @@ export async function createOffer(input: {
 
 export async function listOffersForRequest(requestId: string): Promise<OfferRow[]> {
   return query<OfferRow>(
-    // Enough to choose between shoppers at a glance — a face, a rating, and
-    // whether anyone has checked who they are. The rest is a tap away on their
-    // profile; balances and earnings are never included.
+
     `SELECT o.*, u.full_name AS shopper_name, u.avatar_url AS shopper_avatar,
             sp.rating_avg, sp.rating_count, sp.completed_jobs,
             sp.verification_status, sp.operating_area

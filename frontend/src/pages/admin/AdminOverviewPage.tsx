@@ -28,7 +28,6 @@ interface Presence {
   transitionsLast15Min: number;
 }
 
-/** How often the feed and presence refresh. Polling is enough at this scale. */
 const POLL_MS = 12_000;
 
 const ICON_FOR: Record<string, LucideIcon> = {
@@ -67,7 +66,6 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString('en-UG', { day: 'numeric', month: 'short' });
 }
 
-/** Where an activity row should take you when clicked. */
 function linkFor(item: ActivityItem): string | null {
   if (item.order_id) return `/admin/orders/${item.order_id}`;
   if (item.type === 'user_registered' && item.actor_id) {
@@ -96,7 +94,6 @@ function GlobalSearch() {
     return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
 
-  // Debounced so typing a phone number doesn't fire a query per keystroke.
   useEffect(() => {
     clearTimeout(timer.current);
     if (q.trim().length < 2) { setResults(null); return; }
@@ -203,7 +200,7 @@ export function AdminOverviewPage() {
       setActivity(a.data.activity);
       setLastRefresh(Date.now());
     } catch {
-      // Leave the last good snapshot on screen rather than blanking the page.
+
     } finally {
       setLoading(false);
     }
@@ -231,7 +228,6 @@ export function AdminOverviewPage() {
 
       <GlobalSearch />
 
-      {/* Live "in motion" strip */}
       <GlassCard padding="lg" hover={false}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">
@@ -276,7 +272,6 @@ export function AdminOverviewPage() {
         )}
       </GlassCard>
 
-      {/* Historical stats */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <DashboardStat label="Customers" value={String(stats?.customers ?? 0)} icon={<Users size={18} strokeWidth={1.75} />} />
         <DashboardStat label="Shoppers" value={String(stats?.shoppers ?? 0)} icon={<ShoppingBag size={18} strokeWidth={1.75} />} />
@@ -295,7 +290,6 @@ export function AdminOverviewPage() {
         </Link>
       )}
 
-      {/* The feed */}
       <div>
         <h2 className="mb-3 font-display text-lg font-medium text-brand-green-deep">Activity</h2>
         <GlassCard padding="md" hover={false}>

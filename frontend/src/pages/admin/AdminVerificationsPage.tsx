@@ -41,8 +41,7 @@ export function AdminVerificationsPage() {
               <GlassCard key={v.id} hover={false}>
                 <p className="font-medium text-brand-green-deep">{v.full_name}</p>
                 <p className="text-xs text-brand-ink/50">{v.phone} · {v.document_type}</p>
-                {/* An ID has to be readable to be approved — this opens the
-                    zoom viewer rather than making the reviewer squint. */}
+
                 <ZoomableImage
                   src={v.document_url}
                   alt="Verification document"

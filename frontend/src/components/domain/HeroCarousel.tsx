@@ -37,11 +37,7 @@ const SLIDES: Slide[] = [
 
 const SLIDE_MS = 5000;
 
-/**
- * Auto-advancing hero carousel for the landing page. Slides are all stacked
- * on top of each other and crossfaded with opacity so there's no layout
- * shift and no horizontal scrolling to manage.
- */
+
 export function HeroCarousel() {
   const [active, setActive] = useState(0);
 
@@ -54,7 +50,7 @@ export function HeroCarousel() {
 
   return (
     <div className="relative overflow-hidden rounded-xl3 shadow-glass-lg">
-      {/* Sizing element: keeps the box as tall as the tallest slide. */}
+      
       <div className="invisible px-8 py-16 md:px-14 md:py-24" aria-hidden="true">
         <p className="text-brand-green-fresh"><ShoppingCart size={56} strokeWidth={1.25} /></p>
         <p className="mt-5 font-display text-3xl font-medium md:text-5xl">
@@ -84,7 +80,7 @@ export function HeroCarousel() {
         </div>
       ))}
 
-      {/* DOT NAV */}
+      
       <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2.5">
         {SLIDES.map((slide, i) => (
           <button

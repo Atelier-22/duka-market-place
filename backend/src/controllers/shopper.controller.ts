@@ -20,8 +20,7 @@ export async function getDashboard(req: Request, res: Response) {
      WHERE shopper_id = $1 AND released_at >= date_trunc('week', now())`,
     [shopperId]
   );
-  // Every job in flight, oldest first, each carrying the customer's name — a
-  // shopper thinks in terms of who they are shopping for, not order ids.
+
   const activeOrders = await listActiveJobsForShopper(shopperId);
 
   const availableCount = await queryOne<{ count: string }>(
@@ -95,14 +94,6 @@ export async function submitVerification(req: Request, res: Response) {
   res.status(201).json({ record });
 }
 
-/**
- * What a customer may see about a shopper before trusting them with money.
- *
- * Columns are listed explicitly rather than selected with `sp.*`, which used to
- * ship available_balance_ugx and lifetime_earnings_ugx to anyone who asked —
- * a shopper's wallet balance and total income are nobody else's business.
- * Anything added to shopper_profiles later stays private until it is named here.
- */
 export async function getPublicProfile(req: Request, res: Response) {
   const profile = await queryOne(
     `SELECT u.id, u.full_name, u.avatar_url, u.created_at AS joined_at,
@@ -117,8 +108,6 @@ export async function getPublicProfile(req: Request, res: Response) {
   );
   if (!profile) throw new ApiError(404, 'Shopper not found');
 
-  // What other customers said, which is the part people actually read. The
-  // rater's name is shown; nothing else about them is.
   const reviews = await query(
     `SELECT r.stars, r.created_at, rater.full_name AS rated_by_name, rater.avatar_url AS rated_by_avatar
        FROM ratings r

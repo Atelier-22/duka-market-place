@@ -40,8 +40,7 @@ export function PublicFooter() {
               <a href={`mailto:${BRAND.supportEmail}`} className="hover:text-white">
                 {BRAND.supportEmail}
               </a>
-              {/* Only rendered once there is a real number — an unanswerable
-                  support line is worse than none. */}
+
               {BRAND.supportPhone && <span>{BRAND.supportPhone}</span>}
               <span>{BRAND.country}</span>
             </div>

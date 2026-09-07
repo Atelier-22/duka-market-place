@@ -42,9 +42,9 @@ const DEFAULTS: Preferences = {
 
 interface PreferencesContextValue {
   preferences: Preferences;
-  /** True once the server's copy has arrived; defaults are not an answer. */
+
   loaded: boolean;
-  /** Applies immediately, then persists. Reverts if the server rejects it. */
+
   update: (patch: Partial<Record<string, unknown>>) => Promise<void>;
   saving: boolean;
 }
@@ -53,15 +53,6 @@ const PreferencesContext = createContext<PreferencesContextValue | undefined>(un
 
 const LOCAL_KEY = 'duka_preferences';
 
-/**
- * Appearance must survive a reload before /me returns, so it is mirrored.
- *
- * Per tab, for the same reason the session is: two tabs can be two different
- * accounts with two different themes, and a shared mirror meant whichever tab
- * changed last decided what the others painted for the first moment after a
- * reload. localStorage is still written, but only as the seed a brand-new tab
- * paints from — a tab with its own copy never reads it.
- */
 function readLocal(): Preferences {
   try {
     const own = sessionStorage.getItem(LOCAL_KEY);
@@ -74,16 +65,12 @@ function readLocal(): Preferences {
 
 function writeLocal(prefs: Preferences) {
   const json = JSON.stringify(prefs);
-  try { sessionStorage.setItem(LOCAL_KEY, json); } catch { /* blocked storage */ }
+  try { sessionStorage.setItem(LOCAL_KEY, json); } catch {  }
   try { localStorage.setItem(LOCAL_KEY, json); } catch {
-    // Private windows and blocked storage — the server copy still holds.
+
   }
 }
 
-/**
- * Paints the theme onto <html> as data attributes. All colour comes from CSS
- * variables keyed off these, so one attribute swap reskins the whole app.
- */
 function applyToDocument(prefs: Preferences) {
   const root = document.documentElement;
   const systemDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
@@ -105,7 +92,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     writeLocal(preferences);
   }, [preferences]);
 
-  // Follow the OS while the user is on "system".
   useEffect(() => {
     if (preferences.theme !== 'system' || !window.matchMedia) return;
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -114,7 +100,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener('change', onChange);
   }, [preferences]);
 
-  // Server copy wins once we know who is logged in.
   useEffect(() => {
     if (!user) return;
     api.get('/settings/preferences')
@@ -125,7 +110,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   const update = useCallback(async (patch: Partial<Record<string, unknown>>) => {
     const previous = preferences;
-    // Optimistic: a theme switch that waits on the network feels broken.
+
     setPreferences((p) => ({ ...p, ...(patch as Partial<Preferences>) }));
     setSaving(true);
     try {

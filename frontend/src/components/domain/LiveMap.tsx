@@ -9,25 +9,15 @@ export interface MapPoint {
 }
 
 interface LiveMapProps {
-  /** The viewer's own position — a quiet dot, not the thing they came to see. */
+
   you: MapPoint | null;
-  /** The other person on this order: the shopper if you are the customer, the
-   *  customer if you are the shopper. This is the marker that matters. */
+
   them: MapPoint | null;
-  /** The saved delivery address, when it has coordinates. */
+
   destination: MapPoint | null;
   className?: string;
 }
 
-/**
- * Leaflet is a plain DOM library, so the map instance lives in a ref and is
- * created once. Re-renders only move the markers — tearing the map down and
- * rebuilding it on every position update would flicker and lose the user's
- * pan/zoom.
- *
- * Tiles come from OpenStreetMap, which needs no API key. Swapping to Mapbox or
- * Google later is a one-line change of the tile URL.
- */
 export function LiveMap({ you, them, destination, className = '' }: LiveMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -35,13 +25,12 @@ export function LiveMap({ you, them, destination, className = '' }: LiveMapProps
   const youMarker = useRef<L.Marker | null>(null);
   const destMarker = useRef<L.Marker | null>(null);
   const routeLine = useRef<L.Polyline | null>(null);
-  /** Stop auto-fitting once the user has panned; nothing worse than a map that fights you. */
+
   const userMoved = useRef(false);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    // Kampala, as a sensible default before any position is known.
     const map = L.map(containerRef.current, { zoomControl: true, attributionControl: true })
       .setView([0.3476, 32.5825], 13);
 
@@ -67,8 +56,6 @@ export function LiveMap({ you, them, destination, className = '' }: LiveMapProps
     youMarker.current = place(map, youMarker.current, you, youIcon, 'You');
     destMarker.current = place(map, destMarker.current, destination, destinationIcon, 'Delivery address');
 
-    // The line connects you to whoever you are trying to reach — their live
-    // position if they are sharing one, otherwise the delivery pin.
     const target = them ?? destination;
     if (you && target) {
       const line: L.LatLngExpression[] = [[you.lat, you.lng], [target.lat, target.lng]];
@@ -83,8 +70,7 @@ export function LiveMap({ you, them, destination, className = '' }: LiveMapProps
         map.fitBounds(L.latLngBounds(line as L.LatLngTuple[]), { padding: [40, 40], maxZoom: 16 });
       }
     } else if (!userMoved.current) {
-      // Centre on the counterparty before yourself: their position is the
-      // question the map exists to answer.
+
       const focus = them ?? destination ?? you;
       if (focus) map.setView([focus.lat, focus.lng], 15);
     }
@@ -93,7 +79,6 @@ export function LiveMap({ you, them, destination, className = '' }: LiveMapProps
   return <div ref={containerRef} className={`h-72 w-full rounded-xl2 ${className}`} />;
 }
 
-/** Add or move a marker, removing it if the point has gone away. */
 function place(
   map: L.Map,
   marker: L.Marker | null,
@@ -111,13 +96,6 @@ function place(
   return next;
 }
 
-/**
- * Markers are inline SVG in a divIcon rather than Leaflet's default PNGs —
- * the defaults are loaded by a relative URL that breaks under a bundler, and
- * these match the brand palette.
- */
-
-/** The other person: pulsing, because it is the thing you are watching. */
 const otherPartyIcon = L.divIcon({
   className: '',
   html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:28px;height:28px">
@@ -128,7 +106,6 @@ const otherPartyIcon = L.divIcon({
   iconAnchor: [14, 14],
 });
 
-/** You: quiet and static, so it never competes with the marker that matters. */
 const youIcon = L.divIcon({
   className: '',
   html: `<div style="display:flex;align-items:center;justify-content:center;width:18px;height:18px">

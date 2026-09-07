@@ -10,7 +10,7 @@ const STEP = 0.4;
 interface ImageLightboxProps {
   src: string;
   alt?: string;
-  /** Shown under the toolbar — e.g. who sent it and when. */
+
   caption?: string;
   onClose: () => void;
 }
@@ -19,24 +19,11 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-/**
- * Distance between two touch points, for pinch-zoom. Typed structurally rather
- * than as `TouchList` — React's synthetic TouchList is not the DOM one.
- */
 function touchDistance(touches: { [index: number]: { clientX: number; clientY: number } }): number {
   const [a, b] = [touches[0], touches[1]];
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 }
 
-/**
- * Full-screen image viewer: zoom by wheel, pinch, buttons or double-tap; pan by
- * dragging once zoomed; rotate for photos that came off a phone sideways; and
- * download the original.
- *
- * Rendered through a portal so it escapes the chat bubble's `overflow-hidden`
- * and stacking context — inside the message list it would otherwise be clipped
- * to a 75%-wide box.
- */
 export function ImageLightbox({ src, alt = '', caption, onClose }: ImageLightboxProps) {
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
@@ -48,12 +35,10 @@ export function ImageLightbox({ src, alt = '', caption, onClose }: ImageLightbox
   const zoomTo = useCallback((next: number) => {
     const clamped = clamp(next, MIN_SCALE, MAX_SCALE);
     setScale(clamped);
-    // Snapping back to 1× must recentre, or the image stays parked off-screen
-    // where the user last dragged it.
+
     if (clamped === MIN_SCALE) setOffset({ x: 0, y: 0 });
   }, []);
 
-  // Escape closes; +/- zoom, so the viewer is usable without a mouse.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -65,7 +50,6 @@ export function ImageLightbox({ src, alt = '', caption, onClose }: ImageLightbox
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, scale, zoomTo]);
 
-  // The page behind must not scroll while the viewer is open.
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -122,7 +106,7 @@ export function ImageLightbox({ src, alt = '', caption, onClose }: ImageLightbox
       aria-modal="true"
       aria-label={alt || 'Image viewer'}
       className="fixed inset-0 z-[100] flex flex-col bg-black/92 backdrop-blur-sm"
-      // Clicking the backdrop closes; clicks on the image itself stop below.
+
       onClick={onClose}
     >
       <div

@@ -2,10 +2,6 @@ import { ArrowDown } from 'lucide-react';
 import { OrderPerspective, OrderStatus } from '../../types';
 import { revealPanel } from './OrderTimeline';
 
-/**
- * What each side has to do at each stage, in the imperative. A null means the
- * order is waiting on the other person and there is nothing to chase.
- */
 const ACTION: Partial<Record<OrderStatus, Record<OrderPerspective, { title: string; cta: string } | null>>> = {
   requested: {
     customer: null,
@@ -41,21 +37,10 @@ const ACTION: Partial<Record<OrderStatus, Record<OrderPerspective, { title: stri
 interface ActionNeededBannerProps {
   status: OrderStatus;
   perspective: OrderPerspective;
-  /** The panel that actually does the thing. */
+
   targetId: string;
 }
 
-/**
- * Says what you have to do, at the top, before anything else on the page.
- *
- * The timeline shows a stage called "Awaiting your approval" and people read it
- * as a status rather than an instruction — then went looking for the approve
- * button among a map, a price breakdown and a list of options. This states the
- * job in the imperative and takes you straight to it.
- *
- * Renders nothing at all when the order is waiting on the other person, so it
- * never becomes furniture people learn to ignore.
- */
 export function ActionNeededBanner({ status, perspective, targetId }: ActionNeededBannerProps) {
   const action = ACTION[status]?.[perspective];
   if (!action) return null;

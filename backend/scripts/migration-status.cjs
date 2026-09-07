@@ -1,22 +1,9 @@
 #!/usr/bin/env node
-/**
- * Reports which migrations are present in the database this backend is
- * configured to talk to, and which database that actually is.
- *
- * Migrations here are re-runnable and there is no ledger table to consult, so
- * "has 008 been applied" can only be answered by looking for what 008 leaves
- * behind. Each entry below names one migration and the artifact that proves it
- * landed.
- *
- * Read-only: it creates nothing and changes nothing.
- *
- *   npm run db:status
- */
+
 const path = require('path');
 const { Client } = require('pg');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
-/** [migration, what proves it ran, probe] */
 const CHECKS = [
   ['002_live_tracking',        'table shopper_locations',        table('shopper_locations')],
   ['003_user_preferences',     'table user_preferences',         table('user_preferences')],
@@ -52,8 +39,6 @@ async function main() {
     process.exit(1);
   }
 
-  // Which database, without ever printing the password. Connecting to the
-  // wrong one looks exactly like a migration that did not run.
   const parsed = new URL(url);
   console.log('Connecting to');
   console.log(`  host     : ${parsed.hostname}`);
@@ -78,8 +63,7 @@ async function main() {
       try {
         present = (await client.query(sql)).rows[0].present;
       } catch {
-        // A probe that cannot run at all (the table it reads is absent) is
-        // itself an answer: the migration did not land.
+
         present = false;
       }
       if (!present) missing += 1;

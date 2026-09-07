@@ -17,13 +17,6 @@ import {
 
 const ACCEPTED_IMAGE = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 
-/**
- * Submit an identity document.
- *
- * The bytes never become a URL. Unlike a chat photo, which is served from an
- * unauthenticated /uploads/:key guarded only by an unguessable uuid, an ID scan
- * is reachable only through `serveDocument` below, which checks who is asking.
- */
 export async function submit(req: Request, res: Response) {
   const file = (req as any).file as Express.Multer.File | undefined;
   if (!file) throw new ApiError(400, 'No document uploaded');
@@ -91,9 +84,6 @@ export async function submit(req: Request, res: Response) {
     ]
   );
 
-  // An auto-rejection is final, so the image goes now. Nothing downstream
-  // needs it and keeping it would mean holding an ID scan for a submission
-  // no person will ever open.
   if (rejected && record) {
     await destroyDocument(record.id);
     if (idHash) await setIdentityOutcome(idHash, 'rejected', auto.reason, auto.fraudFlag);
@@ -115,7 +105,6 @@ export async function submit(req: Request, res: Response) {
   });
 }
 
-/** Where the submitter's own verification stands. Never returns the image. */
 export async function mine(req: Request, res: Response) {
   const rows = await query(
     `SELECT id, document_type, status, auto_decision, auto_reason, rejection_reason,
@@ -129,15 +118,6 @@ export async function mine(req: Request, res: Response) {
   res.json({ records: rows });
 }
 
-/**
- * Streams the document to someone entitled to see it.
- *
- * This is the whole reason ID documents do not go through /uploads/:key: that
- * route is deliberately unauthenticated so <img> tags can load chat photos,
- * and its only protection is that the key is hard to guess. A national ID scan
- * needs a caller with a session and a reason, and it must stop being
- * retrievable the moment the document is destroyed.
- */
 export async function serveDocument(req: Request, res: Response) {
   const record = await queryOne<{
     shopper_id: string;
@@ -162,15 +142,13 @@ export async function serveDocument(req: Request, res: Response) {
 
   res.setHeader('Content-Type', file.mimeType);
   res.setHeader('Content-Length', String(file.byteSize));
-  // Never cached, never stored: the opposite of /uploads, which sends
-  // immutable and a year. A cached ID scan outlives the deletion.
+
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Content-Disposition', 'inline');
   return res.end(file.data);
 }
 
-/** The review queue: everything the automated pass could not decide. */
 export async function queue(_req: Request, res: Response) {
   const rows = await query(
     `SELECT v.id, v.shopper_id, v.document_type, v.status,
@@ -191,14 +169,10 @@ export async function queue(_req: Request, res: Response) {
 const decisionSchema = z.object({
   approve: z.boolean(),
   reason: z.string().max(500).optional(),
-  /** Marks the document itself as unusable on any future account. */
+
   fraud: z.boolean().optional(),
 });
 
-/**
- * A reviewer's decision, which is the only way anyone becomes verified.
- * The image is destroyed either way, immediately.
- */
 export async function decide(req: Request, res: Response) {
   const input = decisionSchema.parse(req.body);
   if (!input.approve && !input.reason) {
@@ -225,8 +199,6 @@ export async function decide(req: Request, res: Response) {
     await setIdentityOutcome(record.id_hash, status, input.reason ?? null, input.fraud ?? false);
   }
 
-  // Only a shopper carries a verification status on their profile; a customer
-  // verifying themselves has no such row and needs no update.
   if (input.approve) {
     await query(
       `UPDATE shopper_profiles SET verification_status = 'approved', updated_at = now()

@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/**
- * Which container this browser can actually record.
- *
- * Chrome and Firefox give webm/opus; Safari refuses webm entirely and records
- * mp4/aac. Passing an unsupported mimeType to MediaRecorder throws, so the
- * first supported entry wins and an empty string lets the browser choose.
- */
 const CANDIDATES = [
   'audio/webm;codecs=opus',
   'audio/webm',
@@ -26,18 +19,13 @@ export const voiceRecordingSupported = () =>
 export interface Recording {
   blob: Blob;
   durationMs: number;
-  /** Local object URL for previewing before sending. */
+
   previewUrl: string;
   filename: string;
 }
 
-/** Voice notes longer than this are almost always an accident. */
 const MAX_MS = 3 * 60_000;
 
-/**
- * @param onAutoStop called with the finished note when the length cap ends the
- *   recording on its own, so a long note is delivered rather than discarded.
- */
 export function useVoiceRecorder(onAutoStop?: (recording: Recording) => void) {
   const [recording, setRecording] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -47,23 +35,21 @@ export function useVoiceRecorder(onAutoStop?: (recording: Recording) => void) {
   const chunksRef = useRef<Blob[]>([]);
   const startedAtRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Set when the user cancels, so `stop()`'s resolver knows to discard.
+
   const cancelledRef = useRef(false);
   const resolveRef = useRef<((r: Recording | null) => void) | null>(null);
-  // Held in a ref so `start`'s handlers always see the latest callback without
-  // the effect that owns the recorder re-running mid-recording.
+
   const onAutoStopRef = useRef(onAutoStop);
   onAutoStopRef.current = onAutoStop;
 
   const teardown = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-    // Releasing the tracks is what turns off the browser's recording indicator.
+
     recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
     recorderRef.current = null;
     setRecording(false);
   }, []);
 
-  // A component unmounting mid-recording must not leave the mic live.
   useEffect(() => teardown, [teardown]);
 
   const start = useCallback(async (): Promise<boolean> => {
@@ -79,9 +65,7 @@ export function useVoiceRecorder(onAutoStop?: (recording: Recording) => void) {
       const mimeType = pickMimeType();
       const recorder = new MediaRecorder(stream, {
         ...(mimeType ? { mimeType } : {}),
-        // Speech, not music. The browser default is around 128 kbps, which
-        // makes a 30-second note roughly 500 KB and slow to send on mobile
-        // data; Opus at 24 kbps is clear for voice and about a fifth of that.
+
         audioBitsPerSecond: 24_000,
       });
       chunksRef.current = [];
@@ -96,7 +80,6 @@ export function useVoiceRecorder(onAutoStop?: (recording: Recording) => void) {
         const resolve = resolveRef.current;
         resolveRef.current = null;
 
-        // Cancelled, or so short it was a mis-tap rather than a message.
         const usable = !cancelledRef.current && blob.size > 0 && durationMs >= 400;
         const recording: Recording | null = usable
           ? {
@@ -107,9 +90,6 @@ export function useVoiceRecorder(onAutoStop?: (recording: Recording) => void) {
             }
           : null;
 
-        // The length cap stops the recorder itself, with nobody waiting on a
-        // promise — without this the note was silently thrown away at three
-        // minutes. Hand it to the caller instead.
         if (resolve) resolve(recording);
         else if (recording) onAutoStopRef.current?.(recording);
       };
@@ -132,7 +112,6 @@ export function useVoiceRecorder(onAutoStop?: (recording: Recording) => void) {
     }
   }, [teardown]);
 
-  /** Resolves with the recording, or null if it was cancelled or too short. */
   const stop = useCallback((): Promise<Recording | null> => {
     const recorder = recorderRef.current;
     if (!recorder || recorder.state === 'inactive') return Promise.resolve(null);

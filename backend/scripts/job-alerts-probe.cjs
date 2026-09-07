@@ -1,14 +1,3 @@
-/**
- * Proves that posting a request alerts the shoppers who could take it, and
- * nobody else.
- *
- * The exclusions are the whole point: a fan-out that notifies everyone is worse
- * than no fan-out, because shoppers turn the alerts off and then miss the ones
- * that mattered. Each skipped case gets its own account here rather than being
- * argued about in a comment.
- *
- * Creates one customer and four shoppers, then deletes everything.
- */
 require('dotenv/config');
 const { Pool } = require('pg');
 
@@ -32,7 +21,7 @@ async function call(method, path, { token, body } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
   let json = null;
-  try { json = await res.json(); } catch { /* empty body */ }
+  try { json = await res.json(); } catch {  }
   return { status: res.status, body: json };
 }
 
@@ -40,7 +29,6 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
   body: { role, fullName: name, phone, email, password: PASSWORD },
 });
 
-/** Alerts naming this request that landed for this user. */
 async function alertsFor(userId, title) {
   const r = await pool.query(
     `SELECT id, title, body, link FROM notifications
@@ -56,7 +44,7 @@ async function alertsFor(userId, title) {
   const orderIds = [];
 
   try {
-    // ---- the cast ----------------------------------------------------------
+
     const cust = await reg('customer', 'Alert Customer', `0761${STAMP.slice(0, 6)}`, `alert-cust-${STAMP}@example.test`);
     if (cust.status !== 201) throw new Error(`customer register ${cust.status} ${JSON.stringify(cust.body)}`);
     ids.push(cust.body.user.id);
@@ -64,7 +52,7 @@ async function alertsFor(userId, title) {
     const eligible = await reg('shopper', 'Alert Eligible', `0762${STAMP.slice(0, 6)}`, `alert-elig-${STAMP}@example.test`);
     const mutedOne = await reg('shopper', 'Alert Muted', `0763${STAMP.slice(0, 6)}`, `alert-muted-${STAMP}@example.test`);
     const busyOne = await reg('shopper', 'Alert Busy', `0764${STAMP.slice(0, 6)}`, `alert-busy-${STAMP}@example.test`);
-    // Same person as the customer, holding a shopper account on the same phone.
+
     const selfShop = await reg('shopper', 'Alert Customer', `0761${STAMP.slice(0, 6)}`, `alert-self-${STAMP}@example.test`);
     for (const r of [eligible, mutedOne, busyOne, selfShop]) {
       if (r.status !== 201) throw new Error(`shopper register ${r.status} ${JSON.stringify(r.body)}`);
@@ -72,7 +60,6 @@ async function alertsFor(userId, title) {
     }
     step('a second account on the same phone is allowed for the other role', selfShop.status === 201);
 
-    // Muted: turned the alerts off.
     await call('PATCH', '/settings/preferences', {
       token: mutedOne.body.accessToken, body: { notifyNewRequests: false },
     });
@@ -81,7 +68,6 @@ async function alertsFor(userId, title) {
     step('the preference persists', muteCheck.rows[0]?.notify_new_requests === false,
       JSON.stringify(muteCheck.rows[0]));
 
-    // Busy: already carrying the maximum number of jobs.
     const addrForBusy = await call('POST', '/addresses', {
       token: cust.body.accessToken, body: { line1: 'Alert Address, Kampala', isDefault: true },
     });
@@ -100,7 +86,6 @@ async function alertsFor(userId, title) {
       orderIds.push(o.rows[0].id);
     }
 
-    // ---- post a request ----------------------------------------------------
     const title = `Alert probe item ${STAMP}`;
     const posted = await call('POST', '/requests', {
       token: cust.body.accessToken,
@@ -112,7 +97,6 @@ async function alertsFor(userId, title) {
     });
     step('the request posts', posted.status === 201, `${posted.status} ${JSON.stringify(posted.body)}`);
 
-    // ---- who heard about it ------------------------------------------------
     const got = await alertsFor(eligible.body.user.id, title);
     step('an available shopper is alerted', got.length === 1, `${got.length}`);
     step('the alert names the job', /Alert probe item/.test(got[0]?.title ?? ''), String(got[0]?.title));
@@ -129,14 +113,12 @@ async function alertsFor(userId, title) {
     step('the customer is not alerted on their customer account',
       (await alertsFor(cust.body.user.id, title)).length === 0);
 
-    // The alerted shopper sees it through the API, not just in the table.
     const bell = await call('GET', '/notifications', { token: eligible.body.accessToken });
     step('it reaches the notification bell',
       bell.body?.notifications?.some((n) => n.title === `New job: ${title}`),
       JSON.stringify(bell.body?.notifications?.map((n) => n.title)));
     step('and counts as unread', Number(bell.body?.unread ?? 0) >= 1, String(bell.body?.unread));
 
-    // Freeing a slot should put the busy shopper back in scope.
     await pool.query("UPDATE orders SET status = 'completed' WHERE id = $1", [orderIds[0]]);
     const title2 = `Alert probe second ${STAMP}`;
     await call('POST', '/requests', {
@@ -158,7 +140,7 @@ async function alertsFor(userId, title) {
         for (const t of ['messages', 'order_status_history', 'order_items', 'evidence', 'receipts',
           'payments', 'transactions', 'shopper_earnings', 'deliveries', 'ratings', 'disputes',
           'order_locations']) {
-          try { await pool.query(`DELETE FROM "${t}" WHERE order_id = ANY($1)`, [all]); } catch { /* not keyed on order_id */ }
+          try { await pool.query(`DELETE FROM "${t}" WHERE order_id = ANY($1)`, [all]); } catch {  }
         }
         await pool.query('DELETE FROM orders WHERE id = ANY($1)', [all]);
       }
@@ -176,6 +158,6 @@ async function alertsFor(userId, title) {
   process.exit(failures.length ? 1 : 0);
 })().catch(async (e) => {
   console.error('HARNESS', e.message);
-  try { await pool.end(); } catch { /* already closed */ }
+  try { await pool.end(); } catch {  }
   process.exit(1);
 });

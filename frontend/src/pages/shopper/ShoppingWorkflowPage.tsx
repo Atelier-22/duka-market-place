@@ -17,19 +17,8 @@ import { RatingStars } from '../../components/ui/RatingStars';
 import { useToast } from '../../components/ui/Toast';
 import { useBroadcastPosition, useOrderTracking } from '../../hooks/useOrderTracking';
 
-/** While in these statuses the shopper's browser publishes its position. */
 const BROADCAST_STATUSES = ['shopper_assigned', 'shopping', 'item_found', 'awaiting_customer_approval', 'purchased', 'out_for_delivery'];
 
-/**
- * This screen guides the shopper through the workflow described in the
- * product brief: accept → travel → search → found (photo + real price) →
- * awaiting approval → purchased (receipt) → out for delivery → delivered
- * (customer confirms) → completed (earnings released).
- *
- * Every button here calls a specific guarded endpoint in
- * backend/src/controllers/order.controller.ts — there is no client-side
- * status field the shopper can set arbitrarily.
- */
 export function ShoppingWorkflowPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -65,19 +54,10 @@ export function ShoppingWorkflowPage() {
 
   const broadcasting = !!order && BROADCAST_STATUSES.includes(order.status);
 
-  /**
-   * The price the customer approved, read off the order rather than off form
-   * state, so it survives a reload and coming back to the job later.
-   */
   const recordedPrice = order?.item_price_ugx == null ? null : Number(order.item_price_ugx);
   const { sharing, error: locationError } = useBroadcastPosition(id, broadcasting);
   const { tracking, refresh: refreshTracking } = useOrderTracking(id, broadcasting);
 
-  /**
-   * A customer accepting an offer creates the order as `requested` — the
-   * shopper still has to say yes. Without these two buttons the job simply
-   * sat there with no way to move it forward.
-   */
   async function acceptJob() {
     setActing(true);
     try {
@@ -144,11 +124,7 @@ export function ShoppingWorkflowPage() {
     }
     setActing(true);
     try {
-      // The amount comes from the order, not from `actualPrice`. That field
-      // belongs to the earlier "item found" step, so it is empty on any reload
-      // — which made this button reject a perfectly good receipt with a
-      // message about the photo. The price the customer approved is on the
-      // order; the server falls back to it when this is omitted.
+
       const res = await api.post(`/orders/${id}/out-for-delivery`, {
         receiptPhotoUrl: receiptUrl,
         amountUgx: recordedPrice ?? undefined,
@@ -165,27 +141,17 @@ export function ShoppingWorkflowPage() {
   if (loading) return <LoadingState />;
   if (!order) return null;
 
-  /**
-   * Where each stage of the job lives on this page.
-   *
-   * Shoppers were reading the timeline as a picture and then hunting the page
-   * for the card it described — "You paid the shop" says nothing about where
-   * the receipt upload is. Only the stage the job has actually reached has a
-   * panel on screen, so anything else points at the part of the page that does
-   * exist: the route map, or the chat.
-   */
   const chat = `/shopper/orders/${order.id}/messages`;
   const at = (step: string, hint: string): Partial<Record<OrderStatus, TimelineAction>> =>
     order.status === step ? { [step]: { targetId: `step-${step}`, hint } } as any : {};
 
   const timelineActions: Partial<Record<OrderStatus, TimelineAction>> = {
-    // Past stages still lead somewhere useful rather than going dead.
+
     ...(order.status !== 'requested' && { requested: { to: chat, hint: 'Message the customer' } }),
     ...at('requested', 'Accept or decline'),
     ...at('shopper_assigned', 'Say you are on your way'),
     ...at('shopping', 'Send the photo and price'),
-    // Nothing for the shopper to do here except chase it up, so this one
-    // goes to the chat rather than to a card that only says "waiting".
+
     ...(order.status === 'awaiting_customer_approval'
       && { awaiting_customer_approval: { to: chat, hint: 'Waiting — nudge the customer' } }),
     ...at('purchased', 'Upload your receipt'),
@@ -205,7 +171,6 @@ export function ShoppingWorkflowPage() {
         <StatusBadge status={order.status} />
       </div>
 
-      {/* Before the timeline, before the map: what you have to do now. */}
       <ActionNeededBanner
         status={order.status}
         perspective="shopper"
@@ -227,10 +192,7 @@ export function ShoppingWorkflowPage() {
           </div>
           {locationError && <p className="mt-2 text-xs font-medium text-brand-red">{locationError}</p>}
           <div className="mt-3 overflow-hidden rounded-xl2 border border-brand-green/10">
-            {/* The shopper's map is about the customer, not about them. Their
-                own dot is secondary; the pulsing marker is where they are
-                heading — the customer's live position if shared, otherwise
-                the pin on the delivery address. */}
+
             <LazyLiveMap
               you={tracking?.shopper ? { lat: tracking.shopper.lat, lng: tracking.shopper.lng, label: 'You' } : null}
               them={tracking?.customer ? { lat: tracking.customer.lat, lng: tracking.customer.lng, label: 'Your customer' } : null}
@@ -245,8 +207,7 @@ export function ShoppingWorkflowPage() {
               {tracking.customer ? ' from your customer' : ' from the delivery address'}
             </p>
           )}
-          {/* Where you are taking it, in words — this is all there is when the
-              customer has not pinned a point, and it is still worth showing. */}
+
           {tracking?.deliveryAddressLabel && (
             <p className="mt-3 flex items-center gap-2 text-xs text-brand-ink/55">
               <MapPin size={13} strokeWidth={2} className="shrink-0" />
@@ -254,8 +215,6 @@ export function ShoppingWorkflowPage() {
             </p>
           )}
 
-          {/* Be explicit when there is nothing to head towards, rather than
-              showing a map with only the shopper's own dot on it. */}
           {!tracking?.customer && !tracking?.destination && (
             <div className="mt-3 rounded-xl bg-brand-yellow-soft/60 px-4 py-3">
               <p className="flex items-start gap-2 text-sm text-yellow-900">
@@ -277,7 +236,6 @@ export function ShoppingWorkflowPage() {
             </div>
           )}
 
-          {/* Once there is a point, hand it to whatever they navigate with. */}
           {(tracking?.customer || tracking?.destination) && (
             <a
               href={`https://www.google.com/maps/dir/?api=1&destination=${
@@ -407,7 +365,6 @@ export function ShoppingWorkflowPage() {
               <CheckCircle2 size={17} strokeWidth={2} /> Job complete — earnings released to your balance.
             </p>
 
-            {/* Rating runs both ways: the shopper rates the customer too. */}
             {rated ? (
               <p className="mt-4 text-sm text-brand-ink/55">Thanks — your rating was saved.</p>
             ) : (

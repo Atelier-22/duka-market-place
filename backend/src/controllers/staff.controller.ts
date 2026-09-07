@@ -9,13 +9,6 @@ import {
 } from '../models/staff.model';
 import { ApiError } from '../middleware/errorHandler';
 
-/**
- * Super-admin only. Every route behind this file is gated by requireSuperAdmin,
- * because an admin should not be able to list the staff table, let alone add to
- * it — knowing how many admins exist, and who they are, is already more than
- * the role needs.
- */
-
 async function audit(
   req: Request,
   action: string,
@@ -38,7 +31,6 @@ async function audit(
   );
 }
 
-/** Staff, their capacity, and what each has been doing. */
 export async function listStaffAccounts(req: Request, res: Response) {
   const [admins, superAdmins, rows] = await Promise.all([
     countStaff('admin'),
@@ -67,13 +59,6 @@ const createSchema = z.object({
   phone: z.string().min(9).max(30),
 });
 
-/**
- * Creates an admin (or the second super admin) and returns a one-time password.
- *
- * The cap is enforced inside the insert's transaction, not here — see
- * createStaffWithinCap. Checking a limit in the handler and inserting after is
- * a race that two super admins pressing the button together would win.
- */
 export async function createStaffAccount(req: Request, res: Response) {
   const input = createSchema.parse(req.body);
 
@@ -107,8 +92,6 @@ export async function suspendStaff(req: Request, res: Response) {
   if (!target) throw new ApiError(404, 'Staff account not found');
   if (target.id === req.user!.id) throw new ApiError(409, 'You cannot suspend your own account');
 
-  // Suspending the other super admin leaves one person able to create staff —
-  // and if that password is lost, nobody can ever make another.
   if (target.role === 'super_admin') {
     const others = await queryOne<{ n: number }>(
       "SELECT count(*)::int AS n FROM staff WHERE role = 'super_admin' AND is_active AND id <> $1",
@@ -158,14 +141,6 @@ export async function resetStaffPassword(req: Request, res: Response) {
   res.json({ temporaryPassword: temporary });
 }
 
-/**
- * Removes a staff account outright, freeing its place.
- *
- * The account is deleted rather than deactivated because the cap counts places,
- * and a suspended admin still occupies one — otherwise twenty suspensions would
- * permanently close the door. What they did stays in the audit log: those rows
- * keep the id and the name, and nothing about this deletes them.
- */
 export async function removeStaff(req: Request, res: Response) {
   const target = await findStaffById(req.params.id);
   if (!target) throw new ApiError(404, 'Staff account not found');
@@ -188,10 +163,6 @@ export async function removeStaff(req: Request, res: Response) {
   res.json({ ok: true });
 }
 
-/**
- * Everything, in one call: the platform, the staff, and what the staff have
- * been doing. This is the view that only exists at this level.
- */
 export async function godView(_req: Request, res: Response) {
   const platform = await queryOne(
     `SELECT

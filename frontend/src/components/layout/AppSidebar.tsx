@@ -9,7 +9,7 @@ interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
-  /** Which live counter, if any, this item shows as a badge. */
+
   badge?: 'messages';
 }
 
@@ -21,12 +21,10 @@ const STORAGE_KEY = 'duka_sidebar_collapsed';
 
 export function AppSidebar({ items }: AppSidebarProps) {
   const { user, logout } = useAuth();
-  // Drives the unread badge on the Chats item.
+
   const { totalUnread } = useConversations(!!user);
   const navigate = useNavigate();
 
-  // Remembered per device. Reading localStorage can throw in a private window,
-  // so a failure just means "start expanded".
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEY) === '1';
@@ -39,16 +37,14 @@ export function AppSidebar({ items }: AppSidebarProps) {
     try {
       localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
     } catch {
-      // Preference is a nicety; losing it is fine.
+
     }
   }, [collapsed]);
 
   return (
     <aside
       className={[
-        // `overflow-hidden` so the scrolling nav below cannot spill past the
-        // rounded corners; the height and offset both subtract the top bar, so
-        // the footer stays on screen however many nav items there are.
+
         'glass sticky mb-4 flex shrink-0 flex-col overflow-hidden rounded-xl3 transition-[width] duration-200 ease-out',
         collapsed ? 'w-[68px] p-3' : 'w-64 p-5',
       ].join(' ')}
@@ -57,8 +53,7 @@ export function AppSidebar({ items }: AppSidebarProps) {
         height: 'calc(100dvh - var(--duka-topbar, 92px) - 1.5rem)',
       }}
     >
-      {/* The toggle sits on its own row so the lockup below it can be centred
-          rather than shunted off-axis by a control beside it. */}
+
       <div className={`flex ${collapsed ? 'justify-center' : 'justify-end'}`}>
         <button
           type="button"
@@ -75,12 +70,6 @@ export function AppSidebar({ items }: AppSidebarProps) {
         </button>
       </div>
 
-      {/* No logo here any more — the top bar carries it, and showing it twice
-          on a desktop was just the same mark in two places. */}
-      {/* The only part that scrolls. Twelve items in the admin console
-          overflowed and pushed the account block and Log out off the bottom of
-          the screen, where they could not be reached at all. `min-h-0` is what
-          lets a flex child actually shrink enough to scroll. */}
       <nav
         className={`mt-4 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-0.5 ${
           collapsed ? 'items-center' : ''

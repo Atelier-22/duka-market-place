@@ -14,8 +14,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// On a 401, attempt exactly one silent refresh before giving up — avoids
-// bouncing the user to /login on every short-lived access-token expiry.
 let refreshing: Promise<string | null> | null = null;
 
 api.interceptors.response.use(
@@ -32,8 +30,7 @@ api.interceptors.response.use(
         axios
           .post(`${API_URL}/auth/refresh`, { refreshToken })
           .then((r) => {
-            // This tab's token only. A refresh is not a sign-in and must not
-            // reach across into the other tabs' sessions.
+
             setAccessToken(r.data.accessToken);
             return r.data.accessToken as string;
           })
@@ -59,8 +56,7 @@ export function apiErrorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {
     return err.response?.data?.error ?? err.message;
   }
-  // A plain Error thrown by our own code carries a message written for the
-  // user; swallowing it into "something went wrong" throws that away.
+
   if (err instanceof Error && err.message) return err.message;
   return 'Something went wrong. Please try again.';
 }

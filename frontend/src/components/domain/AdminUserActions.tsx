@@ -12,13 +12,6 @@ interface AdminUserActionsProps {
   onChanged: () => void;
 }
 
-/**
- * The moderation controls, on a person's detail page rather than in a list.
- *
- * Deliberately here and not in the tables: suspending someone or resetting
- * their password should require having looked at their account first, not be
- * a button you can hit by mistake while scanning rows.
- */
 export function AdminUserActions({ userId, name, role, isActive, onChanged }: AdminUserActionsProps) {
   const { push } = useToast();
   const [busy, setBusy] = useState(false);
@@ -53,8 +46,7 @@ export function AdminUserActions({ userId, name, role, isActive, onChanged }: Ad
     setBusy(true);
     try {
       const res = await api.post(`/admin/users/${userId}/reset-password`);
-      // Held on screen rather than toasted: this is shown once and they have
-      // to be able to read it out or copy it.
+
       setTemporary(res.data.temporaryPassword);
     } catch (err) {
       push(apiErrorMessage(err), 'error');

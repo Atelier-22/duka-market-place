@@ -19,13 +19,6 @@ function Stat({ label, value, tone = 'ink' }: { label: string; value: string | n
   );
 }
 
-/**
- * The numbers you run the business on.
- *
- * The chart is plain divs rather than a charting library: it shows one series
- * over at most 90 points, and 40kB of dependency to draw rectangles is a poor
- * trade on a connection where every kilobyte is somebody's airtime.
- */
 export function AdminAnalyticsPage() {
   const [days, setDays] = useState(30);
   const [data, setData] = useState<any>(null);
@@ -94,8 +87,7 @@ export function AdminAnalyticsPage() {
                 className="group relative flex min-w-[6px] flex-1 flex-col justify-end"
                 title={`${new Date(d.day).toLocaleDateString('en-UG', { day: 'numeric', month: 'short' })} · ${orders} order(s), ${done} completed, ${formatUgx(d.gmv_ugx)}`}
               >
-                {/* A day with nothing still gets a sliver, so a gap reads as
-                    "no orders" rather than as missing data. */}
+
                 <div
                   className="rounded-t bg-brand-green/25"
                   style={{ height: `${Math.max(2, (orders / peak) * 100)}%` }}

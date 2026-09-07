@@ -5,22 +5,14 @@ import { ImageLightbox } from './ImageLightbox';
 interface ZoomableImageProps {
   src: string;
   alt?: string;
-  /** Shown in the viewer's toolbar — e.g. "Receipt · 12 Aug". */
+
   caption?: string;
-  /** Classes for the thumbnail itself. */
+
   className?: string;
-  /** Classes for the wrapper, when the thumbnail needs to fill a cell. */
+
   wrapperClassName?: string;
 }
 
-/**
- * A thumbnail that opens in the full-screen zoom viewer.
- *
- * Anywhere a photo matters — an item the shopper found, a receipt, a
- * verification document — the thumbnail is too small to actually check, which
- * is the one thing it exists for. This is the drop-in replacement for a bare
- * `<img>` in those places.
- */
 export function ZoomableImage({ src, alt = '', caption, className = '', wrapperClassName = '' }: ZoomableImageProps) {
   const [open, setOpen] = useState(false);
 

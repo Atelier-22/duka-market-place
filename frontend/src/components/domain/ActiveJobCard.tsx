@@ -17,7 +17,7 @@ export interface ActiveJob {
 
 interface ActiveJobCardProps {
   job: ActiveJob;
-  /** 1-based position, so the shopper can say "job two" and mean it. */
+
   index: number;
   deciding: boolean;
   onDecide: (orderId: string, accept: boolean) => void;
@@ -27,14 +27,6 @@ function initials(name: string): string {
   return name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
 }
 
-/**
- * One job on the shopper's dashboard.
- *
- * The customer's name is the heading, because that is how a shopper holds three
- * errands in their head — "Marie's perfume, then Ronald's shoes". The order id
- * is kept, faded, underneath: needed when something goes wrong, useless the
- * rest of the time.
- */
 export function ActiveJobCard({ job, index, deciding, onDecide }: ActiveJobCardProps) {
   const needsAnswer = job.status === 'requested';
 
@@ -66,7 +58,6 @@ export function ActiveJobCard({ job, index, deciding, onDecide }: ActiveJobCardP
         </div>
       </div>
 
-      {/* Where this job has actually got to, in the shopper's own words. */}
       <p className="mt-3 text-sm text-brand-ink/60">
         {needsAnswer
           ? `${job.customer_name.split(' ')[0]} picked you for this job. Accept it or let it go back to other shoppers.`

@@ -25,8 +25,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
       linked: payload.linked ?? [],
       kind: payload.kind ?? 'user',
     };
-    // Every authenticated request is a sign of life. Throttled internally and
-    // never awaited — this must not add latency to the route it fronts.
+
     touchPresence(payload.sub);
     next();
   } catch {
@@ -37,8 +36,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 export function requireRole(...roles: (UserRole | 'admin' | 'super_admin')[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
-    // A super admin holds every admin power by definition, so asking for
-    // 'admin' must not lock out the layer above it.
+
     const held = req.user.role === 'super_admin' ? ['super_admin', 'admin'] : [req.user.role];
     if (!roles.some((r) => held.includes(r))) {
       return res.status(403).json({ error: `Requires role: ${roles.join(' or ')}` });
@@ -47,11 +45,6 @@ export function requireRole(...roles: (UserRole | 'admin' | 'super_admin')[]) {
   };
 }
 
-/**
- * The narrower gate. Creating staff, and seeing that staff exist at all, is
- * super-admin only — an admin should not be able to enumerate the layer above
- * them, let alone add to it.
- */
 export function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
   if (req.user.kind !== 'staff' || req.user.role !== 'super_admin') {

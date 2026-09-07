@@ -2,40 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
-  DESIGN SYSTEM NOTES (see docs/ARCHITECTURE.md for the product rationale)
-  ---------------------------------------------------------------------
-  Palette:
-    brand-green-deep   #0B3D2E  — hero backgrounds, headers, high-contrast text on white
-    brand-green         #137A4C  — primary buttons, links, active states
-    brand-green-fresh   #1FAE6B  — accents, success, glows
-    brand-green-mist    #E7F5EC  — tinted panel backgrounds
-    brand-yellow         #F2B705  — earnings/shopper energy, ratings, highlights
-    brand-red             #D6493B  — warnings, urgent status, destructive actions
-  Type:
-    display = Fraunces (a warm, slightly irregular serif — used ONLY for
-      hero headlines and section titles, at large sizes, to avoid the
-      generic-SaaS-sans-everywhere look)
-    sans = Inter — everything else (body, UI labels, numbers)
-  Signature element: the "liquid glass" panel — a translucent, blurred,
-    softly-bordered card that floats over a layered gradient/blob
-    background. Used consistently for every card-like surface across the
-    whole product so the glass language reads as intentional, not decorative.
-*/
-
-/* ----------------------------------------------------------------------
-   Theme variables.
-
-   Colours are space-separated RGB channels so Tailwind can apply its own
-   alpha (`bg-brand-green/20`). Three independent axes:
-     [data-accent]  — which hue family the product wears
-     [data-theme]   — light or dark surfaces
-     (no attribute) — light + green, the original look
-
-   Accent blocks set only the four green slots; the dark block sets only
-   the surface/ink slots. They compose, so any accent works in either
-   theme without writing 2 x N palettes.
-   ---------------------------------------------------------------------- */
 :root {
   color-scheme: light;
 
@@ -58,7 +24,6 @@
   --glass-border-alpha: 0.55;
 }
 
-/* Ocean — deep blues, calm and trustworthy */
 [data-accent='ocean'] {
   --brand-green-deep: 12 45 74;
   --brand-green: 21 101 163;
@@ -67,7 +32,6 @@
   --app-bg: #F2F8FD;
 }
 
-/* Sunset — warm terracotta and amber */
 [data-accent='sunset'] {
   --brand-green-deep: 87 33 20;
   --brand-green: 178 71 34;
@@ -77,7 +41,6 @@
   --app-bg: #FEF7F2;
 }
 
-/* Grape — violets with a cool edge */
 [data-accent='grape'] {
   --brand-green-deep: 49 26 82;
   --brand-green: 103 58 168;
@@ -86,7 +49,6 @@
   --app-bg: #F9F5FE;
 }
 
-/* Charcoal — near-neutral, lets photography carry the colour */
 [data-accent='charcoal'] {
   --brand-green-deep: 24 28 32;
   --brand-green: 62 72 82;
@@ -95,7 +57,6 @@
   --app-bg: #F6F7F8;
 }
 
-/* Rose — warm pink, soft rather than loud */
 [data-accent='rose'] {
   --brand-green-deep: 92 26 51;
   --brand-green: 187 55 105;
@@ -104,7 +65,6 @@
   --app-bg: #FEF5F8;
 }
 
-/* Amber — honey and gold */
 [data-accent='amber'] {
   --brand-green-deep: 90 56 8;
   --brand-green: 176 116 16;
@@ -114,7 +74,6 @@
   --app-bg: #FEFAF0;
 }
 
-/* Teal — sea green, cooler than the house green */
 [data-accent='teal'] {
   --brand-green-deep: 10 61 61;
   --brand-green: 17 122 122;
@@ -123,7 +82,6 @@
   --app-bg: #F1FBFB;
 }
 
-/* Indigo — deep blue-violet, quiet and serious */
 [data-accent='indigo'] {
   --brand-green-deep: 32 32 92;
   --brand-green: 68 68 178;
@@ -132,7 +90,6 @@
   --app-bg: #F5F5FE;
 }
 
-/* Crimson — a strong, confident red */
 [data-accent='crimson'] {
   --brand-green-deep: 92 18 25;
   --brand-green: 175 35 50;
@@ -141,7 +98,6 @@
   --app-bg: #FEF4F5;
 }
 
-/* Lime — bright and energetic */
 [data-accent='lime'] {
   --brand-green-deep: 54 74 12;
   --brand-green: 106 145 24;
@@ -150,7 +106,6 @@
   --app-bg: #F9FDF0;
 }
 
-/* Plum — rich magenta-purple */
 [data-accent='plum'] {
   --brand-green-deep: 71 22 66;
   --brand-green: 140 45 130;
@@ -159,7 +114,6 @@
   --app-bg: #FDF5FC;
 }
 
-/* Sky — light, open blue */
 [data-accent='sky'] {
   --brand-green-deep: 14 55 84;
   --brand-green: 25 118 178;
@@ -168,7 +122,6 @@
   --app-bg: #F2FAFE;
 }
 
-/* Copper — burnt orange-brown, earthy */
 [data-accent='copper'] {
   --brand-green-deep: 74 40 22;
   --brand-green: 148 82 42;
@@ -178,7 +131,6 @@
   --app-bg: #FDF7F3;
 }
 
-/* Forest — darker, mossier green than the house palette */
 [data-accent='forest'] {
   --brand-green-deep: 18 46 28;
   --brand-green: 38 94 55;
@@ -187,7 +139,6 @@
   --app-bg: #F4FAF5;
 }
 
-/* Slate — cool blue-grey, near-neutral */
 [data-accent='slate'] {
   --brand-green-deep: 26 35 46;
   --brand-green: 62 82 104;
@@ -199,8 +150,6 @@
 [data-theme='dark'] {
   color-scheme: dark;
 
-  /* Deep shades have to invert: on a dark surface the "deep" slot is used
-     for headings, which must now be the lightest of the family. */
   --brand-green-deep: 209 240 224;
   --brand-green-mist: 27 44 37;
 
@@ -239,29 +188,6 @@ body {
   transition: background 200ms ease;
 }
 
-/* ------------------------------------------------------------------------
-   The living background.
-
-   Three very soft colour washes drifting across the page on a two-minute
-   cycle, so the app is never a flat sheet of white but never distracts
-   either. The effect has to be felt more than seen: opacity is low, the
-   blur is enormous, and nothing moves fast enough to catch the eye while
-   you are reading.
-
-   Painted on a fixed ::before behind everything rather than on body, so it
-   does not scroll, does not repaint on layout, and cannot tint text.
-   Colours come from the accent variables, so it follows whatever palette
-   the person picked instead of being hard-coded green.
-   ------------------------------------------------------------------------ */
-/* Three blurred coloured orbs used to drift behind every page on a two-minute
-   loop. They said nothing about Duka, they moved while people were reading,
-   and they cost a full-viewport 40px blur on phones that have better things to
-   spend a frame on. The background is now a flat surface colour, which is what
-   the palette was for. */
-
-/* Marks the panel a timeline step just sent you to. Scrolling there is not
-   enough on a long order page — you arrive and still have to work out which
-   card you were sent to. Two pulses, then it gets out of the way. */
 .flash-target {
   animation: duka-flash 1s ease-out 2;
   border-radius: theme('borderRadius.xl2');
@@ -273,21 +199,6 @@ body {
   100% { box-shadow: 0 0 0 0 rgb(var(--brand-green-fresh) / 0); }
 }
 
-/* ----------------------------------------------------------------------
-   Liquid glass — the floating top bar.
-
-   Nearly no fill: the page and its drifting colour should read straight
-   through, so the bar registers as a lens over the page rather than a strip
-   laid on top of it. What sells that is the blur and the saturation boost,
-   not opacity — pushing the fill up to make it "look like glass" is what
-   turns it back into a slab.
-
-   The rim is doing the work instead: a bright hairline along the top edge
-   where light would catch, a darker one along the bottom where it falls
-   away, and a soft drop shadow so it reads as floating above the page.
-   ---------------------------------------------------------------------- */
-/* Was a 30px blur at 200% saturation with two inset highlights — the most
-   literal liquid-glass panel in the app. Same flat treatment as .glass. */
 .glass-liquid {
   background: rgb(var(--glass-bg));
   border: 1px solid rgb(var(--brand-green) / 0.12);
@@ -298,9 +209,6 @@ body {
   border-color: rgb(255 255 255 / 0.10);
 }
 
-/* A small opaque pill behind the logo and the avatar. It existed because the
-   bar was transparent and a map or a photo could scroll under a face; the bar
-   is opaque now, so this is simply the shape they sit on. */
 .glass-chip {
   background: rgb(var(--glass-bg));
   border: 1px solid rgb(var(--brand-green) / 0.14);
@@ -311,11 +219,6 @@ body {
   border-color: rgb(255 255 255 / 0.12);
 }
 
-/* Room for the fixed mobile tab strip, plus the iPhone home indicator. The
-   bar only exists below lg, so the padding goes away with it.
-   5.5rem, not 5: the bar floats clear of the bottom edge now, so it stands
-   taller than the flush strip it replaced and the old reserve left the last
-   line of a page grazing it. */
 .app-main {
   padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
@@ -323,28 +226,18 @@ body {
   .app-main { padding-bottom: 0.25rem; }
 }
 
-/* Phones: stop long unbroken strings — a pasted URL, a shop name with no
-   spaces — from forcing the whole page to scroll sideways. */
 @media (max-width: 640px) {
   h1, h2, h3, p, span, td, th, dt, dd, li { overflow-wrap: anywhere; }
 }
 
-/* Nothing may push the page sideways on a phone. A fixed-width dropdown
-   anchored to a button near the right edge used to hang off the left of the
-   viewport; that particular one is now a sheet, but this stops the next one
-   from being discovered by a user instead of by us. Anything that genuinely
-   needs to scroll horizontally does it in its own overflow-x container. */
 @media (max-width: 640px) {
   html, body { overflow-x: hidden; }
 }
 
-/* iOS zooms the whole page when a focused input is under 16px. Every field
-   in the app is 15px, which is exactly the size that triggers it. */
 @media (max-width: 640px) {
   input, select, textarea { font-size: 16px !important; }
 }
 
-/* Reduced motion respect */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -357,23 +250,12 @@ body {
   background: rgba(31, 174, 107, 0.25);
 }
 
-/* Visible keyboard focus everywhere, glass-appropriate */
 :focus-visible {
   outline: 2px solid #1FAE6B;
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* ----------------------------------------------------------------------
-   Atmospheric background: soft green/white gradient with subtle colored
-   blobs. Applied once at the app shell level, sits behind everything.
-   ---------------------------------------------------------------------- */
-/* The page ground.
-   This used to carry two large blurred circles — 42vw of green top-left, 34vw
-   of yellow bottom-right — plus a third red one floating over the middle of
-   every public page. Flat now, in the surface colour the palette already
-   defines. The colour still follows the theme and the accent; what has gone is
-   three blurred shapes that were decoration and nothing else. */
 .atmosphere {
   position: fixed;
   inset: 0;
@@ -381,17 +263,6 @@ body {
   background: var(--app-bg);
 }
 
-/* ----------------------------------------------------------------------
-   Glass primitive — used by <GlassCard/> and any element wanting the look.
-   ---------------------------------------------------------------------- */
-/* Surfaces.
-   These were frosted panels: an 18px backdrop blur, 160% saturation, a bright
-   inner highlight and a 32px drop shadow, over a translucent white. Every card,
-   every button, every modal, in front of drifting coloured orbs.
-   They are flat now — an opaque surface and a hairline border — and the class
-   names are unchanged so this is one edit rather than four hundred. What a
-   panel does is now said by its border and its position, not by how much of
-   the page is smeared behind it. */
 .glass {
   background: rgb(var(--glass-bg));
   border: 1px solid rgb(var(--brand-green) / 0.12);
@@ -403,10 +274,6 @@ body {
   color: white;
 }
 
-/* Hover used to lift a card three pixels and throw a 60px shadow under it, on
-   every card in the app including ones that do nothing when clicked. A surface
-   that reacts to the pointer should be one you can actually press, so this is
-   now a border that darkens — and only where it is applied deliberately. */
 .glass-hover {
   transition: border-color 160ms ease;
 }
@@ -414,10 +281,6 @@ body {
   border-color: rgb(var(--brand-green) / 0.28);
 }
 
-/* Was a three-stop gradient clipped to the headline text. Flat now: a
-   gradient on type costs contrast at every step along it, and the lightest
-   stop was the part carrying the sentence. Kept as a class so the callers do
-   not all have to change. */
 .text-gradient-brand {
   color: rgb(var(--brand-green));
 }
@@ -427,13 +290,10 @@ body {
   background-size: 200% 100%;
 }
 
-/* Pulse under the shopper's live position marker (LiveMap divIcon). Defined
-   here rather than inline because @keyframes cannot live in a style attribute. */
 @keyframes duka-ping {
   75%, 100% { transform: scale(2.2); opacity: 0; }
 }
 
-/* Leaflet paints its own controls; soften them to match the glass palette. */
 .leaflet-container {
   font-family: inherit;
   background: #E7F5EC;

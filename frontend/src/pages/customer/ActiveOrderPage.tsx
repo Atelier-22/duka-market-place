@@ -17,7 +17,6 @@ import { RatingStars } from '../../components/ui/RatingStars';
 import { useToast } from '../../components/ui/Toast';
 import { useBroadcastPosition, useOrderTracking } from '../../hooks/useOrderTracking';
 
-/** Statuses during which the live map is worth showing the customer. */
 const TRACKABLE_STATUSES = ['shopper_assigned', 'shopping', 'item_found', 'awaiting_customer_approval', 'purchased', 'out_for_delivery'];
 
 export function ActiveOrderPage() {
@@ -34,9 +33,7 @@ export function ActiveOrderPage() {
 
   const trackable = !!order && TRACKABLE_STATUSES.includes(order.status);
   const { tracking, refresh: refreshTracking } = useOrderTracking(id, trackable);
-  // The customer shares their position too, so the shopper can find them. A
-  // typed address like "Mbalwa" is not somewhere you can navigate to, and no
-  // address in this system carries coordinates unless someone pins them.
+
   const { sharing: sharingLocation, error: locationError } = useBroadcastPosition(id, trackable);
 
   function load() {
@@ -48,8 +45,7 @@ export function ActiveOrderPage() {
   }
 
   useEffect(load, [id]);
-  // Lightweight polling for near-real-time status updates until Socket.IO
-  // is wired in (see docs/ROADMAP.md Stage 3).
+
   useEffect(() => {
     const interval = setInterval(load, 8000);
     return () => clearInterval(interval);
@@ -81,22 +77,12 @@ export function ActiveOrderPage() {
   if (loading) return <LoadingState />;
   if (!order) return null;
 
-  /**
-   * Where each stage of the order lives on this page.
-   *
-   * "Awaiting your approval" was the stage people could not act on: they read
-   * it in the timeline and then had to find the approve card themselves,
-   * somewhere further down a page that also holds a map, a price breakdown and
-   * a list of options. Now the step is the way there.
-   */
   const chat = `/app/orders/${order.id}/messages`;
   const mine = (step: string, hint: string): Partial<Record<OrderStatus, TimelineAction>> =>
     order.status === step ? { [step]: { targetId: `step-${step}`, hint } } as any : {};
 
   const timelineActions: Partial<Record<OrderStatus, TimelineAction>> = {
-    // The stages the shopper drives are not things the customer can act on, so
-    // they lead to the two places worth looking: where the shopper is, and the
-    // conversation with them.
+
     ...(trackable && { shopper_assigned: { targetId: 'live-tracking', hint: 'See where your shopper is' } }),
     ...(trackable && { shopping: { to: chat, hint: 'Message your shopper' } }),
     ...mine('awaiting_customer_approval', 'Approve the purchase'),
@@ -114,8 +100,6 @@ export function ActiveOrderPage() {
         <StatusBadge status={order.status} />
       </div>
 
-      {/* Ahead of the tracker and the timeline — this is the whole page's
-          purpose whenever the order is waiting on the customer. */}
       <ActionNeededBanner
         status={order.status}
         perspective="customer"
@@ -137,7 +121,7 @@ export function ActiveOrderPage() {
         </GlassCard>
 
         <div className="flex flex-col gap-4">
-          {/* Who is doing this, first — before prices and options. */}
+
           {shopper && (
             <ShopperSummaryCard
               shopper={shopper}
@@ -161,8 +145,7 @@ export function ActiveOrderPage() {
               <div className="flex flex-col gap-2">
                 {items.map((it) => (
                   <div key={it.id} className="flex items-center gap-3 rounded-lg bg-brand-green-mist/60 p-2">
-                    {/* You are being asked to approve a purchase from a 48px
-                        thumbnail — it has to be openable. */}
+
                     {it.photo_url && (
                       <ZoomableImage
                         src={it.photo_url}
@@ -183,7 +166,6 @@ export function ActiveOrderPage() {
             </GlassCard>
           )}
 
-          {/* Customer actions */}
           {order.status === 'awaiting_customer_approval' && (
             <GlassCard id="step-awaiting_customer_approval" glow="yellow" hover={false}>
               <p className="font-medium text-brand-green-deep">Approve this purchase?</p>

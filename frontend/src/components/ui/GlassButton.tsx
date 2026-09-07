@@ -7,12 +7,6 @@ interface GlassButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
 }
 
-/**
- * Flat fills, not gradients. Primary was a green-to-fresh-green gradient with
- * a 32px shadow that grew and brightened on hover — three effects to say one
- * thing. A solid brand green says it, and the state change on press says the
- * rest.
- */
 const variantClasses: Record<string, string> = {
   primary: 'bg-brand-green text-white hover:bg-brand-green-deep',
   secondary:
@@ -39,12 +33,10 @@ export function GlassButton({
   return (
     <button
       className={[
-        // rounded-xl, not rounded-full. A pill reads as a tag or a chip; these
-        // are buttons, and the app's cards and inputs are already rounded
-        // rectangles, so a pill made the one interactive element the odd shape.
+
         'inline-flex items-center justify-center gap-2 rounded-xl font-semibold',
         'transition-colors duration-150 ease-out active:scale-[0.99]',
-        // A visible focus ring: the only way to use this from a keyboard.
+
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green-fresh focus-visible:ring-offset-2',
         'disabled:opacity-50 disabled:pointer-events-none',
         variantClasses[variant],

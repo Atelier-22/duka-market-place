@@ -5,14 +5,14 @@ import { LinkedAccount, User, UserRole } from '../types';
 
 interface AuthContextValue {
   user: User | null;
-  /** Other-role accounts this session may switch into without re-authenticating. */
+
   linkedAccounts: LinkedAccount[];
   isLoading: boolean;
   login: (phone: string, password: string) => Promise<void>;
   register: (input: { role: UserRole; fullName: string; phone: string; email?: string; password: string }) => Promise<void>;
   switchRole: (role: UserRole) => Promise<void>;
   switchAccount: (userId: string) => Promise<UserRole>;
-  /** Re-read /auth/me, after something changes the stored user — an avatar, say. */
+
   refresh: () => Promise<void>;
   logout: () => void;
 }
@@ -45,12 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadMe();
   }, [loadMe]);
 
-  /**
-   * @param remember whether this becomes the session a newly opened tab starts
-   *   from. True for signing in; false when this tab changes account on its own
-   *   — switching to the admin here must not decide what a later tab becomes,
-   *   which is the whole reason every tab used to follow the last one.
-   */
   function adoptSession(
     data: { user: User; accessToken: string; refreshToken: string; linkedAccounts?: LinkedAccount[] },
     remember = true
@@ -87,7 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  /** Swap to a linked account; returns its role so the caller can redirect. */
   async function switchAccount(userId: string): Promise<UserRole> {
     try {
       const res = await api.post('/auth/switch-account', { userId });

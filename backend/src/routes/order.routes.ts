@@ -18,12 +18,8 @@ router.post('/:id/delivered', requireRole('customer', 'admin'), asyncHandler(ord
 router.post('/:id/complete', asyncHandler(orderController.complete));
 router.post('/:id/cancel', asyncHandler(orderController.cancel));
 
-// Live tracking
 router.get('/:id/tracking', asyncHandler(trackingController.getTracking));
-// Both sides of an order may report a position — the customer so the shopper
-// can find them, the shopper so the customer can watch them approach. The
-// controller checks participation and tags the row with which party it is;
-// a role guard here would only lock the customer out.
+
 router.post('/:id/location', asyncHandler(trackingController.postPosition));
 router.post('/:id/shopping-done', requireRole('shopper'), asyncHandler(trackingController.markShoppingDone));
 

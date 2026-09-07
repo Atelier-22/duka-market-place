@@ -10,7 +10,7 @@ export interface Conversation {
   other_avatar: string | null;
   other_role: 'customer' | 'shopper' | 'admin';
   other_phone: string | null;
-  /** True when they have used the app in the last 90 seconds. */
+
   other_online: boolean;
   other_last_seen_at: string | null;
   request_title: string | null;
@@ -26,10 +26,6 @@ export interface Conversation {
 
 const POLL_MS = 20_000;
 
-/**
- * The chat inbox. Polled rather than pushed — a websocket layer can replace
- * the transport later without any component changing.
- */
 export function useConversations(enabled = true) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +35,7 @@ export function useConversations(enabled = true) {
       const res = await api.get('/messages/conversations');
       setConversations(res.data.conversations);
     } catch {
-      // Inbox is not critical enough to surface a poll failure.
+
     } finally {
       setLoading(false);
     }

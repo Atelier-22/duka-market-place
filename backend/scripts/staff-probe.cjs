@@ -1,13 +1,3 @@
-/**
- * Proves the staff layer: separation, the two caps, and invisibility.
- *
- * The caps are the fiddly part — twenty admins BETWEEN two super admins, not
- * twenty each — and invisibility is the part that is easy to claim and hard to
- * be sure of, so it is checked from the outside: a customer's own endpoints,
- * the admin search, the user counts.
- *
- * Creates throwaway staff and users and deletes them.
- */
 require('dotenv/config');
 const { Pool } = require('pg');
 
@@ -30,14 +20,13 @@ async function call(method, path, { token, body } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
   let json = null;
-  try { json = await res.json(); } catch { /* empty */ }
+  try { json = await res.json(); } catch {  }
   return { status: res.status, body: json };
 }
 
 const staffIds = [];
 const userIds = [];
 
-/** Seeds a staff row directly, for the two super admins the caps start from. */
 async function seedStaff(role, name, phone) {
   const bcrypt = require('bcryptjs');
   const r = await pool.query(
@@ -51,10 +40,6 @@ async function seedStaff(role, name, phone) {
 (async () => {
   console.log(`\n=== staff probe (${API}) ===\n`);
 
-  // Real staff are demoted to admin for the run so the two super-admin places
-  // are free, then put back in the finally block. Their ids are captured first
-  // so the restore names them exactly, rather than matching on a pattern that
-  // could sweep up a probe account.
   const parked = await pool.query("SELECT id, role FROM staff WHERE full_name NOT LIKE 'Probe %'");
   if (parked.rows.length) {
     await pool.query("UPDATE staff SET role = 'admin' WHERE id = ANY($1)",
@@ -62,7 +47,7 @@ async function seedStaff(role, name, phone) {
   }
 
   try {
-    // ---- separation --------------------------------------------------------
+
     const inUsers = await pool.query("SELECT count(*)::int n FROM users WHERE role = 'admin'");
     step('no admin is a row in users', inUsers.rows[0].n === 0, String(inUsers.rows[0].n));
 
@@ -77,19 +62,15 @@ async function seedStaff(role, name, phone) {
     const t1 = one.body.accessToken;
     const t2 = two.body.accessToken;
 
-    // ---- the super-admin cap ----------------------------------------------
     const third = await call('POST', '/admin/staff', {
       token: t1, body: { role: 'super_admin', fullName: 'Probe Super Three', phone: `0793${STAMP.slice(0, 6)}` },
     });
     step('a third super admin is refused', third.status === 409, `${third.status} ${third.body?.error}`);
 
-    // ---- the shared admin cap ---------------------------------------------
     const before = await call('GET', '/admin/staff', { token: t1 });
     const room = before.body.capacity.admins.remaining;
     step('capacity is reported', typeof room === 'number', JSON.stringify(before.body?.capacity));
 
-    // Fill every remaining place, alternating between the two super admins to
-    // show the pool is shared rather than one each.
     let made = 0;
     for (let i = 0; i < room; i += 1) {
       const token = i % 2 === 0 ? t1 : t2;
@@ -116,10 +97,6 @@ async function seedStaff(role, name, phone) {
     step('and neither can super admin two — the twenty are shared, not each',
       overflow2.status === 409, `${overflow2.status} ${overflow2.body?.error}`);
 
-    // Removing one frees exactly one place.
-    // Only ever a probe account. Choosing "the first admin" once picked the
-    // oldest, which was the real operator's, and deleted it. A destructive test
-    // must name its target, never take whatever is at the top of a list.
     const victim = full.body.staff.find(
       (s) => s.role === 'admin' && String(s.full_name).startsWith('Probe ')
     );
@@ -132,7 +109,6 @@ async function seedStaff(role, name, phone) {
     step('which frees exactly one place', afterRemove.status === 201, `${afterRemove.status} ${afterRemove.body?.error}`);
     if (afterRemove.status === 201) staffIds.push(afterRemove.body.staff.id);
 
-    // ---- what an ordinary admin may see -----------------------------------
     const adminLogin = await login(afterRemove.body.staff.phone);
     step('a created admin can sign in with the temporary password', adminLogin.status !== 200,
       'expected the temp password to be required');
@@ -151,7 +127,6 @@ async function seedStaff(role, name, phone) {
     step('and cannot reach the whole-platform view',
       (await call('GET', '/admin/god-view', { token: adminToken })).status === 403);
 
-    // ---- invisibility to customers and shoppers ---------------------------
     const cust = await call('POST', '/auth/register', {
       body: { role: 'customer', fullName: 'Probe Watcher', phone: `0797${STAMP.slice(0, 6)}`,
               email: `staff-probe-${STAMP}@example.test`, password: PASSWORD },
@@ -164,7 +139,6 @@ async function seedStaff(role, name, phone) {
     step('a customer cannot reach the god view',
       (await call('GET', '/admin/god-view', { token: custToken })).status === 403);
 
-    // The strongest form: staff simply are not in the data customers can read.
     const searchable = await pool.query(
       "SELECT count(*)::int n FROM users WHERE full_name ILIKE 'Probe Super%' OR full_name ILIKE 'Probe Admin%'");
     step('no staff member appears anywhere in users', searchable.rows[0].n === 0, String(searchable.rows[0].n));
@@ -174,7 +148,6 @@ async function seedStaff(role, name, phone) {
       !(adminSearch.body?.users ?? []).some((u) => String(u.full_name).includes('Probe Super')),
       JSON.stringify((adminSearch.body?.users ?? []).map((u) => u.full_name)));
 
-    // ---- the god view ------------------------------------------------------
     const god = await call('GET', '/admin/god-view', { token: t1 });
     step('the super admin sees the whole platform',
       god.status === 200 && typeof god.body?.platform?.customers === 'number',
@@ -185,7 +158,6 @@ async function seedStaff(role, name, phone) {
     step('staff actions are attributed by name',
       god.body.staffActivity.every((a) => !!a.admin_name), '');
 
-    // ---- guardrails --------------------------------------------------------
     const self = await call('DELETE', `/admin/staff/${sa1}`, { token: t1 });
     step('a super admin cannot remove themselves', self.status === 409, String(self.status));
     await call('DELETE', `/admin/staff/${sa2}`, { token: t1 });
@@ -201,8 +173,7 @@ async function seedStaff(role, name, phone) {
     await pool.query("DELETE FROM users WHERE email LIKE 'staff-probe-%@example.test'");
     await pool.query("DELETE FROM admin_audit_log WHERE admin_name LIKE 'Probe %'");
     await pool.query("DELETE FROM staff WHERE full_name LIKE 'Probe %'");
-    // Put the real staff back exactly as they were — their own role, not an
-    // assumed one, and only for rows that still exist.
+
     for (const row of parked.rows) {
       await pool.query('UPDATE staff SET role = $2, is_active = TRUE WHERE id = $1', [row.id, row.role]);
     }
@@ -218,6 +189,6 @@ async function seedStaff(role, name, phone) {
     await pool.query("DELETE FROM staff WHERE full_name LIKE 'Probe %'");
     await pool.query("DELETE FROM users WHERE email LIKE 'staff-probe-%@example.test'");
     await pool.end();
-  } catch { /* closed */ }
+  } catch {  }
   process.exit(1);
 });

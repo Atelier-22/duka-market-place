@@ -62,7 +62,7 @@ export default function App() {
     <ToastProvider>
       <Canonical />
       <Routes>
-        {/* Public marketing site */}
+
         <Route element={<PublicLayout />}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
@@ -77,7 +77,6 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
         </Route>
 
-        {/* Customer app */}
         <Route element={<ProtectedRoute allow={['customer']} />}>
           <Route element={<CustomerLayout />}>
             <Route path="/app" element={<CustomerDashboardPage />} />
@@ -94,7 +93,6 @@ export default function App() {
           </Route>
         </Route>
 
-        {/* Shopper app */}
         <Route element={<ProtectedRoute allow={['shopper']} />}>
           <Route element={<ShopperLayout />}>
             <Route path="/shopper" element={<ShopperDashboardPage />} />
@@ -110,7 +108,6 @@ export default function App() {
           </Route>
         </Route>
 
-        {/* Admin panel */}
         <Route element={<ProtectedRoute allow={['admin', 'super_admin']} />}>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<AdminOverviewPage />} />
@@ -126,13 +123,11 @@ export default function App() {
             <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
             <Route path="/admin/finance" element={<AdminFinancePage />} />
             <Route path="/admin/operations" element={<AdminOpsPage />} />
-            {/* The API gates these to super admins; an admin reaching them by
-                typing the URL gets an empty page and a 403, not data. */}
+
             <Route path="/admin/staff" element={<AdminStaffPage />} />
             <Route path="/admin/god-view" element={<AdminGodViewPage />} />
             <Route path="/admin/fees" element={<AdminFeesPage />} />
-            {/* The same SettingsPage the customer and shopper dashboards use —
-                an admin is a person with an account like anyone else. */}
+
             <Route path="/admin/settings" element={<SettingsPage />} />
           </Route>
         </Route>

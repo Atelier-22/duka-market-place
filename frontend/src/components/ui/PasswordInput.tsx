@@ -7,14 +7,6 @@ interface PasswordInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
   hint?: string;
 }
 
-/**
- * A password field you can actually read back.
- *
- * Typing a password blind and being told only "incorrect" gives you no way to
- * see where the mistake was — a stray capital, a wrong character, a keyboard
- * that inserted something you did not expect. The eye toggle is off by default,
- * so nothing is exposed unless the person asks for it.
- */
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
   ({ label, error, hint, id, className = '', ...rest }, ref) => {
     const [visible, setVisible] = useState(false);
@@ -44,12 +36,9 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           />
           <button
             type="button"
-            // Never a submit button: inside a form, a bare <button> defaults to
-            // submit and revealing the password would fire the login.
+
             onClick={() => setVisible((v) => !v)}
-            // The field itself is what matters to a screen reader; announcing
-            // this control on every tab stop is noise, so it is skipped and
-            // reachable by pointer, with a label for anyone who lands on it.
+
             tabIndex={-1}
             aria-label={visible ? 'Hide password' : 'Show password'}
             title={visible ? 'Hide password' : 'Show password'}

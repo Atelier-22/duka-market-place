@@ -36,14 +36,12 @@ export function RegisterPage() {
     }
   }
 
-  // Redirect declaratively — calling navigate() during render warns and can loop.
   if (user) return <Navigate to={user.role === 'shopper' ? '/shopper' : '/app'} replace />;
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md items-center px-4 py-16">
       <GlassCard glow="green" padding="lg" className="w-full">
-        {/* The full lockup, on the two pages where someone is deciding
-            whether they trust this site with a password. */}
+
         <DukaLockup markSize={56} className="mb-5" />
         <h1 className="text-center font-display text-2xl font-medium text-brand-green-deep">Create your account</h1>
         <p className="mt-1 text-center text-sm text-brand-ink/60">Join as a customer or a shopper.</p>

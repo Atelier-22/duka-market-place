@@ -28,14 +28,6 @@ function Capacity({ label, used, limit }: { label: string; used: number; limit: 
   );
 }
 
-/**
- * Staff management, visible only to a super admin.
- *
- * Every account here can suspend people and move money, so the page leads with
- * how many places are left rather than hiding it behind a failed attempt — the
- * cap on admins is shared between the super admins, and you should be able to
- * see the pool before you try to draw from it.
- */
 export function AdminStaffPage() {
   const { push } = useToast();
   const [data, setData] = useState<any>(null);

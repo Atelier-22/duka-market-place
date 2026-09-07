@@ -2,8 +2,6 @@ import { BadgeCheck, Home, Map, MessageCircle, Settings, ShoppingBag, User, Wall
 import { AppShell } from './AppShell';
 import { NavItem } from './MobileNav';
 
-// The first four become the phone's bottom tabs — a shopper lives in available
-// jobs, their own jobs and the chat, so those come before earnings and admin.
 const ITEMS: NavItem[] = [
   { to: '/shopper', label: 'Home', icon: Home },
   { to: '/shopper/available', label: 'Jobs', icon: Map },

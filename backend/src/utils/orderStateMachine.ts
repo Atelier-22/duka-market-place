@@ -1,13 +1,5 @@
 import { OrderStatus, UserRole } from '../types';
 
-/**
- * The single authoritative map of legal order-status transitions.
- *
- * Every route that changes an order's status MUST go through
- * `assertValidTransition` below rather than writing `status = X` directly.
- * This is what makes "do not allow arbitrary status changes" (from the
- * product brief) actually true rather than a comment.
- */
 export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   requested: ['shopper_assigned', 'cancelled'],
   shopper_assigned: ['shopping', 'cancelled'],
@@ -17,17 +9,12 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   purchased: ['out_for_delivery', 'disputed'],
   out_for_delivery: ['delivered', 'disputed'],
   delivered: ['completed', 'disputed'],
-  completed: ['disputed'], // a dispute can still be raised shortly after completion
+  completed: ['disputed'],
   cancelled: [],
-  disputed: ['refunded', 'completed', 'cancelled'], // resolution outcomes, admin-only
+  disputed: ['refunded', 'completed', 'cancelled'],
   refunded: [],
 };
 
-/**
- * Which role is allowed to *initiate* each transition. Admins can force any
- * transition (for dispute resolution / support intervention) — that's
- * enforced by the caller checking role === 'admin' first.
- */
 export const TRANSITION_ACTOR: Partial<Record<`${OrderStatus}->${OrderStatus}`, UserRole[]>> = {
   'requested->shopper_assigned': ['shopper'],
   'shopper_assigned->shopping': ['shopper'],
@@ -35,7 +22,7 @@ export const TRANSITION_ACTOR: Partial<Record<`${OrderStatus}->${OrderStatus}`, 
   'item_found->awaiting_customer_approval': ['shopper'],
   'awaiting_customer_approval->purchased': ['customer'],
   'purchased->out_for_delivery': ['shopper'],
-  'out_for_delivery->delivered': ['customer'], // delivery is only confirmed by the customer — prevents fake self-confirmation
+  'out_for_delivery->delivered': ['customer'],
   'delivered->completed': ['customer', 'shopper'],
 };
 
@@ -53,11 +40,6 @@ export class UnauthorizedTransitionError extends Error {
   }
 }
 
-/**
- * Who is asking. A super admin is an admin for the purposes of this map — the
- * extra powers are about staff and oversight, not about which order moves are
- * legal, and the state machine should not grow a second admin-shaped case.
- */
 export type ActorRole = UserRole | 'super_admin';
 
 export function assertValidTransition(from: OrderStatus, to: OrderStatus, actor: ActorRole): void {
@@ -67,7 +49,7 @@ export function assertValidTransition(from: OrderStatus, to: OrderStatus, actor:
     throw new InvalidTransitionError(from, to);
   }
 
-  if (actorRole === 'admin') return; // admins can push disputes/refunds/overrides
+  if (actorRole === 'admin') return;
 
   const key = `${from}->${to}` as const;
   const allowedRoles = TRANSITION_ACTOR[key];

@@ -3,10 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { GlassCard } from '../../components/ui/GlassCard';
 
-/**
- * Shared chrome for the admin drill-down pages so they read as one product
- * rather than three separately-invented layouts.
- */
 export function AdminDetailShell({
   title, subtitle, badges, children,
 }: {

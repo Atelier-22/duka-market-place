@@ -1,11 +1,6 @@
 import { Suspense, lazy } from 'react';
 import type { MapPoint } from './LiveMap';
 
-/**
- * Leaflet and its CSS are ~150kB — worth loading only when a map is actually
- * on screen, which is just the active-order and workflow pages. Everywhere
- * else the bundle never touches it.
- */
 const LiveMap = lazy(() => import('./LiveMap').then((m) => ({ default: m.LiveMap })));
 
 interface LazyLiveMapProps {

@@ -5,27 +5,18 @@ import { formatDuration } from '../../hooks/useVoiceRecorder';
 
 interface VoiceNotePlayerProps {
   src: string;
-  /** Recorded length in ms, captured at record time. */
+
   durationMs?: number | null;
-  /** Own messages sit on the green bubble and need light-on-dark styling. */
+
   tone: 'own' | 'other';
 }
 
-/**
- * A fixed set of bar heights so a voice note looks like a voice note.
- *
- * Deliberately not a real waveform: computing one means downloading and
- * decoding the whole file before anything renders, which on a Ugandan mobile
- * connection is a long stare at an empty bubble. The bars are seeded from the
- * URL so each note keeps its own stable shape rather than all looking alike.
- */
 function bars(seed: string, count = 34): number[] {
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
   return Array.from({ length: count }, (_, i) => {
     hash = (hash * 1103515245 + 12345) | 0;
-    // 0.25–1.0 of the track height, with a gentle taper at both ends so it
-    // reads as speech rather than noise.
+
     const base = 0.25 + (Math.abs(hash >> 8) % 1000) / 1000 * 0.75;
     const taper = Math.sin((i / (count - 1)) * Math.PI) * 0.35 + 0.65;
     return Math.max(0.18, base * taper);
@@ -39,9 +30,6 @@ export function VoiceNotePlayer({ src, durationMs, tone }: VoiceNotePlayerProps)
   const [loadedMs, setLoadedMs] = useState<number | null>(null);
   const shape = useMemo(() => bars(src), [src]);
 
-  // Prefer the recorded duration: webm from MediaRecorder has no duration in
-  // its header, so `audio.duration` is Infinity until the file has fully played
-  // through at least once.
   const total = durationMs && durationMs > 0 ? durationMs : loadedMs ?? 0;
   const progress = total > 0 ? Math.min(1, positionMs / total) : 0;
 
@@ -53,8 +41,7 @@ export function VoiceNotePlayer({ src, durationMs, tone }: VoiceNotePlayerProps)
       if (Number.isFinite(audio.duration)) setLoadedMs(audio.duration * 1000);
     };
     const onEnd = () => { setPlaying(false); setPositionMs(0); audio.currentTime = 0; };
-    // Another note stealing playback pauses this one behind our back, so the
-    // button state has to follow the element rather than only our own clicks.
+
     const onPause = () => setPlaying(false);
     audio.addEventListener('timeupdate', onTime);
     audio.addEventListener('loadedmetadata', onMeta);
@@ -72,8 +59,7 @@ export function VoiceNotePlayer({ src, durationMs, tone }: VoiceNotePlayerProps)
     const audio = audioRef.current;
     if (!audio) return;
     if (audio.paused) {
-      // Pause every other note on the page — two people talking at once is
-      // exactly the confusion voice notes are meant to avoid.
+
       document.querySelectorAll('audio').forEach((a) => { if (a !== audio) a.pause(); });
       void audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
     } else {

@@ -2,12 +2,6 @@ import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { BRAND } from '../../config/brand';
 
-/**
- * Shared frame for the policy pages, so they read as one document set rather
- * than four pages that happen to be long. Deliberately plain: these are read
- * by people who are worried about something, and a policy that is hard to
- * scan is a policy nobody reads.
- */
 export function LegalDoc({
   title,
   updated,
@@ -56,11 +50,6 @@ export function Clause({ heading, children }: { heading: string; children: React
   );
 }
 
-/**
- * An unresolved point, marked in the page itself rather than only in a commit
- * message. These are things that need a decision or a lawyer, and a reader
- * deserves to know which parts are not settled yet.
- */
 export function Pending({ children }: { children: ReactNode }) {
   return (
     <p className="rounded-xl2 border border-brand-yellow/40 bg-brand-yellow-soft/30 px-4 py-3 text-sm text-brand-ink/75">

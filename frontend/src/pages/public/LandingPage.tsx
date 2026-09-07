@@ -24,7 +24,7 @@ const USE_CASES = [
 export function LandingPage() {
   return (
     <div>
-      {/* HERO */}
+      
       <section className="mx-auto max-w-6xl px-4 pt-10 md:pt-20">
         <div className="grid items-center gap-12 md:grid-cols-2">
           <div className="animate-fade-up">
@@ -49,13 +49,7 @@ export function LandingPage() {
                 <GlassButton size="lg" variant="secondary">Become a shopper</GlassButton>
               </Link>
             </div>
-            {/* A counter row stood here claiming 1,200+ requests fulfilled,
-                300+ verified shoppers and a 4.8 average rating. None of those
-                numbers came from anywhere. Duka is new, and saying so is
-                better than opening with three figures a customer could
-                disprove by asking one shopper how busy they are. When the
-                real numbers are worth showing, they can be read from the
-                admin analytics that already count them. */}
+            
           </div>
 
           <div className="relative animate-fade-up [animation-delay:150ms]">
@@ -82,12 +76,12 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* CAROUSEL */}
+      
       <section className="mx-auto mt-32 max-w-6xl px-4">
         <HeroCarousel />
       </section>
 
-      {/* HOW IT WORKS */}
+      
       <section className="mx-auto mt-32 max-w-6xl px-4">
         <div className="mx-auto max-w-xl text-center">
           <h2 className="font-display text-3xl font-medium text-brand-green-deep md:text-4xl">How it works</h2>
@@ -106,7 +100,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* WHY USE THE PLATFORM */}
+      
       <section className="mx-auto mt-32 max-w-6xl px-4">
         <div className="glass-deep grid gap-8 rounded-xl3 p-10 md:grid-cols-3 md:p-14">
           {[
@@ -122,7 +116,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* USE CASES */}
+      
       <section className="mx-auto mt-32 max-w-6xl px-4">
         <div className="mx-auto max-w-xl text-center">
           <h2 className="font-display text-3xl font-medium text-brand-green-deep md:text-4xl">Popular use cases</h2>
@@ -143,7 +137,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* SHOPPER EARNING CTA */}
+      
       <section className="mx-auto mt-32 max-w-6xl px-4">
         <GlassCard glow="yellow" padding="lg" className="grid items-center gap-8 md:grid-cols-2">
           <div>
@@ -172,12 +166,9 @@ export function LandingPage() {
         </GlassCard>
       </section>
 
-      {/* A testimonials section stood here: three invented quotes from three
-          invented people, under five stars nobody had given. Deleted rather
-          than hidden or swapped for placeholders. It belongs back only when
-          real customers have said something real and agreed to be named. */}
+      
 
-      {/* FINAL CTA */}
+      
       <section className="mx-auto mt-32 max-w-4xl px-4 text-center">
         <h2 className="font-display text-3xl font-medium text-brand-green-deep md:text-4xl">
           Ready to get something you can't go get yourself?

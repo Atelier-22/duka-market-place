@@ -20,14 +20,6 @@ function initials(name: string): string {
   return name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
 }
 
-/**
- * The "who is bringing my things" card on a customer's order.
- *
- * Until now the order page named a status and drew a map, and never said whose
- * dot that was. Name, face, rating and whether their ID was checked, with the
- * two things a customer actually wants to do next — message or call — right
- * there rather than a page away.
- */
 export function ShopperSummaryCard({ shopper, onMessage }: { shopper: OrderShopper; onMessage: () => void }) {
   const [showProfile, setShowProfile] = useState(false);
   const verified = shopper.verification_status === 'approved';

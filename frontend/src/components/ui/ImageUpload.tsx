@@ -7,19 +7,10 @@ interface ImageUploadProps {
   label?: string;
   value?: string;
   onChange: (url: string) => void;
-  /** Round crop, for avatars. */
+
   shape?: 'card' | 'circle';
 }
 
-/**
- * Uploads through POST /api/uploads (multipart), which delegates to the
- * backend StorageService abstraction — local disk, or Postgres in production.
- *
- * Two inputs rather than one, because `capture` is not a hint: with it, a phone
- * opens the camera and gives no way to reach the gallery, so a photo you
- * already took was unreachable. Without it you get the OS picker. Offering both
- * explicitly means neither route is hidden behind the other.
- */
 export function ImageUpload({ folder, label, value, onChange, shape = 'card' }: ImageUploadProps) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const libraryRef = useRef<HTMLInputElement>(null);
@@ -96,7 +87,6 @@ export function ImageUpload({ folder, label, value, onChange, shape = 'card' }: 
         </div>
       </div>
 
-      {/* No `capture`: this opens the gallery/file picker on every platform. */}
       <input
         ref={libraryRef}
         type="file"
@@ -104,7 +94,7 @@ export function ImageUpload({ folder, label, value, onChange, shape = 'card' }: 
         className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
       />
-      {/* `capture` opens the camera directly, for when that is what you want. */}
+
       <input
         ref={cameraRef}
         type="file"

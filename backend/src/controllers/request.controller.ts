@@ -52,8 +52,6 @@ export async function create(req: Request, res: Response) {
     await addRequestItem(requestRow.id, item);
   }
 
-  // Items are added first so a shopper who taps the notification straight away
-  // sees the whole request rather than an empty shell.
   const alerted = await notifyShoppersOfNewRequest({
     requestId: requestRow.id,
     customerId: req.user!.id,

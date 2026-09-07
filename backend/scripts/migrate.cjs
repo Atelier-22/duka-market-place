@@ -1,15 +1,5 @@
 #!/usr/bin/env node
-/**
- * Applies everything in database/migrations, in filename order.
- *
- * Every migration in this project is written to be re-runnable (guarded with
- * IF NOT EXISTS and the like), so there is no ledger table to keep in sync —
- * running this against any database brings it up to date, and running it twice
- * is a no-op. Pass a filename to apply just one.
- *
- *   node scripts/migrate.cjs
- *   node scripts/migrate.cjs 004_chat_presence_and_voice.sql
- */
+
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
@@ -42,7 +32,7 @@ async function main() {
   try {
     for (const file of files) {
       process.stdout.write(`→ ${file} ... `);
-      // One transaction per file: a migration either lands whole or not at all.
+
       await client.query('BEGIN');
       try {
         await client.query(fs.readFileSync(path.join(DIR, file), 'utf8'));

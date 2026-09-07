@@ -20,17 +20,6 @@ const LABEL: Record<TickState, string> = {
   read: 'Read',
 };
 
-/**
- * The receipt on your own messages, in the language people already know:
- *
- *   one tick        — it left your phone, theirs has not picked it up (offline)
- *   two black ticks — it reached their phone
- *   two green ticks — they opened the chat and read it
- *
- * Rendered outside the bubble next to the timestamp rather than inside it: own
- * bubbles are a green gradient with white text, where a black tick would be
- * invisible and a green one indistinguishable from the background.
- */
 export function MessageTicks({ state }: { state: TickState }) {
   const label = LABEL[state];
 
@@ -46,7 +35,6 @@ export function MessageTicks({ state }: { state: TickState }) {
   return <CheckCheck size={14} strokeWidth={2.5} className="text-brand-green-fresh" aria-label={label} />;
 }
 
-/** Ticks plus a tooltip, for use beside a timestamp. */
 export function MessageReceipt({ state }: { state: TickState }) {
   return (
     <span title={LABEL[state]} className="inline-flex items-center">

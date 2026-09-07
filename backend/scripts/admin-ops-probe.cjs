@@ -1,15 +1,3 @@
-/**
- * Exercises the admin's operational powers, and — more importantly — the
- * guardrails on them.
- *
- * These actions lock people out, move money and hand out admin access. The
- * interesting assertions here are the refusals: suspending yourself, removing
- * the last admin, paying a shopper who is owed nothing, settling a payment
- * twice. Each of those is a way to break the platform from inside the console
- * that is supposed to run it.
- *
- * Creates throwaway accounts and deletes them.
- */
 require('dotenv/config');
 const { Pool } = require('pg');
 
@@ -33,7 +21,7 @@ async function call(method, path, { token, body } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
   let json = null;
-  try { json = await res.json(); } catch { /* empty */ }
+  try { json = await res.json(); } catch {  }
   return { status: res.status, body: json };
 }
 
@@ -47,7 +35,7 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
   const orderIds = [];
 
   try {
-    // ---- cast --------------------------------------------------------------
+
     const a = await reg('customer', 'Ops Admin', `0781${STAMP.slice(0, 6)}`, `ops-admin-${STAMP}@example.test`);
     const c = await reg('customer', 'Ops Customer', `0782${STAMP.slice(0, 6)}`, `ops-cust-${STAMP}@example.test`);
     const s = await reg('shopper', 'Ops Shopper', `0783${STAMP.slice(0, 6)}`, `ops-shop-${STAMP}@example.test`);
@@ -70,13 +58,11 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
 
     const custToken = c.body.accessToken;
 
-    // ---- an ordinary user cannot reach any of it --------------------------
     const forbidden = await call('POST', `/admin/users/${shopId}/suspend`, {
       token: custToken, body: { reason: 'trying it on' },
     });
     step('a customer cannot suspend anyone', forbidden.status === 403, String(forbidden.status));
 
-    // ---- moderation --------------------------------------------------------
     const self = await call('POST', `/admin/users/${adminId}/suspend`, {
       token: admin, body: { reason: 'testing self-suspension' },
     });
@@ -111,7 +97,6 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
     });
     step('after which they can sign in again', signsIn.status === 200, String(signsIn.status));
 
-    // ---- password reset ----------------------------------------------------
     const reset = await call('POST', `/admin/users/${custId}/reset-password`, { token: admin });
     step('a password can be reset', reset.status === 200 && !!reset.body?.temporaryPassword,
       `${reset.status}`);
@@ -126,7 +111,6 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
     const flagged = await pool.query('SELECT must_change_password FROM users WHERE id = $1', [custId]);
     step('they are flagged to change it', flagged.rows[0]?.must_change_password === true, '');
 
-    // ---- roles -------------------------------------------------------------
     const demoteSelf = await call('POST', `/admin/users/${adminId}/role`, {
       token: admin, body: { role: 'customer' },
     });
@@ -143,7 +127,6 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
     });
     step('and demoted again', demote.status === 200, `${demote.status}`);
 
-    // ---- an order to work with --------------------------------------------
     const custRelog = await call('POST', '/auth/login', {
       body: { phone: `0782${STAMP.slice(0, 6)}`, password: reset.body?.temporaryPassword },
     });
@@ -172,7 +155,6 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
     ]) await call('POST', `/orders/${orderId}/${path}`, { token: shop, body });
     await call('POST', `/orders/${orderId}/approve`, { token: cust });
 
-    // ---- payments ----------------------------------------------------------
     const payments = await call('GET', '/admin/payments?status=pending', { token: admin });
     step('pending payments are listed',
       payments.status === 200 && payments.body.payments.some((p) => p.order_id === orderId),
@@ -184,7 +166,6 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
     const settleTwice = await call('POST', `/admin/payments/${payment.id}/settle`, { token: admin });
     step('settling twice is refused', settleTwice.status === 409, String(settleTwice.status));
 
-    // ---- payouts -----------------------------------------------------------
     const nothingOwed = await call('POST', `/admin/payouts/${shopId}/pay`, { token: admin });
     step('paying a shopper who is owed nothing is refused', nothingOwed.status === 409,
       `${nothingOwed.status} ${nothingOwed.body?.error}`);
@@ -210,7 +191,6 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
     const noDouble = await call('POST', `/admin/payouts/${shopId}/pay`, { token: admin });
     step('paying out twice is refused', noDouble.status === 409, String(noDouble.status));
 
-    // ---- disputes ----------------------------------------------------------
     const disp = await call('POST', `/admin/orders/${orderId}/dispute`, {
       token: admin, body: { reason: 'price_mismatch', description: 'Charged more than agreed' },
     });
@@ -226,7 +206,6 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
     });
     step('a closed dispute cannot be re-resolved', reResolve.status === 409, String(reResolve.status));
 
-    // ---- broadcast ---------------------------------------------------------
     await call('PATCH', '/settings/preferences', { token: cust, body: { notifyMarketing: true } });
     const cast = await call('POST', '/admin/broadcast', {
       token: admin, body: { audience: 'customers', title: `Ops notice ${STAMP}`, body: 'Testing' },
@@ -240,7 +219,6 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
       [shopId, `Ops notice ${STAMP}`]);
     step('but not in the wrong audience', notShopper.rows[0].n === 0, String(notShopper.rows[0].n));
 
-    // ---- locations ---------------------------------------------------------
     const loc = await call('POST', '/admin/locations', {
       token: admin, body: { name: `Ops Market ${STAMP}`, type: 'market', city: 'Kampala' },
     });
@@ -249,7 +227,6 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
     step('and hidden again', off.status === 200 && off.body?.location?.is_active === false, `${off.status}`);
     await pool.query('DELETE FROM locations WHERE id = $1', [loc.body?.location?.id]);
 
-    // ---- reporting ---------------------------------------------------------
     const an = await call('GET', '/admin/analytics?days=14', { token: admin });
     step('analytics responds', an.status === 200 && Array.isArray(an.body?.daily), `${an.status}`);
     step('every day in the window is present, including empty ones',
@@ -258,7 +235,6 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
       typeof an.body?.totals?.gmv_ugx === 'number', `${typeof an.body?.totals?.gmv_ugx}`);
     step('top shoppers are ranked', Array.isArray(an.body?.topShoppers), '');
 
-    // ---- audit trail -------------------------------------------------------
     const log = await call('GET', '/admin/audit?limit=100', { token: admin });
     const actions = (log.body?.entries ?? []).map((e) => e.action);
     step('the audit log responds', log.status === 200 && Array.isArray(log.body?.entries), `${log.status}`);
@@ -274,15 +250,14 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
       for (const t of ['messages', 'order_status_history', 'order_items', 'evidence', 'receipts',
         'payments', 'transactions', 'shopper_earnings', 'deliveries', 'ratings', 'disputes',
         'order_locations']) {
-        try { await pool.query(`DELETE FROM "${t}" WHERE order_id = ANY($1)`, [oi]); } catch { /* not keyed */ }
+        try { await pool.query(`DELETE FROM "${t}" WHERE order_id = ANY($1)`, [oi]); } catch {  }
       }
       await pool.query('DELETE FROM orders WHERE id = ANY($1)', [oi]);
     }
     if (ids.length) {
       await pool.query('DELETE FROM admin_audit_log WHERE admin_id = ANY($1)', [ids]);
       await pool.query('DELETE FROM notifications WHERE user_id = ANY($1)', [ids]);
-      // A payout writes a transaction with no order_id, so the order-scoped
-      // sweep above misses it and the users delete then hits the FK.
+
       await pool.query('DELETE FROM transactions WHERE user_id = ANY($1)', [ids]);
       await pool.query('DELETE FROM shopper_earnings WHERE shopper_id = ANY($1)', [ids]);
       await pool.query('DELETE FROM shopping_request_items WHERE request_id IN (SELECT id FROM shopping_requests WHERE customer_id = ANY($1))', [ids]);
@@ -290,10 +265,7 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
       await pool.query('DELETE FROM shopping_requests WHERE customer_id = ANY($1)', [ids]);
       await pool.query('DELETE FROM users WHERE id = ANY($1)', [ids]);
     }
-    // Belt and braces, including anything a previous failed run left behind:
-    // resolve the accounts first, then unwind their dependents in FK order.
-    // Deleting the users straight off fails on transactions, which is exactly
-    // how the last aborted run wedged the next one.
+
     const stale = await pool.query(
       "SELECT id FROM users WHERE email LIKE 'ops-%@example.test'");
     const staleIds = stale.rows.map((r) => r.id);
@@ -305,7 +277,7 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
         for (const t of ['messages', 'order_status_history', 'order_items', 'evidence', 'receipts',
           'payments', 'transactions', 'shopper_earnings', 'deliveries', 'ratings', 'disputes',
           'order_locations']) {
-          try { await pool.query(`DELETE FROM "${t}" WHERE order_id = ANY($1)`, [so]); } catch { /* not keyed */ }
+          try { await pool.query(`DELETE FROM "${t}" WHERE order_id = ANY($1)`, [so]); } catch {  }
         }
         await pool.query('DELETE FROM orders WHERE id = ANY($1)', [so]);
       }
@@ -327,6 +299,6 @@ const reg = (role, name, phone, email) => call('POST', '/auth/register', {
   process.exit(failures.length ? 1 : 0);
 })().catch(async (e) => {
   console.error('HARNESS', e.message);
-  try { await pool.end(); } catch { /* closed */ }
+  try { await pool.end(); } catch {  }
   process.exit(1);
 });

@@ -32,9 +32,6 @@ export async function getById(req: Request, res: Response) {
   const history = await getOrderStatusHistory(order.id);
   const items = await query('SELECT * FROM order_items WHERE order_id = $1 ORDER BY created_at', [order.id]);
 
-  // Who is doing the shopping. The customer had no way to see this on the order
-  // itself — only a name buried in the chat — so they were tracking a stranger
-  // on a map. Balances and earnings are deliberately not included.
   const shopper = order.shopper_id
     ? await queryOne(
         `SELECT u.id, u.full_name, u.avatar_url, u.phone,
@@ -51,7 +48,7 @@ export async function getById(req: Request, res: Response) {
 }
 
 export async function listMine(req: Request, res: Response) {
-  // Staff have no orders of their own; the admin branch returns an empty set.
+
   const orders = await listOrdersForUser(
     req.user!.id,
     req.user!.role === 'super_admin' ? 'admin' : req.user!.role
@@ -59,7 +56,6 @@ export async function listMine(req: Request, res: Response) {
   res.json({ orders });
 }
 
-/** Generic guarded transition used by the simple (no-payload) status changes. */
 async function transition(req: Request, res: Response, to: OrderStatus, note?: string) {
   const order = await loadOrderOrThrow(req.params.id);
   assertParticipant(order, req.user!.id, req.user!.role);
@@ -69,12 +65,8 @@ async function transition(req: Request, res: Response, to: OrderStatus, note?: s
   res.json({ order: updated });
 }
 
-// shopper: requested -> shopper_assigned (redundant safety endpoint; normally
-// set automatically by offer.controller.acceptOffer, exposed here for the
-// "shopper taps Accept directly on an open request with no prior offer" path)
 export async function markAssigned(req: Request, res: Response) {
-  // Taking on a job is where the cap belongs — the order already exists and
-  // already names this shopper, so it is excluded from its own count.
+
   const order = await loadOrderOrThrow(req.params.id);
   if (order.shopper_id === req.user!.id) {
     const carrying = await countActiveJobs(req.user!.id, order.id);
@@ -86,7 +78,6 @@ export async function markAssigned(req: Request, res: Response) {
   await transition(req, res, 'shopper_assigned');
 }
 
-// shopper: shopper_assigned -> shopping ("On my way / searching")
 export async function markShopping(req: Request, res: Response) {
   await transition(req, res, 'shopping', 'Shopper is at the location searching for the item');
 }
@@ -97,7 +88,6 @@ const itemFoundSchema = z.object({
   shopName: z.string().max(150).optional(),
 });
 
-// shopper: shopping -> item_found. Records the real price + photo evidence.
 export async function markItemFound(req: Request, res: Response) {
   const input = itemFoundSchema.parse(req.body);
   const order = await loadOrderOrThrow(req.params.id);
@@ -114,8 +104,6 @@ export async function markItemFound(req: Request, res: Response) {
     note: `Item found at ${input.shopName ?? 'the location'} for the recorded price`,
   });
 
-  // Immediately move to awaiting_customer_approval so the customer sees a
-  // single actionable "approve this purchase" screen rather than two steps.
   assertValidTransition(updated.status, 'awaiting_customer_approval', req.user!.role);
   const awaiting = await updateOrderStatus(updated.id, 'awaiting_customer_approval', req.user!.id);
   await notifyOrderStatus(awaiting, 'awaiting_customer_approval', req.user!.id);
@@ -127,7 +115,6 @@ export async function markItemFound(req: Request, res: Response) {
   }) });
 }
 
-// customer: awaiting_customer_approval -> purchased
 export async function approvePurchase(req: Request, res: Response) {
   const order = await loadOrderOrThrow(req.params.id);
   assertParticipant(order, req.user!.id, req.user!.role);
@@ -157,16 +144,11 @@ export async function approvePurchase(req: Request, res: Response) {
   res.json({ order: updated, pricing });
 }
 
-// The amount is optional: by this point the customer has already approved a
-// price and it is on the order. Requiring the client to send it again meant a
-// shopper who reloaded the page — losing the form state from the earlier step —
-// could not file a receipt at all.
 const receiptSchema = z.object({
   receiptPhotoUrl: mediaUrl,
   amountUgx: z.number().int().positive().optional(),
 });
 
-// shopper: purchased -> out_for_delivery, with receipt evidence
 export async function markOutForDelivery(req: Request, res: Response) {
   const input = receiptSchema.parse(req.body);
   const order = await loadOrderOrThrow(req.params.id);
@@ -194,7 +176,6 @@ export async function markOutForDelivery(req: Request, res: Response) {
   res.json({ order: updated });
 }
 
-// customer: out_for_delivery -> delivered (only the customer may confirm this)
 export async function confirmDelivered(req: Request, res: Response) {
   const order = await loadOrderOrThrow(req.params.id);
   assertParticipant(order, req.user!.id, req.user!.role);
@@ -209,7 +190,6 @@ export async function confirmDelivered(req: Request, res: Response) {
   res.json({ order: updated });
 }
 
-// customer or shopper: delivered -> completed. Releases the shopper's earnings.
 export async function complete(req: Request, res: Response) {
   const order = await loadOrderOrThrow(req.params.id);
   assertParticipant(order, req.user!.id, req.user!.role);

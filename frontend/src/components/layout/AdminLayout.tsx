@@ -17,18 +17,11 @@ const ITEMS: NavItem[] = [
   { to: '/admin/operations', label: 'Operations', icon: Wrench },
   { to: '/admin/requests', label: 'Requests', icon: FileText },
   { to: '/admin/disputes', label: 'Disputes', icon: Scale },
-  // Fees is the platform's pricing, not the admin's own preferences — it had
-  // the Settings icon only because there was no Settings page to give it to.
+
   { to: '/admin/fees', label: 'Fees', icon: Percent },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
-/**
- * Only a super admin is shown these, and the API refuses them to anyone else.
- * An admin never sees the entries, so nothing in their console suggests a layer
- * above them exists — the same reasoning that keeps /admin off the customer and
- * shopper UI entirely.
- */
 const SUPER_ONLY: NavItem[] = [
   { to: '/admin/god-view', label: 'Everything', icon: Eye },
   { to: '/admin/staff', label: 'Admins', icon: ShieldCheck },
@@ -39,7 +32,6 @@ export function AdminLayout() {
   const isSuper = user?.role === 'super_admin';
   const items = isSuper ? [...SUPER_ONLY, ...ITEMS] : ITEMS;
 
-  // Wider than the other two: these pages are mostly tables.
   return (
     <AppShell
       items={items}

@@ -1,14 +1,3 @@
-/**
- * Proves the settings actually persist — every switch, not just the ones that
- * are easy to eyeball.
- *
- * A settings screen that looks like it saved and did not is worse than one that
- * plainly fails, because you only find out later when the thing you asked for
- * does not happen. Each field here is written, read back on a fresh request,
- * and compared.
- *
- * Creates one throwaway account and deletes it.
- */
 require('dotenv/config');
 const { Pool } = require('pg');
 
@@ -32,7 +21,7 @@ async function call(method, path, { token, body } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
   let json = null;
-  try { json = await res.json(); } catch { /* empty body */ }
+  try { json = await res.json(); } catch {  }
   return { status: res.status, body: json };
 }
 
@@ -52,14 +41,12 @@ async function call(method, path, { token, body } = {}) {
     const token = reg.body.accessToken;
     ids.push(reg.body.user.id);
 
-    // Defaults exist without anyone having saved anything.
     const initial = await call('GET', '/settings/preferences', { token });
     step('preferences exist on first read', initial.status === 200 && !!initial.body?.preferences,
       `${initial.status}`);
     step('location starts off', initial.body?.preferences?.share_location === false,
       String(initial.body?.preferences?.share_location));
 
-    // Every field, in one patch, then read back on a separate request.
     const patch = {
       theme: 'dark',
       accent: 'plum',
@@ -89,14 +76,11 @@ async function call(method, path, { token, body } = {}) {
     step('traits persist as a list',
       Array.isArray(p.traits) && p.traits.join(',') === 'Concise,Formal', JSON.stringify(p.traits));
 
-    // Turning something back off has to stick too — a toggle that only saves
-    // in one direction is the classic way this breaks.
     await call('PATCH', '/settings/preferences', { token, body: { shareLocation: false } });
     const off = await call('GET', '/settings/preferences', { token });
     step('a preference can be turned back off', off.body?.preferences?.share_location === false,
       String(off.body?.preferences?.share_location));
 
-    // The dismissal timestamp drives whether the prompt returns.
     const when = new Date().toISOString();
     await call('PATCH', '/settings/preferences', { token, body: { locationPromptDismissedAt: when } });
     const dis = await call('GET', '/settings/preferences', { token });
@@ -109,11 +93,9 @@ async function call(method, path, { token, body } = {}) {
       cleared.body?.preferences?.location_prompt_dismissed_at === null,
       String(cleared.body?.preferences?.location_prompt_dismissed_at));
 
-    // An accent with no CSS block would silently render as the default.
     const bogus = await call('PATCH', '/settings/preferences', { token, body: { accent: 'chartreuse' } });
     step('an unknown accent is refused', bogus.status === 400, `${bogus.status}`);
 
-    // Profile: the avatar in particular, since the top bar writes it.
     const prof = await call('PATCH', '/settings/profile', {
       token, body: { fullName: 'Settings Probe Renamed' },
     });
@@ -141,6 +123,6 @@ async function call(method, path, { token, body } = {}) {
   process.exit(failures.length ? 1 : 0);
 })().catch(async (e) => {
   console.error('HARNESS', e.message);
-  try { await pool.end(); } catch { /* already closed */ }
+  try { await pool.end(); } catch {  }
   process.exit(1);
 });

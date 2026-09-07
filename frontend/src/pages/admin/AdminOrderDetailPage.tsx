@@ -184,8 +184,7 @@ export function AdminOrderDetailPage() {
         {evidence.length === 0 && receipts.length === 0 ? <Empty>Nothing uploaded.</Empty> : (
           <div className="grid gap-3 sm:grid-cols-3">
             {evidence.map((e: any) => (
-              // Evidence is the thing a dispute turns on, so it opens in the
-              // zoom viewer (and can be downloaded) rather than a new tab.
+
               <div key={e.id} className="rounded-xl2 border border-brand-green/15 p-2">
                 <ZoomableImage
                   src={e.file_url}
@@ -217,8 +216,7 @@ export function AdminOrderDetailPage() {
               <div key={m.id} className={`max-w-[80%] rounded-xl2 px-3 py-2 ${m.sender_role === 'shopper' ? 'self-start bg-brand-green-mist' : 'self-end bg-brand-white/80 border border-brand-green/10'}`}>
                 <p className="text-[11px] font-semibold text-brand-ink/50">{m.sender_name} · {m.sender_role}</p>
                 {m.body && <p className="mt-0.5 text-sm text-brand-ink/80">{m.body}</p>}
-                {/* A voice note is as much a part of the record as a photo —
-                    playable here so a dispute can actually be adjudicated. */}
+
                 {m.attachment_url && m.attachment_type === 'audio' && (
                   <div className="mt-2">
                     <VoiceNotePlayer src={m.attachment_url} durationMs={m.attachment_duration_ms} tone="other" />
@@ -257,7 +255,6 @@ export function AdminOrderDetailPage() {
         </Panel>
       )}
 
-      {/* Admin-only interventions. Deliberately last, and never one-click. */}
       <Panel title="Admin actions">
         <div className="grid gap-6 md:grid-cols-2">
           <div>

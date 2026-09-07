@@ -23,7 +23,6 @@ async function call(method, path, token, body) {
 (async () => {
   console.log('\n=== admin control centre probe ===\n');
 
-  // A throwaway admin plus a throwaway customer to prove the guard.
   const reg = await call('POST', '/auth/register', null, {
     role: 'customer', fullName: 'Probe Admin',
     phone: `0755${STAMP.slice(0, 6)}`, email: `probe-admin-${STAMP}@example.test`,
@@ -40,7 +39,6 @@ async function call(method, path, token, body) {
   const plainToken = plain.body.accessToken;
   const plainId = plain.body.user.id;
 
-  // Promote one to admin, then log in again so the JWT carries role=admin.
   await pool.query("UPDATE users SET role = 'admin' WHERE id = $1", [adminId]);
   const relog = await call('POST', '/auth/login', null, {
     phone: `0755${STAMP.slice(0, 6)}`, password: 'E2ePassword123!',
@@ -48,7 +46,6 @@ async function call(method, path, token, body) {
   const admin = relog.body?.accessToken;
   step('admin can log in', !!admin && relog.body.user.role === 'admin', JSON.stringify(relog.body?.user?.role));
 
-  // ---- the guard ---------------------------------------------------------
   for (const p of ['/admin/activity', '/admin/presence', '/admin/search?q=a', '/admin/dashboard']) {
     const anon = await call('GET', p, null);
     step(`anonymous blocked from ${p}`, anon.status === 401, String(anon.status));
@@ -56,7 +53,6 @@ async function call(method, path, token, body) {
     step(`customer blocked from ${p}`, cust.status === 403, String(cust.status));
   }
 
-  // ---- the new endpoints -------------------------------------------------
   const act = await call('GET', '/admin/activity?limit=50', admin);
   step('activity feed responds', act.status === 200 && Array.isArray(act.body?.activity),
     `${act.status} ${JSON.stringify(act.body).slice(0, 200)}`);
@@ -91,7 +87,6 @@ async function call(method, path, token, body) {
   const missing = await call('GET', '/admin/customers/00000000-0000-0000-0000-000000000000', admin);
   step('unknown customer 404s', missing.status === 404, String(missing.status));
 
-  // Use a real order if the database has one.
   const anyOrder = await pool.query('SELECT id, shopper_id FROM orders LIMIT 1');
   if (anyOrder.rows.length) {
     const od = await call('GET', `/admin/orders/${anyOrder.rows[0].id}`, admin);

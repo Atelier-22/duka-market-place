@@ -28,7 +28,6 @@ export async function listMine(req: Request, res: Response) {
 
 const confirmSchema = z.object({ paymentId: z.string().uuid() });
 
-/** Customer/admin confirms a cash-on-delivery or manual payment was received. */
 export async function confirm(req: Request, res: Response) {
   const { paymentId } = confirmSchema.parse(req.body);
   const result = await paymentService.confirmManually(paymentId);

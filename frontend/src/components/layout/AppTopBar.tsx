@@ -10,14 +10,6 @@ function initials(name: string): string {
   return name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
 }
 
-/**
- * The bar across the top of every signed-in page: the logo on the left, the
- * person's picture on the right.
- *
- * The avatar is the control for changing itself. Burying "profile picture"
- * three taps deep in Settings is why most accounts here have none — the place
- * you notice it missing should be the place you can fix it.
- */
 export function AppTopBar({ roleLabel }: { roleLabel: string }) {
   const { user, refresh } = useAuth();
   const { push } = useToast();
@@ -80,15 +72,12 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
   const item = 'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-brand-ink/75 transition-colors hover:bg-brand-green-mist disabled:opacity-50';
 
   return (
-    // Floating: inset from every edge and fully rounded, so it reads as a bar
-    // resting above the page rather than one welded to the top of it. `top-2`
-    // keeps that gap while it is stuck during a scroll.
+
     <header
       className="glass-liquid sticky top-2 z-40 mx-2 mb-4 flex items-center justify-between gap-3 rounded-2xl px-2 py-2 sm:mx-3 sm:px-2.5"
       style={{ marginTop: 'max(0.5rem, env(safe-area-inset-top))' }}
     >
-      {/* On its own chip: the bar is deliberately close to invisible, and the
-          logo must not go with it when a photo or a map scrolls underneath. */}
+
       <Link
         to={home}
         aria-label="Duka home"
@@ -143,7 +132,6 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
           </div>
         )}
 
-        {/* No `capture` — this one opens the gallery. */}
         <input
           ref={libraryRef}
           type="file"

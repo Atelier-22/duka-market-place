@@ -19,15 +19,6 @@ function Stat({ label, value, to, tone = 'ink' }: {
   return to ? <Link to={to}>{inner}</Link> : inner;
 }
 
-/**
- * Everything at once, for a super admin: the platform, and what the staff have
- * been doing to it.
- *
- * The staff feed is the part that only exists here. An admin can see the audit
- * log of their own console; a super admin sees it across every admin, with who
- * did what, which is the difference between running the platform and overseeing
- * the people who run it.
- */
 export function AdminGodViewPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);

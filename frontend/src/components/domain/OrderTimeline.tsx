@@ -20,64 +20,38 @@ const STEP_ICONS: Record<string, LucideIcon> = {
 };
 
 export interface TimelineAction {
-  /** Element on this page to scroll to and flash. */
+
   targetId?: string;
-  /** Somewhere else entirely — the chat, the order, a receipt. */
+
   to?: string;
-  /** What tapping it does. Shown under the step and used as the tooltip. */
+
   hint: string;
 }
 
 interface OrderTimelineProps {
   status: OrderStatus;
-  /**
-   * Whose screen this is. The shopper sees the same stages described as their
-   * own actions rather than as things a shopper did to them.
-   */
+
   perspective?: OrderPerspective;
-  /**
-   * Where each stage lives on this page. Steps with an entry become buttons;
-   * the rest stay as plain markers. Supplied by the page rather than hard-coded
-   * here, because the same timeline is rendered for both sides of an order and
-   * "approve the purchase" is a different card on each.
-   */
+
   actions?: Partial<Record<OrderStatus, TimelineAction>>;
 }
 
-/**
- * Move the page to a panel and make it obvious which one just arrived.
- *
- * Scrolling alone is not enough on a long order page — you land somewhere and
- * still have to work out which card you were sent to, which is the original
- * complaint about not being able to find the approve button.
- */
 export function revealPanel(targetId: string) {
   const el = document.getElementById(targetId);
   if (!el) return;
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   el.classList.remove('flash-target');
-  // Reading offsetWidth forces the class removal to take effect before it is
-  // added again; without it the animation does not restart on a second tap.
+
   void el.offsetWidth;
   el.classList.add('flash-target');
   window.setTimeout(() => el.classList.remove('flash-target'), 2000);
 }
 
-/**
- * The real-time-style order tracker from the product brief. Renders every
- * stage of REQUESTED → ... → DELIVERED and highlights where the order
- * currently sits. A cancelled/disputed/refunded order still shows the trail
- * it walked before branching off.
- *
- * Every stage that has somewhere to go is a button. People were reading the
- * timeline as a picture and then hunting the page for the thing it was
- * describing — so the picture is now the way there.
- */
 export function OrderTimeline({ status, perspective = 'customer', actions = {} }: OrderTimelineProps) {
   const navigate = useNavigate();
   const labels = orderStepLabels(perspective);
   const currentIndex = ORDER_STEPS.indexOf(status);
-  const isBranched = currentIndex === -1; // cancelled / disputed / refunded
+  const isBranched = currentIndex === -1;
 
   function go(action: TimelineAction) {
     if (action.to) navigate(action.to);
@@ -121,8 +95,7 @@ export function OrderTimeline({ status, perspective = 'customer', actions = {} }
                 {labels[step]}
               </p>
               {active && <p className="mt-0.5 text-xs text-brand-green-fresh">In progress</p>}
-              {/* The hint is what makes the step legible as a destination
-                  rather than a label that happens to respond to taps. */}
+
               {clickable && (
                 <p className={`mt-0.5 flex items-center gap-1 text-xs font-medium ${
                   active ? 'text-brand-green-deep' : 'text-brand-ink/45'

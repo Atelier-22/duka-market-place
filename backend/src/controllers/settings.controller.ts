@@ -17,9 +17,7 @@ export async function getPreferences(req: Request, res: Response) {
 
 const preferencesSchema = z.object({
   theme: z.enum(['system', 'light', 'dark']).optional(),
-  // Kept in step with the [data-accent] blocks in frontend/src/index.css and
-  // the ACCENTS list in SettingsPage; an accent with no CSS block silently
-  // falls back to the default palette, so the three must not drift.
+
   accent: z.enum([
     'green', 'ocean', 'sunset', 'grape', 'charcoal',
     'rose', 'amber', 'teal', 'indigo', 'crimson',
@@ -34,8 +32,7 @@ const preferencesSchema = z.object({
   notifyNewRequests: z.boolean().optional(),
   notifyMarketing: z.boolean().optional(),
   shareLocation: z.boolean().optional(),
-  // Sent when the prompt is dismissed, so it can return later rather than
-  // either nagging every load or never appearing again.
+
   locationPromptDismissedAt: z.string().datetime().nullable().optional(),
 });
 
@@ -67,13 +64,8 @@ const profileSchema = z.object({
   avatarUrl: mediaUrl.nullable().optional(),
 });
 
-/**
- * Account details. Email and phone stay unique per role, so a change is
- * checked against the same-role constraint before it is written.
- */
 export async function updateProfile(req: Request, res: Response) {
-  // Staff are not rows in `users`; their profile lives in `staff`, and writing
-  // the other table would silently do nothing.
+
   if (req.user!.kind === 'staff') {
     const input = profileSchema.parse(req.body);
     const updated = await queryOne(
@@ -170,8 +162,6 @@ export async function changePassword(req: Request, res: Response) {
   const user = await findUserById(req.user!.id);
   if (!user) throw new ApiError(404, 'User not found');
 
-  // Requiring the current password is what stops a hijacked session from
-  // locking the real owner out.
   const valid = await verifyPassword(input.currentPassword, user.password_hash);
   if (!valid) throw new ApiError(403, 'Your current password is not correct');
 
@@ -188,10 +178,6 @@ export async function changePassword(req: Request, res: Response) {
   res.json({ ok: true });
 }
 
-/**
- * Data controls: everything this account holds, as JSON. Deliberately a read —
- * account deletion is a separate, irreversible action and is not exposed here.
- */
 export async function exportData(req: Request, res: Response) {
   const userId = req.user!.id;
   const user = await findUserById(userId);

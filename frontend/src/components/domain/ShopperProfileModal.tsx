@@ -25,15 +25,6 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-/**
- * Who is doing your shopping.
- *
- * A customer is about to hand a stranger money and their home address, so the
- * things that answer "can I trust this person" lead: their face, whether their
- * ID has been checked, their rating, and what other customers said. Presented
- * as a sheet rather than a page so it can be opened from an offer, an order, or
- * a chat without losing where you were.
- */
 export function ShopperProfileModal({ shopperId, onClose }: ShopperProfileModalProps) {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -90,8 +81,7 @@ export function ShopperProfileModal({ shopperId, onClose }: ShopperProfileModalP
             <div className="flex flex-col items-center text-center">
               <div className="relative">
                 {profile.avatar_url ? (
-                  // Tappable: a photo you cannot enlarge is not much use for
-                  // recognising someone at a gate.
+
                   <ZoomableImage
                     src={profile.avatar_url}
                     alt={profile.full_name}

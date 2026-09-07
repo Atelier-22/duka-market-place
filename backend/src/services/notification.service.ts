@@ -3,22 +3,11 @@ import { MAX_ACTIVE_JOBS } from '../models/order.model';
 import { query } from '../db/pool';
 import { OrderStatus, UserRole } from '../types';
 
-/**
- * Every in-app notification is raised through here rather than inserted at the
- * call site, so the copy for a given event lives in one place and a failure to
- * notify can never fail the action that triggered it — see `notify`.
- */
-
 interface Recipient {
   userId: string;
   role: Extract<UserRole, 'customer' | 'shopper'>;
 }
 
-/**
- * Notifications are a side effect of an action that has already succeeded. If
- * the insert fails the user must still get their 200 — losing a bell entry is
- * far better than failing a delivery confirmation because of it.
- */
 async function notify(input: { userId: string; title: string; body?: string; link?: string }) {
   try {
     await createNotification(input);
@@ -32,10 +21,6 @@ function orderLink(role: Recipient['role'], orderId: string): string {
   return role === 'shopper' ? `/shopper/orders/${orderId}` : `/app/orders/${orderId}`;
 }
 
-/**
- * What each side should be told when an order reaches a given status. A null
- * entry means that side took the action themselves and does not need telling.
- */
 const STATUS_COPY: Partial<Record<OrderStatus, { customer: string | null; shopper: string | null }>> = {
   shopper_assigned: {
     customer: 'A shopper accepted your request',
@@ -83,10 +68,6 @@ const STATUS_COPY: Partial<Record<OrderStatus, { customer: string | null; shoppe
   },
 };
 
-/**
- * Tells whichever side did not perform the transition. `actorId` is skipped so
- * nobody is notified about their own tap.
- */
 export async function notifyOrderStatus(order: {
   id: string;
   customer_id: string;
@@ -131,24 +112,6 @@ export async function notifyNewMessage(input: {
   });
 }
 
-/**
- * Tell shoppers a job has been posted.
- *
- * The one event that decides whether a shopper earns anything was the one event
- * that raised no notification — they had to keep reopening "Available jobs" to
- * find out. This fans out to every shopper who could actually take it.
- *
- * Written as a single INSERT..SELECT rather than a loop: this runs inside the
- * request that creates the job, and one round trip per shopper would make
- * posting a request slower for every shopper who joins the platform.
- *
- * Who is skipped, and why:
- *   - deactivated accounts, and anyone who turned these alerts off
- *   - shoppers already carrying the maximum number of jobs — they cannot take
- *     it, so telling them is just noise
- *   - the customer's own shopper account, for people who hold both roles;
- *     nobody needs alerting to their own request
- */
 export async function notifyShoppersOfNewRequest(input: {
   requestId: string;
   customerId: string;
@@ -190,8 +153,7 @@ export async function notifyShoppersOfNewRequest(input: {
     );
     return rows.length;
   } catch (err) {
-    // Same rule as every other notification: never fail the action that
-    // triggered it. A customer's request must post even if nobody is told.
+
     // eslint-disable-next-line no-console
     console.error('Failed to notify shoppers of a new request', err);
     return 0;
@@ -221,12 +183,6 @@ export async function notifyOfferAccepted(input: { shopperId: string; orderId: s
   });
 }
 
-/**
- * The shopper ticked "done shopping, delivering now". This is deliberately
- * separate from the out_for_delivery status notification: the clock can start
- * before the receipt is uploaded, and telling the customer their order is
- * "on the way" when the order has not reached that status yet would be a lie.
- */
 export async function notifyDeliveryStarted(input: {
   customerId: string;
   orderId: string;

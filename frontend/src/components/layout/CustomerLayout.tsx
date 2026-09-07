@@ -2,8 +2,6 @@ import { ClipboardList, CreditCard, Home, MessageCircle, Package, PlusCircle, Se
 import { AppShell } from './AppShell';
 import { NavItem } from './MobileNav';
 
-// Order matters on a phone: the first four become the bottom tabs, so they are
-// the things a customer does constantly, not the full alphabet of pages.
 const ITEMS: NavItem[] = [
   { to: '/app', label: 'Home', icon: Home },
   { to: '/app/requests/new', label: 'Request', icon: PlusCircle },

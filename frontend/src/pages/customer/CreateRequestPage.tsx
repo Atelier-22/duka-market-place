@@ -27,30 +27,23 @@ export function CreateRequestPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
 
-  // Step 1: what
   const [title, setTitle] = useState('');
-  // Step 2: details
+
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('1');
-  // Step 3: where
+
   const [sourcingType, setSourcingType] = useState<SourcingType>('shopper_choice');
   const [locationId, setLocationId] = useState('');
   const [socialSellerUrl, setSocialSellerUrl] = useState('');
-  // Step 4: budget
+
   const [budgetMin, setBudgetMin] = useState('');
   const [budgetMax, setBudgetMax] = useState('');
-  // Step 5: delivery
+
   const [addressId, setAddressId] = useState('');
   const [newAddressLine, setNewAddressLine] = useState('');
   const [addingAddress, setAddingAddress] = useState(false);
   const [notes, setNotes] = useState('');
 
-  /**
-   * Locations grouped by town, in the order the server sent them — it already
-   * orders by city then name, so the grouping only has to preserve that.
-   * Kampala first regardless, because most orders are still there and it
-   * should not sit under "Jinja" purely by alphabet.
-   */
   const locationsByCity = useMemo(() => {
     const groups = new Map<string, Location[]>();
     for (const l of locations) {
@@ -75,19 +68,6 @@ export function CreateRequestPage() {
     });
   }, []);
 
-  /**
-   * Why Continue is not available yet, in words — or null when it is.
-   *
-   * This was a list of booleans, so the button simply went grey and the reason
-   * lived only in the code. A disabled button is also `pointer-events-none`,
-   * so there was not even a tooltip to go looking for: you either guessed
-   * which field was wrong or gave up. The reason is now shown next to it.
-   *
-   * The location check covers 'specific_shop' as well. The picker has always
-   * been shown for both, but only 'specific_market' was ever required, so
-   * naming a shop and choosing nothing walked past this step and posted a
-   * request no shopper could act on.
-   */
   const blockedReason: string | null = [
     title.trim().length >= 3 ? null : 'Tell us what you need first — a few words is enough.',
     null,
@@ -103,15 +83,6 @@ export function CreateRequestPage() {
 
   const canProceed = !blockedReason;
 
-  /**
-   * Ask the browser where we are, if it will say.
-   *
-   * A typed line like "Mbalwa" is not somewhere a shopper can navigate to, and
-   * every address in the database was stored without coordinates — which is why
-   * delivery pins never appeared on anyone's map. This attaches them at the one
-   * moment the customer is most likely to be standing at the address. It is
-   * best-effort: a refused prompt saves the address anyway.
-   */
   function currentCoords(): Promise<{ lat: number; lng: number } | null> {
     if (!('geolocation' in navigator)) return Promise.resolve(null);
     return new Promise((resolve) => {
@@ -175,11 +146,6 @@ export function CreateRequestPage() {
       <h1 className="font-display text-2xl font-medium text-brand-green-deep">Request something</h1>
       <p className="mt-1 text-sm text-brand-ink/50">Tell us what you need — we'll find someone nearby to get it.</p>
 
-      {/* Progress.
-          Six 11px captions across a 360px phone are unreadable, and unreadable
-          labels are why the flow felt like it had hidden steps. On a phone the
-          position is stated in words — which step, of how many, and what it is
-          called — and the captions only appear once there is room for them. */}
       <div className="mt-6">
         <div className="flex items-center gap-1.5">
           {STEPS.map((s, i) => (
@@ -261,9 +227,7 @@ export function CreateRequestPage() {
                   onChange={(e) => setLocationId(e.target.value)}
                 >
                   <option value="">Select a location…</option>
-                  {/* Grouped by town, and a native select on purpose: the OS
-                      picker gives full-size touch targets and a scroll people
-                      already know, which no custom dropdown matches on a phone. */}
+
                   {locationsByCity.map(([city, inCity]) => (
                     <optgroup key={city} label={city}>
                       {inCity.map((l) => (
@@ -346,17 +310,13 @@ export function CreateRequestPage() {
         )}
       </GlassCard>
 
-      {/* Sticky on a phone: the step content is long enough to scroll, and a
-          Continue button parked below the fold reads as a dead end. It stays
-          in normal flow once the viewport is tall enough not to need it. */}
       <div
         className={[
           'sticky bottom-0 z-10 mt-6 -mx-4 border-t border-brand-green/10 bg-white/85 px-4 py-3',
           'backdrop-blur-md sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:backdrop-blur-none',
         ].join(' ')}
       >
-        {/* The reason Continue is unavailable, where the thumb already is.
-            aria-live so it is announced rather than silently appearing. */}
+
         {blockedReason && step < STEPS.length - 1 && (
           <p className="mb-2 text-center text-xs font-medium text-brand-ink/60" aria-live="polite">
             {blockedReason}

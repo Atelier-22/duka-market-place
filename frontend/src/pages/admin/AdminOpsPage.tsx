@@ -17,11 +17,6 @@ const AUDIENCES = [
   { value: 'shoppers', label: 'Shoppers' },
 ] as const;
 
-/**
- * The three operational tools that are not about one person or one order:
- * telling everybody something, curating the markets people can shop in, and
- * reading back what admins have done.
- */
 export function AdminOpsPage() {
   const { push } = useToast();
   const [tab, setTab] = useState<Tab>('announce');

@@ -5,10 +5,10 @@ export interface TrackingState {
   trackable: boolean;
   status: string;
   shopper: { lat: number; lng: number; accuracyM: number | null; recordedAt: string } | null;
-  /** The customer's live position, when they are sharing it. */
+
   customer: { lat: number; lng: number; accuracyM: number | null; recordedAt: string } | null;
   destination: { lat: number; lng: number; label: string } | null;
-  /** Present even when the address has no coordinates on it. */
+
   deliveryAddressId: string | null;
   deliveryAddressLabel: string | null;
   destinationPinned: boolean;
@@ -21,10 +21,8 @@ export interface TrackingState {
   deliveryDeferredTo: string | null;
 }
 
-/** How often the customer's map asks for a fresh position. */
 const POLL_MS = 15_000;
 
-/** Reads the shopper's live position for an order. */
 export function useOrderTracking(orderId: string | undefined, enabled: boolean) {
   const [tracking, setTracking] = useState<TrackingState | null>(null);
 
@@ -34,7 +32,7 @@ export function useOrderTracking(orderId: string | undefined, enabled: boolean) 
       const res = await api.get(`/orders/${orderId}/tracking`);
       setTracking(res.data);
     } catch {
-      // Tracking is supplementary; a failed poll must not break the order page.
+
     }
   }, [orderId]);
 
@@ -48,16 +46,8 @@ export function useOrderTracking(orderId: string | undefined, enabled: boolean) 
   return { tracking, refresh: load };
 }
 
-/** How often the shopper's browser reports where it is. */
 const BROADCAST_MS = 20_000;
 
-/**
- * Publishes the shopper's position for an order while `active` is true.
- *
- * Location is only ever read with the browser's permission, only while a job
- * is genuinely in flight, and the watch is torn down the moment it isn't —
- * this must never become a background tracker.
- */
 export function useBroadcastPosition(orderId: string | undefined, active: boolean) {
   const [error, setError] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
@@ -77,7 +67,7 @@ export function useBroadcastPosition(orderId: string | undefined, active: boolea
       (pos) => {
         setError(null);
         setSharing(true);
-        // watchPosition can fire far more often than we want to write rows.
+
         const now = Date.now();
         if (now - lastSent.current < BROADCAST_MS) return;
         lastSent.current = now;
@@ -87,12 +77,10 @@ export function useBroadcastPosition(orderId: string | undefined, active: boolea
           lng: pos.coords.longitude,
           accuracyM: pos.coords.accuracy,
         }).catch((err) => {
-          // Swallowing this is how a broken broadcast stayed invisible: the
-          // browser said "sharing", the server refused every write, and nobody
-          // found out until someone asked why the map was empty.
+
           setSharing(false);
           setError(apiErrorMessage(err));
-          // Let the next fix retry rather than waiting out the throttle.
+
           lastSent.current = 0;
         });
       },

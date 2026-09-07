@@ -20,7 +20,6 @@ interface ShopperOfferCardProps {
   accepting?: boolean;
 }
 
-/** Lets a customer compare shoppers on rating, fee, and estimated time — per the brief. */
 export function ShopperOfferCard({ offer, onAccept, accepting }: ShopperOfferCardProps) {
   const [showProfile, setShowProfile] = useState(false);
   const totalFee = Number(offer.shopping_fee_ugx) + Number(offer.delivery_fee_ugx);
@@ -30,7 +29,7 @@ export function ShopperOfferCard({ offer, onAccept, accepting }: ShopperOfferCar
   return (
     <GlassCard hover={false} className="flex flex-col gap-3">
       <div className="flex items-start gap-3">
-        {/* A face, not just a name — this is the person coming to your door. */}
+
         <button
           type="button"
           onClick={() => setShowProfile(true)}

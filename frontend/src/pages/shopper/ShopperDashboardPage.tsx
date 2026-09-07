@@ -21,10 +21,9 @@ export function ShopperDashboardPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [togglingOnline, setTogglingOnline] = useState(false);
-  /** The order id currently being accepted/declined — several may be waiting. */
+
   const [deciding, setDeciding] = useState<string | null>(null);
 
-  /** Accept or decline a job the customer assigned but the shopper hasn't answered. */
   async function decide(orderId: string, accept: boolean) {
     setDeciding(orderId);
     try {
@@ -112,8 +111,7 @@ export function ShopperDashboardPage() {
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="font-display text-lg font-medium text-brand-green-deep">
               Your jobs
-              {/* Slots used, so the cap is never a surprise at the moment
-                  someone tries to take a sixth. */}
+
               <span className="ml-2 text-sm font-normal text-brand-ink/40">
                 {activeJobs.length} of {limit}
               </span>

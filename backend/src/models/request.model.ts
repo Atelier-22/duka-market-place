@@ -77,7 +77,6 @@ export async function listRequestsForCustomer(customerId: string): Promise<Reque
   );
 }
 
-/** Requests visible to shoppers: open ones, optionally filtered by location. */
 export async function listOpenRequests(filters: { locationId?: string }): Promise<RequestRow[]> {
   if (filters.locationId) {
     return query<RequestRow>(

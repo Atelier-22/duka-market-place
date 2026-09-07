@@ -8,11 +8,6 @@ interface PricingBreakdownProps {
   totalUgx?: Amount;
 }
 
-/**
- * Money arrives over JSON and a BIGINT can serialise as a string, in which case
- * `a + b` concatenates rather than adds and the customer is quoted a total in
- * the quadrillions. Never add these values raw.
- */
 function amount(value: Amount): number {
   if (value === null || value === undefined || value === '') return 0;
   const parsed = Number(value);
@@ -23,12 +18,6 @@ function formatUgx(n: Amount) {
   return new Intl.NumberFormat('en-UG').format(amount(n)) + ' UGX';
 }
 
-/**
- * The transparent pricing card required by the product brief: item price,
- * shopping fee, delivery fee and platform fee are always shown as separate
- * line items — never collapsed into a single number the customer has to
- * trust blindly.
- */
 export function PricingBreakdown({
   itemPriceUgx, shoppingFeeUgx, deliveryFeeUgx, platformFeeUgx = 0, totalUgx,
 }: PricingBreakdownProps) {
@@ -38,9 +27,6 @@ export function PricingBreakdown({
   const platform = amount(platformFeeUgx);
   const lineSum = item + shopping + delivery + platform;
 
-  // Prefer the total the server recorded, but only when it agrees with the
-  // lines above it. A stored total that contradicts its own breakdown is a bug,
-  // and showing it would be asking someone to pay a number we cannot justify.
   const stored = amount(totalUgx);
   const total = stored > 0 && stored === lineSum ? stored : lineSum;
 

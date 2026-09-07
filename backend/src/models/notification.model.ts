@@ -39,7 +39,6 @@ export async function countUnread(userId: string): Promise<number> {
   return Number(row?.n ?? 0);
 }
 
-/** Marks one notification read. Scoped by user_id so ids cannot be guessed. */
 export async function markRead(userId: string, id: string): Promise<NotificationRow | null> {
   return queryOne<NotificationRow>(
     `UPDATE notifications SET read_at = now()

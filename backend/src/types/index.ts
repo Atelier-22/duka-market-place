@@ -36,21 +36,10 @@ export interface AuthUser {
 
 export interface JwtPayload {
   sub: string;
-  /**
-   * `staff` means the subject is a row in `staff`, not `users`. Carried in the
-   * token because the two tables are separate and an id alone no longer says
-   * which one to look in — and because a user token must never be able to
-   * address a staff account by guessing an id.
-   */
+
   kind?: 'user' | 'staff';
   role: UserRole | 'admin' | 'super_admin';
-  /**
-   * Ids of the other accounts this person proved ownership of at login, by the
-   * submitted password also verifying against them. Carried in the signed token
-   * so /auth/switch-account can hand out tokens for a sibling account without
-   * asking for the password again — and so a sibling that was never
-   * password-proven can never be switched into.
-   */
+
   linked?: string[];
 }
 

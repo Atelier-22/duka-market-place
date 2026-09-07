@@ -10,13 +10,6 @@ import { formatDate, formatUgx } from './AdminDetailShell';
 
 type Tab = 'payouts' | 'payments';
 
-/**
- * Money owed out, and money owed in.
- *
- * Both are irreversible from the UI, so both confirm first and both name the
- * exact figure in the confirmation — "pay this shopper" is not a sentence
- * anyone should agree to without seeing the number.
- */
 export function AdminFinancePage() {
   const { push } = useToast();
   const [tab, setTab] = useState<Tab>('payouts');

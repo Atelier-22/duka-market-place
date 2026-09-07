@@ -27,21 +27,13 @@ import verificationRoutes from './routes/verification.routes';
 
 const app = express();
 
-app.use(helmet({ crossOriginResourcePolicy: false })); // allow serving /uploads across origin in dev
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors({ origin: env.corsOrigins, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
 app.use(morgan(env.nodeEnv === 'development' ? 'dev' : 'combined'));
 
-// Serves uploads back from whichever driver is configured — the database by
-// default, because a container's disk does not survive a deploy and every
-// image anyone had sent was being wiped with it. Same URL shape as the old
-// static folder, so URLs already stored in message rows keep resolving.
 app.get(/^\/uploads\/(.+)$/, asyncHandler(fileController.serve));
 
-// `storage` is here because the difference between a durable driver and a
-// container disk is invisible from outside until photos start disappearing
-// days later. Reporting it makes a misconfigured deploy answerable in one
-// request instead of one bug report.
 app.get('/health', (_req, res) => res.json({
   status: 'ok',
   env: env.nodeEnv,
@@ -52,7 +44,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/orders', messageRoutes); // mounted under /api/orders/:orderId/messages
+app.use('/api/orders', messageRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/ratings', ratingRoutes);
 app.use('/api/disputes', disputeRoutes);

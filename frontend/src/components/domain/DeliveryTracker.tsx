@@ -9,7 +9,6 @@ function formatDistance(metres: number): string {
   return metres < 1000 ? `${metres} m away` : `${(metres / 1000).toFixed(1)} km away`;
 }
 
-/** Counts down from the ETA recorded when delivery started. */
 function useCountdown(startedAt: string | null, etaMinutes: number | null) {
   const [now, setNow] = useState(() => Date.now());
 
@@ -24,11 +23,6 @@ function useCountdown(startedAt: string | null, etaMinutes: number | null) {
   return Math.round(etaMinutes - elapsedMin);
 }
 
-/**
- * The customer's live view of a delivery: where the shopper is, how far away,
- * and how long the countdown has left. Shown only while the order is actually
- * in flight.
- */
 export function DeliveryTracker({
   tracking,
   sharingLocation = false,
@@ -36,11 +30,11 @@ export function DeliveryTracker({
   onPinned,
 }: {
   tracking: TrackingState | null;
-  /** Whether this browser is currently publishing the customer's position. */
+
   sharingLocation?: boolean;
-  /** Why it isn't, when it isn't — permission, or a rejected write. */
+
   locationError?: string | null;
-  /** Refresh tracking after the address gains coordinates. */
+
   onPinned?: () => void;
 }) {
   const remaining = useCountdown(tracking?.deliveryStartedAt ?? null, tracking?.deliveryEtaMinutes ?? null);
@@ -111,8 +105,6 @@ export function DeliveryTracker({
         </p>
       )}
 
-      {/* An unpinned address is the single reason a shopper's map comes up
-          empty, so it gets a prompt rather than a quiet status line. */}
       {!tracking.destinationPinned && tracking.deliveryAddressId && (
         <div className="mt-3 rounded-xl bg-brand-yellow-soft/60 px-4 py-3">
           <p className="text-sm text-yellow-900">
@@ -129,7 +121,6 @@ export function DeliveryTracker({
         </div>
       )}
 
-      {/* Say plainly whether the shopper can see them right now. */}
       {tracking.destinationPinned && (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           <p className="flex items-center gap-2 text-xs">

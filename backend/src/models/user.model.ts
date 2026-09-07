@@ -13,7 +13,7 @@ export interface UserRow {
   created_at: string;
 }
 
-/** Strips formatting so "0700 000 000" and "0700-000-000" resolve to one account. */
+
 export function normalizePhone(phone: string): string {
   return phone.replace(/[^0-9+]/g, '');
 }
@@ -24,15 +24,10 @@ export function normalizeEmail(email: string): string {
 
 const PHONE_NORMALIZED = "regexp_replace(phone, '[^0-9+]', '', 'g')";
 
-/**
- * A phone number is only unique per role now, so a lookup by phone alone can
- * return more than one row (one customer account, one shopper account).
- * Callers that need a single account must disambiguate — login does it by
- * checking which candidates the submitted password verifies against.
- */
+
 export async function findUsersByPhone(phone: string): Promise<UserRow[]> {
-  // Compare on the normalized form on both sides so rows written before
-  // normalization (with spaces/dashes) still match.
+  
+  
   return query<UserRow>(
     `SELECT * FROM users WHERE ${PHONE_NORMALIZED} = $1 ORDER BY created_at`,
     [normalizePhone(phone)]
@@ -53,14 +48,10 @@ export async function findUserByEmailAndRole(email: string, role: UserRole): Pro
   ]);
 }
 
-/**
- * Other accounts that plausibly belong to the same person — same email, or the
- * same phone under a different role. Plausibly only: the caller must still
- * prove ownership with the password before treating one as linked.
- */
+
 export async function findSiblingAccounts(user: UserRow): Promise<UserRow[]> {
-  // A NULL email must never match another NULL email, or every account without
-  // an email would be siblings with every other one.
+  
+  
   return query<UserRow>(
     `SELECT * FROM users
       WHERE id <> $1

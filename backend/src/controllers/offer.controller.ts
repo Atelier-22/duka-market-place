@@ -64,9 +64,6 @@ export async function acceptOffer(req: Request, res: Response) {
   if (requestRow.customer_id !== req.user!.id) throw new ApiError(403, 'Not authorized to accept this offer');
   if (requestRow.status === 'assigned') throw new ApiError(409, 'This request already has an assigned shopper');
 
-  // The customer accepting is what puts the job on the shopper's plate, so the
-  // cap has to hold here too — otherwise five customers accepting at once could
-  // hand one shopper a queue they never agreed to.
   if (await countActiveJobs(offer.shopper_id) >= MAX_ACTIVE_JOBS) {
     throw new ApiError(409,
       'This shopper is already handling as many jobs as they can — pick another offer, or try again once they finish one');

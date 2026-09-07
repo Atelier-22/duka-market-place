@@ -15,7 +15,6 @@ function formatUgx(n: number) {
   return new Intl.NumberFormat('en-UG').format(n) + ' UGX';
 }
 
-/** How often the open list checks for work posted since it was opened. */
 const POLL_MS = 20_000;
 
 export function AvailableRequestsPage() {
@@ -30,15 +29,14 @@ export function AvailableRequestsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [capacity, setCapacity] = useState<{ count: number; limit: number; atCapacity: boolean } | null>(null);
-  /** Requests that appeared after this page was opened. */
+
   const [freshIds, setFreshIds] = useState<Set<string>>(new Set());
 
   function load() {
     api.get('/requests/available')
       .then((res) => {
         const incoming: ShoppingRequest[] = res.data.requests;
-        // Flag what arrived since this page was opened, so a shopper who leaves
-        // it up can see at a glance what is new rather than re-reading the list.
+
         setRequests((current) => {
           const known = new Set(current.map((r) => r.id));
           if (current.length > 0) {
@@ -49,8 +47,7 @@ export function AvailableRequestsPage() {
         });
       })
       .finally(() => setLoading(false));
-    // Reuses the dashboard payload rather than adding an endpoint just to
-    // answer "how many jobs am I already carrying".
+
     api.get('/shoppers/dashboard')
       .then((res) => setCapacity({
         count: res.data.activeOrders?.length ?? 0,
@@ -60,9 +57,7 @@ export function AvailableRequestsPage() {
       .catch(() => undefined);
   }
   useEffect(load, []);
-  // A shopper leaves this page open waiting for work; making them reload it to
-  // find out whether anything came in is the problem the alerts solve, and the
-  // list should not be the last thing to hear about it.
+
   useEffect(() => {
     const t = setInterval(load, POLL_MS);
     return () => clearInterval(t);
@@ -97,8 +92,6 @@ export function AvailableRequestsPage() {
         {capacity && ` You're carrying ${capacity.count} of ${capacity.limit} jobs.`}
       </p>
 
-      {/* Say so here rather than letting them write an offer that will be
-          refused when the customer tries to accept it. */}
       {capacity?.atCapacity && (
         <p className="mt-4 rounded-xl bg-brand-yellow-soft/60 px-4 py-3 text-sm text-yellow-800">
           You already have the maximum of {capacity.limit} jobs. You can still browse, but finish

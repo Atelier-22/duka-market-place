@@ -11,21 +11,13 @@ export interface PreferencesRow {
   notify_orders: boolean;
   notify_offers: boolean;
   notify_marketing: boolean;
-  /** Shopper-side: alert me when a new job is posted. */
+
   notify_new_requests: boolean;
-  /**
-   * Whether this person has agreed to share their location with us. The
-   * browser owns the actual permission; this is the answer that has to follow
-   * them to a new device, and it decides whether we prompt again.
-   */
+
   share_location: boolean;
   location_prompt_dismissed_at: string | null;
 }
 
-/**
- * Reads a user's preferences, creating the defaults row on first access so
- * callers never have to deal with "no preferences yet".
- */
 export async function getOrCreatePreferences(userId: string): Promise<PreferencesRow> {
   const existing = await queryOne<PreferencesRow>(
     'SELECT * FROM user_preferences WHERE user_id = $1',
@@ -64,7 +56,6 @@ export async function updatePreferences(userId: string, patch: PreferencePatch):
     params.push(patch[key]);
   }
 
-  // Nothing to change — return what's already stored rather than writing.
   if (sets.length === 0) return getOrCreatePreferences(userId);
 
   sets.push('updated_at = now()');

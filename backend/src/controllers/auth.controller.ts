@@ -31,13 +31,9 @@ export async function register(req: Request, res: Response) {
   const input = registerSchema.parse(req.body);
 
   const phone = normalizePhone(input.phone);
-  // Treat a blank email the same as no email — an empty string would collide
-  // with every other blank on the UNIQUE index.
+
   const email = input.email?.trim() ? normalizeEmail(input.email) : null;
 
-  // Uniqueness is per role: the same phone/email may already be in use by the
-  // other role's account, and that is allowed — it is what makes the two
-  // accounts switchable later.
   const existing = await findUserByPhoneAndRole(phone, input.role);
   if (existing) {
     throw new ApiError(409, `You already have a ${input.role} account on this phone number — try logging in instead`);
@@ -51,8 +47,7 @@ export async function register(req: Request, res: Response) {
   }
 
   const passwordHash = await hashPassword(input.password);
-  // A duplicate that races past the checks above surfaces as a Postgres 23505,
-  // which errorHandler maps to the same 409 rather than a 500.
+
   const user = await createUser({
     role: input.role,
     fullName: input.fullName.trim(),
@@ -61,9 +56,6 @@ export async function register(req: Request, res: Response) {
     passwordHash,
   });
 
-  // A sibling account may already exist under the other role. Linking it here
-  // means the toggle is available immediately after signing up, without a
-  // second login.
   const linked = await proveLinkedAccounts(user, input.password);
 
   res.status(201).json({
@@ -73,15 +65,6 @@ export async function register(req: Request, res: Response) {
   });
 }
 
-/**
- * Of the accounts that look like they belong to this person, return only the
- * ones the supplied password actually opens.
- *
- * Matching on email alone would be an account-takeover hole: registering a
- * shopper account with someone else's email would otherwise hand you their
- * customer account. Requiring the password to verify against both sides means
- * a link can only be formed by someone who can already log into both.
- */
 async function proveLinkedAccounts(user: UserRow, password: string): Promise<UserRow[]> {
   const siblings = await findSiblingAccounts(user);
   const proven = await Promise.all(
@@ -110,11 +93,6 @@ const loginSchema = z.object({
 export async function login(req: Request, res: Response) {
   const input = loginSchema.parse(req.body);
 
-  // Staff first, and silently: they live in a separate table, so a staff phone
-  // never appears among the user candidates below. Same endpoint and same
-  // failure message either way — a wrong password must not reveal whether the
-  // number belongs to a staff account, which is how you would otherwise probe
-  // for one.
   const staff = await findStaffByPhone(input.phone);
   if (staff && (await verifyPassword(input.password, staff.password_hash))) {
     if (!staff.is_active) throw new ApiError(403, 'This account has been suspended');
@@ -127,8 +105,6 @@ export async function login(req: Request, res: Response) {
     });
   }
 
-  // Phone is unique per role, not globally, so this can return both the
-  // customer and the shopper account. The password decides which are ours.
   const candidates = await findUsersByPhone(input.phone);
   const matches = await Promise.all(
     candidates.map(async (c) => ((await verifyPassword(input.password, c.password_hash)) ? c : null))
@@ -140,8 +116,6 @@ export async function login(req: Request, res: Response) {
   const active = owned.filter((u) => u.is_active);
   if (active.length === 0) throw new ApiError(403, 'This account has been deactivated');
 
-  // When one password opens both accounts, land on the customer side and let
-  // the toggle move them across; it is the more common entry point.
   const user = active.find((u) => u.role === 'customer') ?? active[0];
   const linked = await proveLinkedAccounts(user, input.password);
 
@@ -154,11 +128,6 @@ export async function login(req: Request, res: Response) {
 
 const switchAccountSchema = z.object({ userId: z.string().uuid() });
 
-/**
- * Swap the session over to a sibling account without a fresh login. Only ids
- * that were password-proven at login are in the token's `linked` list, so this
- * cannot be used to reach an account the caller never authenticated against.
- */
 export async function switchAccount(req: Request, res: Response) {
   const { userId } = switchAccountSchema.parse(req.body);
 
@@ -170,8 +139,6 @@ export async function switchAccount(req: Request, res: Response) {
   if (!target) throw new ApiError(404, 'Linked account no longer exists');
   if (!target.is_active) throw new ApiError(403, 'That account has been deactivated');
 
-  // The account we are leaving becomes a linked account of the new session, so
-  // the toggle keeps working in both directions.
   const linkedIds = [...req.user!.linked, req.user!.id].filter((id) => id !== target.id);
   const linkedRows = (await Promise.all(linkedIds.map(findUserById))).filter(
     (r): r is UserRow => r !== null
@@ -195,8 +162,7 @@ export async function refresh(req: Request, res: Response) {
   } catch {
     throw new ApiError(401, 'Invalid or expired refresh token');
   }
-  // Keep the proven links on the refreshed token, or the toggle would vanish
-  // the first time the access token expires.
+
   const accessToken = signAccessToken(payload.sub, payload.role, payload.linked ?? []);
   res.json({ accessToken });
 }
@@ -211,8 +177,6 @@ export async function me(req: Request, res: Response) {
   const user = await findUserById(req.user!.id);
   if (!user) throw new ApiError(404, 'User not found');
 
-  // Rebuilt from the token rather than re-derived from email, so a reload
-  // restores the toggle without re-proving the password.
   const linkedRows = (await Promise.all(req.user!.linked.map(findUserById))).filter(
     (r): r is UserRow => r !== null && r.is_active
   );
@@ -222,20 +186,12 @@ export async function me(req: Request, res: Response) {
 
 const switchRoleSchema = z.object({ role: z.enum(['customer', 'shopper']) });
 
-/**
- * One Duka account can act as both a customer and a shopper. Switching flips
- * the role on the user row, lazily creating the side of the profile that
- * doesn't exist yet, and re-issues tokens so the new role is in the JWT.
- */
 export async function switchRole(req: Request, res: Response) {
   const { role } = switchRoleSchema.parse(req.body);
 
   const user = await findUserById(req.user!.id);
   if (!user) throw new ApiError(404, 'User not found');
 
-  // Since uniqueness became role-scoped, flipping this row's role would collide
-  // with a separate account that already holds it. Point them at the toggle,
-  // which is the right tool once two accounts exist.
   const occupied = await findUserByPhoneAndRole(user.phone, role);
   if (occupied && occupied.id !== user.id) {
     throw new ApiError(409, `You already have a separate ${role} account — use the account switcher instead`);

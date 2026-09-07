@@ -1,37 +1,16 @@
 import Anthropic from '@anthropic-ai/sdk';
-// The JSON-schema helper rather than the zod one: the SDK's zod helper wants
-// zod v4, and zod v3 is what every request validator in this codebase is
-// written against. Upgrading zod to read an ID card is not a trade worth
-// making. Both helpers produce the same `parsed_output` guarantee.
+
 import { jsonSchemaOutputFormat } from '@anthropic-ai/sdk/helpers/json-schema';
 import { env } from '../config/env';
 
-/**
- * Reading the fields off an identity document.
- *
- * Same shape as the storage and payment abstractions: an interface, a driver
- * chosen by an environment variable, and a `manual` default that keeps the
- * whole feature working with no external service configured. With OCR_DRIVER
- * unset, submissions simply arrive in the review queue with nothing pre-filled
- * and a human reads the document — which is what happens at the end of every
- * path anyway.
- *
- * ── WHAT THIS CANNOT DO ──
- * It reads what is printed on a card. It does not check that the card exists,
- * that it was issued, or that it belongs to the person holding it. Confirming
- * someone is a real Ugandan resident needs the NIRA register, which needs an
- * agreement with NIRA. Everything here is a data-quality gate and a duplicate
- * check in front of a person, and it is deliberately unable to approve anyone
- * on its own.
- */
 export interface ExtractedIdFields {
   idNumber: string | null;
   fullName: string | null;
-  /** ISO yyyy-mm-dd, or null when absent or unreadable. */
+
   dateOfBirth: string | null;
   expiryDate: string | null;
   documentType: string | null;
-  /** The model's own read on whether the image is legible at all. */
+
   legible: boolean;
   notes: string | null;
 }
@@ -42,7 +21,7 @@ export interface OcrResult {
   status: OcrStatus;
   engine: string;
   fields: ExtractedIdFields | null;
-  /** Why it is not 'ok', in words a reviewer can read. */
+
   message: string | null;
 }
 
@@ -61,7 +40,6 @@ const EMPTY_FIELDS: ExtractedIdFields = {
   notes: null,
 };
 
-/** No automated reading at all; every submission goes to a person. */
 class ManualOcrDriver implements OcrDriver {
   readonly name = 'manual';
 
@@ -102,11 +80,6 @@ documentType should be one of: national_id, passport, drivers_licence, refugee_i
 
 Put anything a reviewer should know in notes — glare over the number, a torn corner, signs the card has been altered, a photo of a screen rather than a card.`;
 
-/**
- * Claude vision. Structured output rather than free text, so a malformed read
- * is a parse failure the caller can act on rather than a plausible-looking
- * string that quietly reaches a reviewer as fact.
- */
 class ClaudeOcrDriver implements OcrDriver {
   readonly name = 'claude';
   private client: Anthropic;
@@ -149,9 +122,6 @@ class ClaudeOcrDriver implements OcrDriver {
         output_config: { format: jsonSchemaOutputFormat(ID_FIELDS_SCHEMA) },
       });
 
-      // A safety decline is a real outcome for identity documents, not an
-      // exception. It must not fail the submission — it just means nobody
-      // pre-filled the form and a person reads the document instead.
       if (response.stop_reason === 'refusal') {
         return {
           status: 'refused',
@@ -179,8 +149,7 @@ class ClaudeOcrDriver implements OcrDriver {
         message: fields.legible ? null : fields.notes ?? 'The document could not be read clearly.',
       };
     } catch (err) {
-      // Never let the reader's failure block a submission: the person has
-      // uploaded their ID and is waiting. Fall through to human review.
+
       if (err instanceof Anthropic.RateLimitError) {
         return { status: 'error', engine: this.name, fields: null, message: 'Automated reading is busy; queued for a reviewer.' };
       }

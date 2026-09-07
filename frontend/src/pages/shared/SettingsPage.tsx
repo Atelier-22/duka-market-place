@@ -21,7 +21,7 @@ interface Section {
   id: SectionId;
   label: string;
   icon: LucideIcon;
-  /** Extra words the search box should match beyond the visible labels. */
+
   keywords: string;
 }
 
@@ -76,11 +76,6 @@ const LANGUAGES: { value: Language; label: string; note: string }[] = [
   { value: 'lg', label: 'Luganda', note: 'Translations in progress' },
 ];
 
-/**
- * A miniature of the bar itself, so the choice is made by looking at the thing
- * rather than by reading three names and guessing. Three dots stand in for
- * tabs; the first is the active one.
- */
 function NavStylePreview({ navStyle }: { navStyle: NavStyle }) {
   const dark = navStyle === 'glow';
   return (
@@ -179,12 +174,7 @@ export function SettingsPage() {
 
   const [search, setSearch] = useState('');
   const [active, setActive] = useState<SectionId>('personalization');
-  /**
-   * On a phone the sections were a horizontally scrolling strip of chips above
-   * the panel — the ones past the third were off-screen with nothing to say so,
-   * which is why they read as hidden. Below `md` this becomes a plain list you
-   * tap into, and `null` means you are looking at that list.
-   */
+
   const [mobileSection, setMobileSection] = useState<SectionId | null>(null);
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== 'undefined' && window.innerWidth < 768
@@ -206,10 +196,6 @@ export function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
-  /**
-   * Location does nothing for an admin — they have no orders to be found on —
-   * so it is not offered rather than offered and inert.
-   */
   const sections = useMemo(
     () => SECTIONS.filter((s) => s.id !== 'location' || user?.role !== 'admin'),
     [user?.role]
@@ -221,7 +207,6 @@ export function SettingsPage() {
     return sections.filter((s) => `${s.label} ${s.keywords}`.toLowerCase().includes(q));
   }, [search, sections]);
 
-  // A search that narrows to one section should just take you there.
   const current: SectionId | null = isMobile ? mobileSection : active;
   const shown = search.trim()
     ? matches
@@ -261,7 +246,6 @@ export function SettingsPage() {
     }
   }
 
-
   function toggleTrait(trait: string) {
     const has = preferences.traits.includes(trait);
     update({ traits: has ? preferences.traits.filter((t) => t !== trait) : [...preferences.traits, trait] });
@@ -282,9 +266,6 @@ export function SettingsPage() {
         />
       </div>
 
-      {/* On a phone, tapping into a section replaces the list; the header
-          becomes a back button. On a desktop the nav and the panel sit side by
-          side as before. */}
       {isMobile && mobileSection && !search.trim() && (
         <button
           type="button"
@@ -299,7 +280,7 @@ export function SettingsPage() {
       <div className="mt-6 flex flex-col gap-6 md:flex-row">
         {!search.trim() && (
           <>
-            {/* Desktop rail */}
+
             <nav className="hidden shrink-0 md:flex md:w-56 md:flex-col md:gap-1">
               {sections.map((sec) => {
                 const Icon = sec.icon;
@@ -322,7 +303,6 @@ export function SettingsPage() {
               })}
             </nav>
 
-            {/* Phone list */}
             {!mobileSection && (
               <GlassCard padding="sm" hover={false} className="md:hidden">
                 <div className="flex flex-col">
@@ -567,8 +547,7 @@ export function SettingsPage() {
                 label="Offers"
                 description="When a shopper offers to take your request"
               />
-              {/* Only meaningful to a shopper — a customer has no available
-                  jobs list, so showing them the switch would be noise. */}
+
               {user?.role === 'shopper' && (
                 <Toggle
                   checked={preferences.notify_new_requests}

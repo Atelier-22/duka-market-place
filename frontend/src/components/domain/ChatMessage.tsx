@@ -13,7 +13,7 @@ interface ChatMessageProps {
   isOwn: boolean;
   senderName: string;
   createdAt: string;
-  /** Only shown on your own messages — you don't get receipts on theirs. */
+
   tickState?: TickState;
 }
 
@@ -29,7 +29,6 @@ export function ChatMessage({
 }: ChatMessageProps) {
   const [zoomed, setZoomed] = useState(false);
 
-  // Older messages predate the column and were always photos.
   const kind = attachmentUrl ? attachmentType ?? 'image' : null;
 
   const timestamp = new Date(createdAt).toLocaleTimeString('en-UG', {
@@ -64,7 +63,7 @@ export function ChatMessage({
                 className="max-h-64 w-full rounded-lg object-cover"
               />
             </button>
-            {/* Always present on touch, where there is no hover to reveal them. */}
+
             <div className="absolute right-1.5 top-1.5 flex gap-1.5">
               <span
                 onClick={() => setZoomed(true)}

@@ -15,18 +15,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useConversations } from '../../hooks/useConversations';
 import { Recording, formatDuration, useVoiceRecorder, voiceRecordingSupported } from '../../hooks/useVoiceRecorder';
 
-/** How often an open thread checks for the other side's replies and presence. */
 const POLL_MS = 5_000;
 
 interface PendingVoice {
   previewUrl: string;
   durationMs: number;
-  /**
-   * The upload, started the instant recording stops and resolved only when the
-   * note is actually sent. Waiting for it before showing the preview meant
-   * staring at "Uploading…" on mobile data; this way the upload runs while you
-   * listen back, and by the time you tap send it is usually already done.
-   */
+
   upload: Promise<string>;
 }
 
@@ -34,7 +28,6 @@ function initials(name: string): string {
   return name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
 }
 
-/** The server accepts 0–10 minutes as an integer; anything else is dropped. */
 function safeDurationMs(ms: number): number | undefined {
   if (!Number.isFinite(ms)) return undefined;
   return Math.min(10 * 60_000, Math.max(0, Math.round(ms)));
@@ -56,25 +49,20 @@ export function OrderMessagesPage() {
   const [uploading, setUploading] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [loading, setLoading] = useState(true);
-  /** Sent-but-not-yet-acknowledged messages, rendered after the real ones. */
+
   const [pending, setPending] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  /**
-   * Start uploading straight away and hold the note as a preview. Shared by
-   * the stop button and by the length cap stopping the recorder itself.
-   */
+
   const holdRecording = useCallback((result: Recording) => {
     const upload = uploadBlob(result.blob, result.filename);
-    // Attach a handler now so a failed upload cannot surface as an unhandled
-    // rejection; `handleSend` awaits the same promise and reports it there.
+
     upload.catch(() => undefined);
     setVoice({ previewUrl: result.previewUrl, durationMs: result.durationMs, upload });
   }, []);
 
   const recorder = useVoiceRecorder(holdRecording);
 
-  // Reuse the inbox to name the person at the top without another endpoint.
   const { conversations } = useConversations();
   const conversation = conversations.find((c) => c.order_id === id);
 
@@ -95,18 +83,14 @@ export function OrderMessagesPage() {
     return () => clearInterval(t);
   }, [load]);
 
-  // Opening the thread clears its unread badge.
   useEffect(() => {
     if (!id) return;
     api.post(`/orders/${id}/messages/read`).catch(() => undefined);
   }, [id, messages.length]);
 
-  // Follows optimistic sends too, so your own message scrolls into view the
-  // instant you send it rather than when the server answers.
   useEffect(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }),
     [messages.length, pending.length]);
 
-  // The preview blob is only ever referenced by this page.
   useEffect(() => () => { if (voice) URL.revokeObjectURL(voice.previewUrl); }, [voice]);
 
   async function uploadBlob(file: Blob, filename: string): Promise<string> {
@@ -134,10 +118,6 @@ export function OrderMessagesPage() {
     if (!ok && recorder.error) push(recorder.error, 'error');
   }
 
-  /**
-   * Stop recording and show the note immediately, playable from the local blob,
-   * while the upload runs in the background. Nothing here waits on the network.
-   */
   function finishRecording() {
     void recorder.stop().then((result) => { if (result) holdRecording(result); });
   }
@@ -157,9 +137,6 @@ export function OrderMessagesPage() {
     setAttachment('');
     setVoice(null);
 
-    // Show it in the thread straight away, playing from the local blob, with a
-    // clock instead of a tick until the server has it. Waiting for the round
-    // trip before anything appeared is what made sending feel slow.
     const localId = `pending-${Date.now()}`;
     setPending((current) => [...current, {
       id: localId,
@@ -174,11 +151,9 @@ export function OrderMessagesPage() {
     }]);
 
     try {
-      // Usually already finished — the upload started when recording stopped.
+
       const uploadedUrl = note ? await note.upload : image;
 
-      // Never let a local preview URL reach the server: `blob:` is meaningless
-      // outside this tab and the server rightly rejects it.
       if (uploadedUrl && uploadedUrl.startsWith('blob:')) {
         throw new Error('That attachment did not finish uploading — try again.');
       }
@@ -190,15 +165,14 @@ export function OrderMessagesPage() {
         body: text.trim() || undefined,
         attachmentUrl: uploadedUrl || undefined,
         attachmentType: note ? 'audio' : image ? 'image' : undefined,
-        // Must be a finite integer inside the server's range. A NaN here would
-        // serialise to JSON `null` and come back as an unexplained 400.
+
         attachmentDurationMs: note ? safeDurationMs(note.durationMs) : undefined,
       });
       setPending((current) => current.filter((m) => m.id !== localId));
       if (note) URL.revokeObjectURL(note.previewUrl);
       load();
     } catch (err) {
-      // Put the draft back rather than silently losing what they typed.
+
       setPending((current) => current.filter((m) => m.id !== localId));
       setBody(text);
       setAttachment(image);
@@ -208,17 +182,14 @@ export function OrderMessagesPage() {
   }
 
   const name = conversation?.other_name ?? 'Conversation';
-  // Only shoppers have a profile to show; a customer's details are not on
-  // display for the shopper the way a shopper's are for the customer.
+
   const viewableShopperId = conversation?.other_role === 'shopper' ? conversation.other_id : null;
   const canSend = Boolean(body.trim() || attachment || voice);
   const composerDisabled = recorder.recording;
   const visible = [...messages, ...pending];
 
   return (
-    // `dvh` rather than `vh`: on a phone `100vh` is the height with the browser
-    // chrome hidden, so a vh-sized column is always taller than the visible page
-    // and the composer ends up under the address bar.
+
     <div className="mx-auto flex h-[calc(100dvh-13rem)] min-h-[24rem] max-w-2xl flex-col pb-4 lg:h-[calc(100dvh-6rem)]">
       <div className="mb-2 flex items-center gap-2">
         <button
@@ -230,10 +201,9 @@ export function OrderMessagesPage() {
       </div>
 
       <GlassCard hover={false} padding="md" className="flex flex-1 flex-col overflow-hidden">
-        {/* Thread header — who you are talking to, whether they are there, and a way back to the order */}
+
         <div className="flex items-center gap-3 border-b border-brand-green/10 pb-3">
-          {/* Tapping the person opens their profile — the natural place to
-              look someone up is the thread you are talking to them in. */}
+
           <button
             type="button"
             onClick={() => viewableShopperId && setShowProfile(true)}
@@ -328,8 +298,7 @@ export function OrderMessagesPage() {
 
         {voice && (
           <div className="mt-3 flex items-center gap-3 rounded-xl bg-brand-green-mist/60 p-2">
-            {/* Play it back before committing — a voice note you cannot check
-                first is worse than typing, which is the whole point of it. */}
+
             <VoiceNotePlayer src={voice.previewUrl} durationMs={voice.durationMs} tone="other" />
             <button
               type="button"
@@ -410,9 +379,6 @@ export function OrderMessagesPage() {
               className="min-w-0 flex-1 rounded-full border border-brand-green/15 bg-brand-white/70 px-4 py-2.5 text-sm text-brand-ink outline-none transition-colors placeholder:text-brand-ink/35 focus:border-brand-green-fresh"
             />
 
-            {/* Never disabled while a send is in flight — the message is
-                already in the thread and the composer is free for the next
-                one, which is the point of sending optimistically. */}
             <GlassButton type="submit" size="sm" disabled={uploading || !canSend}>
               <Send size={15} strokeWidth={2} />
             </GlassButton>

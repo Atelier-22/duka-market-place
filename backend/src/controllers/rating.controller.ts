@@ -33,7 +33,6 @@ export async function rateOrder(req: Request, res: Response) {
     await query(`INSERT INTO reviews (rating_id, comment) VALUES ($1,$2)`, [rating.id, input.comment]);
   }
 
-  // Recompute the shopper's rolling average when a shopper was rated.
   if (isCustomer) {
     await query(
       `UPDATE shopper_profiles sp SET

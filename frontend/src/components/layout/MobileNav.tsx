@@ -17,29 +17,15 @@ interface MobileNavProps {
   items: NavItem[];
 }
 
-/** How many destinations get a permanent tab; the rest live behind "More". */
 const TAB_COUNT = 4;
 
-/**
- * Mirrors the `end` rule the tabs pass to NavLink, so the sliding indicator
- * and the highlighted label can never disagree about which tab is current.
- * "/app" must match exactly or it would claim every page under it; "/app/orders"
- * has to keep the highlight while you are reading one order.
- */
 function isActivePath(to: string, pathname: string): boolean {
   if (to.split('/').length <= 2) return pathname === to;
   return pathname === to || pathname.startsWith(`${to}/`);
 }
 
-/** Long enough to read as movement, short enough not to lag the tap. */
 const SLIDE = 'duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none';
 
-/**
- * The three looks share every behaviour — the same destinations, badges,
- * overflow and reach argument — and differ only in how the current one is
- * drawn. Keeping them in one component rather than three is what stops a fix
- * to the badge or the active-path rule from landing in only one of them.
- */
 function slotClasses(navStyle: NavStyle, isActive: boolean): string {
   const base =
     'relative z-10 flex min-h-[60px] flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] font-semibold transition-colors duration-200';
@@ -68,8 +54,6 @@ function Slot({
     </span>
   );
 
-  // Pop: the current tab rises out of the bar in a filled circle. The label
-  // goes with it — there is no room for both, and the circle is the signal.
   if (navStyle === 'pop') {
     return (
       <>
@@ -96,8 +80,6 @@ function Slot({
     );
   }
 
-  // Glow: icons only against the dark bar, with the halo behind supplying the
-  // emphasis that a label would otherwise carry.
   if (navStyle === 'glow') {
     return (
       <span
@@ -130,18 +112,6 @@ function Slot({
   );
 }
 
-/**
- * Phone navigation.
- *
- * The sidebar is 256px wide. On a 375px phone that leaves about a hundred
- * pixels for the actual app, which is why the site was unusable on a handset.
- * Below `lg` the sidebar is hidden entirely and replaced by this: a compact top
- * bar, and a bottom tab strip for the destinations people use constantly.
- *
- * Bottom tabs rather than a hamburger because the bottom of the screen is where
- * a thumb already is — a menu button in the top-left corner is the hardest
- * place to reach one-handed on a large phone.
- */
 export function MobileNav({ items }: MobileNavProps) {
   const { user, logout } = useAuth();
   const { totalUnread } = useConversations(!!user);
@@ -150,7 +120,6 @@ export function MobileNav({ items }: MobileNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [navStyle] = useNavStyle();
 
-  // Navigating away must close the sheet, or it covers the page you just asked for.
   useEffect(() => setMenuOpen(false), [location.pathname]);
 
   useEffect(() => {
@@ -168,20 +137,13 @@ export function MobileNav({ items }: MobileNavProps) {
     return item.badge === 'messages' ? totalUnread : 0;
   }
 
-  // Every tab plus the "More" button. Not a constant: a role with three
-  // destinations gets four slots, and the indicator has to divide by the
-  // number actually on screen or it stops lining up with the labels.
   const slotCount = tabs.length + 1;
   const tabIndex = tabs.findIndex((i) => isActivePath(i.to, location.pathname));
   const activeIndex = tabIndex >= 0 ? tabIndex : overflowActive ? tabs.length : -1;
 
   return (
     <>
-      {/* Top bar — identity and role, nothing that competes for the thumb. */}
-      {/* Bottom tabs. pb-safe keeps them clear of the iPhone home indicator. */}
-      {/* Floating rather than edge-to-edge: the rounded bar reads as a control
-          sitting on the page instead of a strip welded to the bottom of the
-          screen, and the inset keeps it clear of the home indicator. */}
+
       <nav
         className="fixed z-40 lg:hidden"
         style={{
@@ -199,10 +161,7 @@ export function MobileNav({ items }: MobileNavProps) {
               : 'glass border border-brand-green/10',
           ].join(' ')}
         >
-          {/* The slide. One pill that moves between tabs rather than a
-              highlight that blinks out here and in there — the movement is
-              what tells you where you just came from. Width is a percentage of
-              the slots actually rendered, so it lands on a label every time. */}
+
           <span
             aria-hidden
             className={`pointer-events-none absolute inset-y-1.5 left-0 flex items-center justify-center px-1 transition-all ${SLIDE}`}
@@ -260,7 +219,6 @@ export function MobileNav({ items }: MobileNavProps) {
         </div>
       </nav>
 
-      {/* Everything else, as a sheet from the bottom — same reach argument. */}
       {menuOpen && (
         <div
           className="fixed inset-0 z-50 flex items-end bg-brand-ink/40 backdrop-blur-sm lg:hidden"

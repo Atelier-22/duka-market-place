@@ -8,16 +8,6 @@ import { findOrderById, updateOrderStatus } from '../models/order.model';
 import { assertValidTransition } from '../utils/orderStateMachine';
 import { ApiError } from '../middleware/errorHandler';
 
-/**
- * Operational powers for the admin console: moderation, money, announcements,
- * places and reporting.
- *
- * Everything that changes something writes to admin_audit_log first, naming the
- * admin who did it. That is not bookkeeping for its own sake — these actions
- * lock people out of their livelihood and move money, and "who did this and
- * why" has to be answerable afterwards without anyone's memory being involved.
- */
-
 async function audit(
   req: Request,
   action: string,
@@ -41,16 +31,11 @@ async function audit(
   );
 }
 
-/** Loads a user or 404s, so every handler below reads the same way. */
 async function targetUser(id: string) {
   const user = await findUserById(id);
   if (!user) throw new ApiError(404, 'User not found');
   return user;
 }
-
-// ---------------------------------------------------------------------------
-// Moderation
-// ---------------------------------------------------------------------------
 
 const suspendSchema = z.object({ reason: z.string().min(3).max(500) });
 
@@ -58,7 +43,6 @@ export async function suspendUser(req: Request, res: Response) {
   const { reason } = suspendSchema.parse(req.body);
   const user = await targetUser(req.params.id);
 
-  // Suspending yourself locks you out of the console you are standing in.
   if (user.id === req.user!.id) {
     throw new ApiError(409, 'You cannot suspend your own account');
   }
@@ -70,8 +54,6 @@ export async function suspendUser(req: Request, res: Response) {
     [user.id, reason]
   );
 
-  // Tell them, and tell them why — a silent lockout is indistinguishable from
-  // the app being broken.
   await query(
     `INSERT INTO notifications (user_id, channel, title, body)
      VALUES ($1,'in_app',$2,$3)`,
@@ -104,13 +86,6 @@ export async function reactivateUser(req: Request, res: Response) {
   res.json({ user: updated });
 }
 
-/**
- * Issues a one-time password and returns it exactly once.
- *
- * Never emailed or stored in the clear: the admin reads it out to the person
- * over whatever channel they are already using, and the account is flagged so
- * the next sign-in has to replace it.
- */
 export async function resetUserPassword(req: Request, res: Response) {
   const user = await targetUser(req.params.id);
 
@@ -142,8 +117,7 @@ export async function changeUserRole(req: Request, res: Response) {
       "SELECT count(*)::int AS n FROM users WHERE role = 'admin' AND is_active AND id <> $1",
       [user.id]
     );
-    // Removing the last admin leaves a console nobody can reach, and no way in
-    // the product to make a new one.
+
     if ((others?.n ?? 0) === 0) {
       throw new ApiError(409, 'This is the only admin left — promote someone else first');
     }
@@ -159,10 +133,6 @@ export async function changeUserRole(req: Request, res: Response) {
 
   res.json({ user: updated });
 }
-
-// ---------------------------------------------------------------------------
-// Verification
-// ---------------------------------------------------------------------------
 
 const revokeSchema = z.object({ reason: z.string().min(3).max(500) });
 
@@ -186,21 +156,10 @@ export async function revokeVerification(req: Request, res: Response) {
   res.json({ ok: true });
 }
 
-// ---------------------------------------------------------------------------
-// Disputes
-// ---------------------------------------------------------------------------
-
-/**
- * The outcomes the schema actually defines. A dispute is not "resolved" in the
- * abstract — it is resolved in someone's favour, split between them, or closed
- * with no action, and the record has to say which. `under_review` is here too
- * so a dispute can be parked while it is looked into rather than sitting in
- * the same state as one nobody has touched.
- */
 const resolveSchema = z.object({
   outcome: z.enum(['under_review', 'resolved_customer', 'resolved_shopper', 'resolved_split', 'closed']),
   note: z.string().min(3).max(1000),
-  /** Where the order itself should land — refunded, or completed anyway. */
+
   finalOrderStatus: z.enum(['refunded', 'completed', 'cancelled']).optional(),
 });
 
@@ -219,7 +178,7 @@ export async function resolveDispute(req: Request, res: Response) {
     [req.params.id]
   );
   if (!dispute) throw new ApiError(404, 'Dispute not found');
-  // Only an open or under-review dispute can move; a decided one stays decided.
+
   if (!['open', 'under_review'].includes(dispute.status)) {
     throw new ApiError(409, 'That dispute has already been decided');
   }
@@ -230,9 +189,6 @@ export async function resolveDispute(req: Request, res: Response) {
     [dispute.id, outcome, note, req.user!.id]
   );
 
-  // Deciding a dispute usually decides the order with it — refund the
-  // customer, or let it stand as completed. Done through the state machine so
-  // an impossible jump is refused here exactly as it would be anywhere else.
   if (finalOrderStatus) {
     const order = await findOrderById(dispute.order_id);
     if (order && order.status !== finalOrderStatus) {
@@ -243,7 +199,6 @@ export async function resolveDispute(req: Request, res: Response) {
     }
   }
 
-  // Both sides of the order hear the outcome, not only whoever raised it.
   const order = await queryOne<{ customer_id: string; shopper_id: string }>(
     'SELECT customer_id, shopper_id FROM orders WHERE id = $1',
     [dispute.order_id]
@@ -262,11 +217,6 @@ export async function resolveDispute(req: Request, res: Response) {
   res.json({ dispute: updated });
 }
 
-// ---------------------------------------------------------------------------
-// Money
-// ---------------------------------------------------------------------------
-
-/** What each shopper is owed, and what they have already been paid. */
 export async function listPayouts(_req: Request, res: Response) {
   const rows = await query(
     `SELECT u.id AS shopper_id, u.full_name, u.phone,
@@ -286,13 +236,6 @@ export async function listPayouts(_req: Request, res: Response) {
   res.json({ payouts: rows });
 }
 
-/**
- * Settles everything a shopper is currently owed.
- *
- * One transaction: the earnings rows, the running balance and the ledger entry
- * have to move together or not at all — a crash between them would either pay
- * someone twice or lose the record that they were paid.
- */
 export async function payOutShopper(req: Request, res: Response) {
   const shopper = await targetUser(req.params.id);
   if (shopper.role !== 'shopper') throw new ApiError(409, 'That account is not a shopper');
@@ -382,10 +325,6 @@ export async function settlePayment(req: Request, res: Response) {
   res.json({ payment: updated });
 }
 
-// ---------------------------------------------------------------------------
-// Announcements
-// ---------------------------------------------------------------------------
-
 const broadcastSchema = z.object({
   audience: z.enum(['all', 'customers', 'shoppers']),
   title: z.string().min(3).max(120),
@@ -393,13 +332,6 @@ const broadcastSchema = z.object({
   link: z.string().max(200).optional(),
 });
 
-/**
- * One notification to a whole audience, as a single INSERT..SELECT.
- *
- * Suspended accounts are excluded — telling someone who cannot sign in about a
- * new feature is not a message, it is noise on a locked door. So is anyone who
- * turned marketing off.
- */
 export async function broadcast(req: Request, res: Response) {
   const input = broadcastSchema.parse(req.body);
   const roles =
@@ -421,10 +353,6 @@ export async function broadcast(req: Request, res: Response) {
 
   res.json({ reached: rows.length, audience: input.audience });
 }
-
-// ---------------------------------------------------------------------------
-// Places
-// ---------------------------------------------------------------------------
 
 export async function listLocations(_req: Request, res: Response) {
   const rows = await query(
@@ -466,17 +394,6 @@ export async function toggleLocation(req: Request, res: Response) {
   res.json({ location: row });
 }
 
-// ---------------------------------------------------------------------------
-// Reporting
-// ---------------------------------------------------------------------------
-
-/**
- * The numbers an operator actually runs the business on, over a window.
- *
- * generate_series so days with no orders come back as zero rather than being
- * missing — a gap in a chart reads as "no data", which is a different claim
- * from "nothing happened".
- */
 export async function analytics(req: Request, res: Response) {
   const days = Math.min(180, Math.max(7, Number(req.query.days) || 30));
 

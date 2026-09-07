@@ -18,20 +18,10 @@ async function assertParticipant(orderId: string, userId: string, role: string) 
   return order;
 }
 
-/**
- * Every conversation this user is part of — one per order — newest activity
- * first, with the other person's name, the last line, and an unread count.
- * This is the inbox behind the chat list.
- */
 export async function conversations(req: Request, res: Response) {
   const userId = req.user!.id;
   const isShopper = req.user!.role === 'shopper';
 
-  // Loading the inbox proves this person's client is reachable, so everything
-  // waiting for them across every thread is now delivered — that is what earns
-  // the sender's second tick. Doing it here (rather than only when a thread is
-  // opened) is what makes delivery ticks behave the way people expect: you get
-  // two ticks once they have the app open, not only once they read you.
   await query(
     `UPDATE messages m SET delivered_at = now()
        FROM orders o
@@ -86,12 +76,10 @@ export async function conversations(req: Request, res: Response) {
   res.json({ conversations: rows });
 }
 
-/** Marks the other side's messages in this order as read. */
 export async function markRead(req: Request, res: Response) {
   await assertParticipant(req.params.orderId, req.user!.id, req.user!.role);
   const rows = await query(
-    // A read message is necessarily a delivered one; stamping both keeps the
-    // ticks from ever showing "read but not delivered".
+
     `UPDATE messages SET read_at = now(), delivered_at = COALESCE(delivered_at, now())
       WHERE order_id = $1 AND sender_id <> $2 AND read_at IS NULL
       RETURNING id`,
@@ -104,8 +92,6 @@ export async function list(req: Request, res: Response) {
   const order = await assertParticipant(req.params.orderId, req.user!.id, req.user!.role);
   const userId = req.user!.id;
 
-  // Fetching the thread proves the message arrived. Admins read threads without
-  // being party to them, so their reads must not stamp anyone's receipts.
   const isParticipant = order.customer_id === userId || order.shopper_id === userId;
   if (isParticipant) {
     await query(
@@ -122,8 +108,6 @@ export async function list(req: Request, res: Response) {
     [req.params.orderId]
   );
 
-  // The counterparty's presence, so an open thread can show the live dot
-  // without a second request on every poll.
   const otherId = order.customer_id === userId ? order.shopper_id : order.customer_id;
   const other = otherId
     ? await queryOne<{ online: boolean; last_seen_at: string | null }>(
@@ -142,17 +126,14 @@ const sendSchema = z.object({
   body: z.string().max(2000).optional(),
   attachmentUrl: mediaUrl.optional(),
   attachmentType: z.enum(['image', 'audio', 'file']).optional(),
-  // Captured by the recorder so a voice note can show its length before the
-  // audio has been fetched — decoding metadata client-side is slower and fails
-  // on some browsers for streamed webm.
+
   attachmentDurationMs: z.number().int().min(0).max(10 * 60_000).optional(),
 }).refine((v) => v.body || v.attachmentUrl, { message: 'Message must have text or an attachment' });
 
 export async function send(req: Request, res: Response) {
   const order = await assertParticipant(req.params.orderId, req.user!.id, req.user!.role);
   const input = sendSchema.parse(req.body);
-  // Default the kind rather than trusting its absence: an older client that
-  // sends only attachmentUrl still gets a photo rendered as a photo.
+
   const attachmentType = input.attachmentUrl
     ? input.attachmentType ?? 'image'
     : null;
@@ -170,7 +151,6 @@ export async function send(req: Request, res: Response) {
     ]
   );
 
-  // Whoever is on the other side of this order gets the bell entry.
   const isSenderCustomer = order.customer_id === req.user!.id;
   const recipientId = isSenderCustomer ? order.shopper_id : order.customer_id;
   if (recipientId) {

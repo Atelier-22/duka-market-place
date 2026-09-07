@@ -10,7 +10,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        {/* Inside AuthProvider: preferences are loaded per signed-in user. */}
+
         <PreferencesProvider>
           <App />
         </PreferencesProvider>

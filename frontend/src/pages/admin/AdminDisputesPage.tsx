@@ -17,11 +17,6 @@ export function AdminDisputesPage() {
   }
   useEffect(load, []);
 
-  /**
-   * Routed through the admin endpoint rather than the generic one, so the
-   * decision is written to the audit log against whoever made it and both
-   * sides of the order are told the outcome — not just whoever complained.
-   */
   async function resolve(id: string, outcome: string, finalOrderStatus?: string) {
     const note = window.prompt('Why? Both the customer and the shopper will be shown this.');
     if (!note?.trim()) return;

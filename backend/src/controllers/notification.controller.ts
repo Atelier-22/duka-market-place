@@ -12,14 +12,13 @@ export async function list(req: Request, res: Response) {
   res.json({ notifications, unread });
 }
 
-/** Cheap endpoint for the bell badge to poll without pulling the whole list. */
 export async function unreadCount(req: Request, res: Response) {
   res.json({ unread: await countUnread(req.user!.id) });
 }
 
 export async function read(req: Request, res: Response) {
   const row = await markRead(req.user!.id, req.params.id);
-  // Already-read or someone else's id both land here; not found either way.
+
   if (!row) throw new ApiError(404, 'Notification not found');
   res.json({ notification: row });
 }

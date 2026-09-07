@@ -3,25 +3,10 @@ import { z } from 'zod';
 import { query, queryOne } from '../db/pool';
 import { ApiError } from '../middleware/errorHandler';
 
-/**
- * The admin control centre: a single view of everything moving on the platform.
- *
- * Every handler here is mounted behind requireAuth + requireRole('admin') in
- * admin.routes.ts. Nothing in this file is reachable by a customer or shopper.
- */
-
 const feedSchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });
 
-/**
- * Unified reverse-chronological feed across the whole platform.
- *
- * One round trip: the branches are UNION ALLed and sorted in the database, so
- * adding an event type costs a branch rather than another query per row. Each
- * branch produces the same shape — type, summary, actor, subject, timestamp —
- * so the frontend renders them uniformly.
- */
 export async function getActivity(req: Request, res: Response) {
   const { limit } = feedSchema.parse(req.query);
 
@@ -142,10 +127,6 @@ export async function getActivity(req: Request, res: Response) {
   res.json({ activity: rows });
 }
 
-/**
- * "What is in motion right now" — online shoppers and every order that has not
- * reached a terminal state, broken down by status.
- */
 export async function getPresence(_req: Request, res: Response) {
   const [shoppers, byStatus, recentlyActive] = await Promise.all([
     queryOne<{ online: string; total: string }>(
@@ -162,7 +143,7 @@ export async function getPresence(_req: Request, res: Response) {
         ORDER BY count DESC`
     ),
     queryOne<{ n: string }>(
-      // A rough "is anything happening" pulse over the last 15 minutes.
+
       `SELECT COUNT(*) AS n FROM order_status_history WHERE created_at > now() - interval '15 minutes'`
     ),
   ]);
@@ -180,10 +161,6 @@ export async function getPresence(_req: Request, res: Response) {
 
 const searchSchema = z.object({ q: z.string().trim().min(1).max(100) });
 
-/**
- * One box for "find me the thing this complaint is about" — matches users by
- * name, phone or email, and orders by the short id shown in the UI.
- */
 export async function search(req: Request, res: Response) {
   const { q } = searchSchema.parse(req.query);
   const like = `%${q.toLowerCase()}%`;
@@ -218,7 +195,6 @@ export async function search(req: Request, res: Response) {
   res.json({ users, orders });
 }
 
-/** Full picture of one customer: profile, requests, orders, spend, disputes. */
 export async function getCustomerDetail(req: Request, res: Response) {
   const { id } = req.params;
 
@@ -274,7 +250,6 @@ export async function getCustomerDetail(req: Request, res: Response) {
   });
 }
 
-/** Full picture of one shopper: profile, verification, jobs, earnings, ratings. */
 export async function getShopperDetail(req: Request, res: Response) {
   const { id } = req.params;
 
@@ -328,7 +303,6 @@ export async function getShopperDetail(req: Request, res: Response) {
   res.json({ user, verifications, orders, earnings, ratings, offers });
 }
 
-/** Everything about one order: parties, timeline, evidence, receipts, messages. */
 export async function getOrderDetail(req: Request, res: Response) {
   const { id } = req.params;
 
@@ -385,14 +359,6 @@ export async function getOrderDetail(req: Request, res: Response) {
 
 const forceCancelSchema = z.object({ reason: z.string().min(3).max(500) });
 
-/**
- * Support intervention: cancel an order regardless of where it sits.
- *
- * This bypasses the normal state machine on purpose — assertValidTransition
- * already grants admins that latitude for exactly this case. The reason is
- * required and recorded in the status history, so an override is always
- * attributable to a person.
- */
 export async function forceCancelOrder(req: Request, res: Response) {
   const { reason } = forceCancelSchema.parse(req.body);
   const { id } = req.params;
@@ -424,15 +390,10 @@ export async function forceCancelOrder(req: Request, res: Response) {
 const openDisputeSchema = z.object({
   reason: z.string().min(3).max(100),
   description: z.string().min(3).max(2000),
-  /** Whose behalf this is raised on; defaults to the customer. */
+
   onBehalfOf: z.enum(['customer', 'shopper']).default('customer'),
 });
 
-/**
- * Opens a dispute for a user who complained through a channel outside the app
- * (a phone call, a message to support). Recorded against the person it is for,
- * not the admin, so the case reads correctly to whoever handles it next.
- */
 export async function openDisputeForOrder(req: Request, res: Response) {
   const input = openDisputeSchema.parse(req.body);
   const { id } = req.params;
@@ -452,7 +413,6 @@ export async function openDisputeForOrder(req: Request, res: Response) {
     [id, raisedBy, input.reason, `${input.description}\n\n(Opened by admin on their behalf.)`]
   );
 
-  // Mirror it on the order so the state machine and every dashboard agree.
   if (!['completed', 'cancelled', 'refunded', 'disputed'].includes(order.status)) {
     await query(`UPDATE orders SET status = 'disputed', updated_at = now() WHERE id = $1`, [id]);
     await query(

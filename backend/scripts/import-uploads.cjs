@@ -1,16 +1,5 @@
 #!/usr/bin/env node
-/**
- * Moves files already sitting in the local uploads folder into the database,
- * so images and voice notes sent before the switch keep working.
- *
- * The URLs stored in message and evidence rows do not change — only where the
- * bytes come from — so anything already on disk carries on resolving instead of
- * turning into a broken image.
- *
- * Safe to re-run: a key already in the table is skipped, not duplicated.
- *
- *   node scripts/import-uploads.cjs
- */
+
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
@@ -18,7 +7,6 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const ROOT = path.resolve(__dirname, '..', process.env.UPLOAD_DIR || 'uploads');
 
-/** Same mapping the upload endpoint uses, so served types stay correct. */
 const MIME = {
   '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
   '.webp': 'image/webp', '.gif': 'image/gif', '.heic': 'image/heic', '.heif': 'image/heif',

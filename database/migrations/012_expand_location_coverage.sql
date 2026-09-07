@@ -1,29 +1,7 @@
--- ---------------------------------------------------------------------------
--- 012: coverage beyond Kampala
---
--- The seed shipped five locations, all of them in Kampala, so anyone opening
--- the app from Gulu or Mbarara found nothing to order from and no way to say
--- where they were. Coverage was the ceiling on who could use Duka at all.
---
--- This widens it to the main trading centres across Uganda: the markets,
--- malls and supermarkets people actually name when they say where something
--- should be bought.
---
--- ── ABOUT THE COORDINATES ──
--- These are approximate town-centre positions, good enough to sort a picker
--- by distance and to centre a map. They are NOT surveyed pin locations for
--- the market gate. lat/lng are nullable and nothing depends on them being
--- exact, but they should be refined against real pins as shoppers start
--- working each area rather than treated as authoritative.
---
--- Re-runnable: rows are matched on (name, city) and existing ones are left
--- alone, so running this twice adds nothing and edits nothing.
--- ---------------------------------------------------------------------------
-
 INSERT INTO locations (name, type, city, lat, lng, description)
 SELECT v.name, v.type, v.city, v.lat, v.lng, v.description
 FROM (VALUES
-  -- ── Kampala ──────────────────────────────────────────────────────────────
+
   ('Nakawa Market',            'market',      'Kampala',    0.329700, 32.619700, 'Produce, household goods and second-hand clothing east of the centre.'),
   ('Wandegeya Market',         'market',      'Kampala',    0.335000, 32.573000, 'Produce and everyday goods next to Makerere.'),
   ('Kasubi Market',            'market',      'Kampala',    0.336900, 32.552500, 'Fresh produce, fish and household goods.'),
@@ -34,36 +12,29 @@ FROM (VALUES
   ('Ntinda Shopping Complex',  'mall',        'Kampala',    0.355000, 32.610000, 'Supermarkets and retail serving Ntinda and Naguru.'),
   ('Kabalagala Trading Centre','shop',        'Kampala',    0.295000, 32.600000, 'Late-opening shops, pharmacies and food vendors.'),
 
-  -- ── Wakiso ───────────────────────────────────────────────────────────────
   ('Nansana Market',           'market',      'Nansana',    0.365000, 32.525000, 'Main produce and general goods market for Nansana.'),
   ('Kyengera Market',          'market',      'Kyengera',   0.290000, 32.510000, 'Roadside produce and household goods on the Masaka road.'),
   ('Kajjansi Trading Centre',  'shop',        'Kajjansi',   0.180000, 32.530000, 'Shops and produce between Kampala and Entebbe.'),
 
-  -- ── Entebbe ──────────────────────────────────────────────────────────────
   ('Entebbe Main Market',      'market',      'Entebbe',    0.064000, 32.479000, 'Fresh produce, fish from the lake, and household goods.'),
   ('Victoria Mall',            'mall',        'Entebbe',    0.057000, 32.464000, 'Supermarket, pharmacy and retail in central Entebbe.'),
 
-  -- ── Mukono / Njeru ───────────────────────────────────────────────────────
   ('Mukono Central Market',    'market',      'Mukono',     0.353600, 32.755400, 'Produce and general goods for Mukono town.'),
   ('Njeru Market',             'market',      'Njeru',      0.428000, 33.159000, 'Produce and household goods west of the Nile.'),
 
-  -- ── Jinja ────────────────────────────────────────────────────────────────
   ('Jinja Central Market',     'market',      'Jinja',      0.447800, 33.202600, 'The main market — produce, fish, clothing and hardware.'),
   ('Jinja Main Street Shops',  'shop',        'Jinja',      0.439000, 33.204000, 'Electronics, hardware and general retail.'),
 
-  -- ── Eastern ──────────────────────────────────────────────────────────────
   ('Mbale Central Market',     'market',      'Mbale',      1.082000, 34.175000, 'Produce, clothing and hardware at the foot of Elgon.'),
   ('Tororo Main Market',       'market',      'Tororo',     0.693000, 34.181000, 'Produce and general goods near the border.'),
   ('Soroti Central Market',    'market',      'Soroti',     1.715000, 33.611000, 'Produce, grain and household goods.'),
   ('Iganga Main Market',       'market',      'Iganga',     0.609000, 33.469000, 'Produce and general goods on the Jinja–Mbale road.'),
 
-  -- ── Northern ─────────────────────────────────────────────────────────────
   ('Gulu Main Market',         'market',      'Gulu',       2.774600, 32.299000, 'The main market for northern Uganda — produce, clothing, hardware.'),
   ('Lira Main Market',         'market',      'Lira',       2.235000, 32.910000, 'Produce, grain and general goods.'),
   ('Arua Main Market',         'market',      'Arua',       3.020000, 30.911000, 'Produce and cross-border trade goods.'),
   ('Kitgum Main Market',       'market',      'Kitgum',     3.278000, 32.878000, 'Produce and household goods.'),
 
-  -- ── Western ──────────────────────────────────────────────────────────────
   ('Mbarara Central Market',   'market',      'Mbarara',   -0.607200, 30.654500, 'The main market for the south-west — produce, dairy, clothing.'),
   ('Fort Portal Central Market','market',     'Fort Portal',0.671000, 30.275000, 'Produce and household goods below the Rwenzoris.'),
   ('Kasese Central Market',    'market',      'Kasese',     0.183000, 30.088000, 'Produce, fish and general goods.'),
@@ -71,7 +42,6 @@ FROM (VALUES
   ('Kabale Central Market',    'market',      'Kabale',    -1.249000, 29.989000, 'Produce and household goods in the far south-west.'),
   ('Bushenyi Market',          'market',      'Bushenyi',  -0.585000, 30.213000, 'Produce, dairy and general goods.'),
 
-  -- ── Central / south ──────────────────────────────────────────────────────
   ('Masaka Central Market',    'market',      'Masaka',    -0.341000, 31.734000, 'Produce, clothing and hardware for greater Masaka.'),
   ('Mityana Main Market',      'market',      'Mityana',    0.401000, 32.043000, 'Produce and general goods on the Fort Portal road.'),
   ('Luweero Market',           'market',      'Luweero',    0.849000, 32.473000, 'Produce and household goods on the Gulu highway.'),
@@ -81,6 +51,4 @@ WHERE NOT EXISTS (
   SELECT 1 FROM locations l WHERE l.name = v.name AND l.city = v.city
 );
 
--- The picker groups by city and the list is now long enough that the ordering
--- is done in the database rather than in every consumer.
 CREATE INDEX IF NOT EXISTS idx_locations_city_name ON locations(city, name);

@@ -7,9 +7,7 @@ import { UserRole } from '../../types';
 const HOME_FOR: Record<UserRole, string> = {
   customer: '/app',
   shopper: '/shopper',
-  // Staff never appear in this switcher at all — they are not rows in `users`,
-  // so nothing can link them to a customer or shopper account in the first
-  // place. These two entries exist only to satisfy the map.
+
   admin: '/app',
   super_admin: '/app',
 };
@@ -21,20 +19,12 @@ const LABEL_FOR: Record<UserRole, string> = {
   super_admin: 'Super admin',
 };
 
-/**
- * Shown only when this session proved ownership of a separate account under
- * another role at login. Switching re-issues tokens for that account and drops
- * the user on its dashboard — no logout, no password re-entry.
- */
 export function AccountToggle() {
   const { user, linkedAccounts, switchAccount } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // An admin account is never surfaced here. This widget lives in the customer
-  // and shopper sidebars, and showing an "Admin" row there would advertise the
-  // panel's existence to anyone looking over the user's shoulder.
   const switchable = linkedAccounts.filter((a) => a.role !== 'admin');
 
   if (!user || switchable.length === 0) return null;

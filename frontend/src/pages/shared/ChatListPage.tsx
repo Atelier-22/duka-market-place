@@ -39,12 +39,6 @@ function preview(c: Conversation, myId: string | undefined): string {
   return `${mine ? 'You: ' : ''}${text}`;
 }
 
-/**
- * The chat inbox: one row per person you have a job with, most recent first.
- * A shopper juggling several jobs picks who to answer from here rather than
- * digging through orders — which was the whole problem with per-order-only
- * messaging.
- */
 export function ChatListPage() {
   const { user } = useAuth();
   const { conversations, loading } = useConversations();
@@ -125,8 +119,7 @@ export function ChatListPage() {
                     <span className="shrink-0 text-[11px] text-brand-ink/40">{whenLabel(c.last_at)}</span>
                   </div>
                   <div className="mt-0.5 flex items-center gap-1.5">
-                    {/* Your own last message carries its receipt here, the way
-                        the preview row does in any messaging app. */}
+
                     {c.last_at && c.last_sender_id === user?.id && (
                       <MessageReceipt state={tickStateFor({ delivered_at: c.last_delivered_at, read_at: c.last_read_at })} />
                     )}

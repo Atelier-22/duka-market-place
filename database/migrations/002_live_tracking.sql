@@ -1,12 +1,3 @@
--- 002: live delivery tracking.
---
--- Adds the shopper's position trail for an order plus the delivery clock:
--- a shopper marks shopping done, then either starts delivering immediately
--- (which begins the ETA countdown) or defers to a time agreed with the
--- customer over the phone.
---
--- Safe to run more than once.
-
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS shopper_locations (
@@ -19,7 +10,6 @@ CREATE TABLE IF NOT EXISTS shopper_locations (
   recorded_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- The common read is "latest position for this order", so index accordingly.
 CREATE INDEX IF NOT EXISTS idx_shopper_locations_order
   ON shopper_locations(order_id, recorded_at DESC);
 

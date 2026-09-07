@@ -16,14 +16,6 @@ interface ShoppingDonePanelProps {
   onDone: () => void;
 }
 
-/**
- * The shopper's "done shopping" tick.
- *
- * Two outcomes: set off now, which starts the customer's ETA countdown, or
- * defer to a time already agreed with the customer by phone — which records
- * the arrangement without starting any clock. Deferring is a normal choice
- * here, not an exception.
- */
 export function ShoppingDonePanel({
   orderId, shoppingDoneAt, deliveryStartedAt, deliveryDeferredTo,
   sharingLocation, locationError, onDone,
