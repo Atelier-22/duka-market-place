@@ -8,11 +8,16 @@ interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
   padding?: 'sm' | 'md' | 'lg';
 }
 
+/**
+ * Marks a card as significant. These were 40px coloured glows bleeding out of
+ * the card — decoration doing the job of hierarchy. A card that matters now
+ * says so with its border, which reads at a glance and costs nothing to paint.
+ */
 const glowMap: Record<string, string> = {
   none: '',
-  green: 'shadow-glow',
-  yellow: 'shadow-[0_0_40px_-10px_rgba(242,183,5,0.4)]',
-  red: 'shadow-[0_0_40px_-10px_rgba(214,73,59,0.35)]',
+  green: 'border-brand-green-fresh/40',
+  yellow: 'border-brand-yellow/50',
+  red: 'border-brand-red/40',
 };
 
 const paddingMap: Record<string, string> = {
@@ -22,14 +27,18 @@ const paddingMap: Record<string, string> = {
 };
 
 /**
- * The signature surface of the whole product. Every card-like element in
- * Duka is a GlassCard — this is what makes the glass language feel
- * intentional rather than a one-off effect on the landing page.
+ * The standard surface. Every card-like element in Duka is one of these, so
+ * the panel treatment stays consistent instead of being reinvented per page.
+ *
+ * `hover` defaults to off. It used to default on, which lifted every card in
+ * the app three pixels under the pointer — including the great majority that
+ * are not clickable. Movement should mean something is pressable, so it is now
+ * opt-in for the cards that actually are.
  */
 export function GlassCard({
   children,
   deep = false,
-  hover = true,
+  hover = false,
   glow = 'none',
   padding = 'md',
   className = '',

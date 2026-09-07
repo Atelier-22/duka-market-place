@@ -105,7 +105,7 @@ export function OrderTimeline({ status, perspective = 'customer', actions = {} }
               className={[
                 'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all',
                 active
-                  ? 'bg-gradient-to-br from-brand-green to-brand-green-fresh text-white shadow-glow animate-float'
+                  ? 'bg-brand-green text-white shadow-glow animate-float'
                   : done
                   ? 'bg-brand-green-fresh/90 text-white'
                   : 'bg-white text-brand-ink/30 border border-brand-green/15',

@@ -99,7 +99,7 @@ function NavStylePreview({ navStyle }: { navStyle: NavStyle }) {
               key={i}
               className={
                 active
-                  ? '-mt-3 h-4 w-4 rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh shadow-sm'
+                  ? '-mt-3 h-4 w-4 rounded-full bg-brand-green shadow-sm'
                   : 'h-1.5 w-1.5 rounded-full bg-brand-ink/25'
               }
             />

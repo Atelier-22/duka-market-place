@@ -112,7 +112,7 @@ export function ChatListPage() {
                       className="h-12 w-12 rounded-full object-cover"
                     />
                   ) : (
-                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-sm font-semibold text-white">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-green text-sm font-semibold text-white">
                       {initials(c.other_name)}
                     </span>
                   )}

@@ -286,43 +286,28 @@ body {
    where light would catch, a darker one along the bottom where it falls
    away, and a soft drop shadow so it reads as floating above the page.
    ---------------------------------------------------------------------- */
+/* Was a 30px blur at 200% saturation with two inset highlights — the most
+   literal liquid-glass panel in the app. Same flat treatment as .glass. */
 .glass-liquid {
-  background: rgb(var(--glass-bg) / 0.14);
-  backdrop-filter: blur(30px) saturate(200%);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
-  border: 1px solid rgb(255 255 255 / 0.45);
-  box-shadow:
-    inset 0 1px 0 0 rgb(255 255 255 / 0.55),
-    inset 0 -1px 0 0 rgb(11 61 46 / 0.05),
-    0 10px 30px -12px rgb(11 61 46 / 0.22);
+  background: rgb(var(--glass-bg));
+  border: 1px solid rgb(var(--brand-green) / 0.12);
 }
 
 [data-theme='dark'] .glass-liquid {
-  background: rgb(var(--glass-bg) / 0.22);
+  background: rgb(var(--glass-bg));
   border-color: rgb(255 255 255 / 0.10);
-  box-shadow:
-    inset 0 1px 0 0 rgb(255 255 255 / 0.10),
-    0 10px 30px -12px rgb(0 0 0 / 0.55);
 }
 
-/* ----------------------------------------------------------------------
-   The things ON the glass — the logo and the avatar.
-
-   A bar this transparent will sometimes have a photo or a map scrolling
-   under it, and neither the mark nor a face can be allowed to disappear
-   into that. Each sits on its own small, much more opaque pill, so the bar
-   stays a lens while its contents stay legible against anything.
-   ---------------------------------------------------------------------- */
+/* A small opaque pill behind the logo and the avatar. It existed because the
+   bar was transparent and a map or a photo could scroll under a face; the bar
+   is opaque now, so this is simply the shape they sit on. */
 .glass-chip {
-  background: rgb(var(--glass-bg) / 0.78);
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  border: 1px solid rgb(255 255 255 / 0.55);
-  box-shadow: 0 2px 10px -4px rgb(11 61 46 / 0.25);
+  background: rgb(var(--glass-bg));
+  border: 1px solid rgb(var(--brand-green) / 0.14);
 }
 
 [data-theme='dark'] .glass-chip {
-  background: rgb(var(--glass-bg) / 0.82);
+  background: rgb(var(--glass-bg));
   border-color: rgb(255 255 255 / 0.12);
 }
 
@@ -399,37 +384,42 @@ body {
 /* ----------------------------------------------------------------------
    Glass primitive — used by <GlassCard/> and any element wanting the look.
    ---------------------------------------------------------------------- */
+/* Surfaces.
+   These were frosted panels: an 18px backdrop blur, 160% saturation, a bright
+   inner highlight and a 32px drop shadow, over a translucent white. Every card,
+   every button, every modal, in front of drifting coloured orbs.
+   They are flat now — an opaque surface and a hairline border — and the class
+   names are unchanged so this is one edit rather than four hundred. What a
+   panel does is now said by its border and its position, not by how much of
+   the page is smeared behind it. */
 .glass {
-  background: rgb(var(--glass-bg) / var(--glass-bg-alpha));
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid rgb(var(--glass-bg) / var(--glass-border-alpha));
-  box-shadow:
-    0 8px 32px 0 rgba(11, 61, 46, 0.10),
-    inset 0 1px 0 0 rgb(var(--glass-bg) / calc(var(--glass-border-alpha) + 0.05));
+  background: rgb(var(--glass-bg));
+  border: 1px solid rgb(var(--brand-green) / 0.12);
 }
 
 .glass-deep {
-  background: rgba(11, 61, 46, 0.72);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgb(11 61 46);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   color: white;
 }
 
+/* Hover used to lift a card three pixels and throw a 60px shadow under it, on
+   every card in the app including ones that do nothing when clicked. A surface
+   that reacts to the pointer should be one you can actually press, so this is
+   now a border that darkens — and only where it is applied deliberately. */
 .glass-hover {
-  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 240ms ease;
+  transition: border-color 160ms ease;
 }
 .glass-hover:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 20px 60px -10px rgba(11, 61, 46, 0.25);
+  border-color: rgb(var(--brand-green) / 0.28);
 }
 
+/* Was a three-stop gradient clipped to the headline text. Flat now: a
+   gradient on type costs contrast at every step along it, and the lightest
+   stop was the part carrying the sentence. Kept as a class so the callers do
+   not all have to change. */
 .text-gradient-brand {
-  background: linear-gradient(100deg, #0B3D2E 0%, #137A4C 45%, #1FAE6B 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: rgb(var(--brand-green));
 }
 
 .shimmer-bg {

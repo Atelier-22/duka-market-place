@@ -24,7 +24,7 @@ export function HowItWorksPage() {
       <div className="mt-14 flex flex-col gap-5">
         {STEPS.map((step) => (
           <GlassCard key={step.n} hover={false} className="flex items-start gap-5">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh font-display text-lg font-semibold text-white">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-green font-display text-lg font-semibold text-white">
               {step.n}
             </span>
             <div>

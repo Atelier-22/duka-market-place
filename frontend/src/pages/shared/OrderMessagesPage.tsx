@@ -244,7 +244,7 @@ export function OrderMessagesPage() {
             {conversation?.other_avatar ? (
               <img src={conversation.other_avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
             ) : (
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-xs font-semibold text-white">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-green text-xs font-semibold text-white">
                 {initials(name)}
               </span>
             )}

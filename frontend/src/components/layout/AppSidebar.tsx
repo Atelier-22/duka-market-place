@@ -99,7 +99,7 @@ export function AppSidebar({ items }: AppSidebarProps) {
                   'relative flex items-center rounded-xl text-sm font-medium transition-colors',
                   collapsed ? 'h-10 w-10 justify-center' : 'w-full gap-3 px-3 py-2.5',
                   isActive
-                    ? 'bg-gradient-to-br from-brand-green to-brand-green-fresh text-white shadow-glass'
+                    ? 'bg-brand-green text-white shadow-glass'
                     : 'text-brand-ink/65 hover:bg-brand-green-mist hover:text-brand-green-deep',
                 ].join(' ')
               }

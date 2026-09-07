@@ -109,7 +109,7 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
           {user?.avatarUrl ? (
             <img src={user.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
           ) : (
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-sm font-semibold text-white">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-green text-sm font-semibold text-white">
               {initials(user?.fullName ?? '')}
             </span>
           )}

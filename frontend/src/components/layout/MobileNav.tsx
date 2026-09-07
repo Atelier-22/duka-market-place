@@ -78,7 +78,7 @@ function Slot({
             'relative flex h-11 w-11 items-center justify-center rounded-full transition-all',
             SLIDE,
             isActive
-              ? '-translate-y-3.5 bg-gradient-to-br from-brand-green to-brand-green-fresh text-white shadow-glass'
+              ? '-translate-y-3.5 bg-brand-green text-white shadow-glass'
               : 'translate-y-0 bg-transparent',
           ].join(' ')}
         >
@@ -300,7 +300,7 @@ export function MobileNav({ items }: MobileNavProps) {
                       [
                         'flex items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-medium transition-colors',
                         isActive
-                          ? 'bg-gradient-to-br from-brand-green to-brand-green-fresh text-white'
+                          ? 'bg-brand-green text-white'
                           : 'bg-brand-green-mist/50 text-brand-ink/75',
                       ].join(' ')
                     }

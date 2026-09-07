@@ -100,7 +100,7 @@ export function ShopperProfileModal({ shopperId, onClose }: ShopperProfileModalP
                     className="h-24 w-24 rounded-full object-cover"
                   />
                 ) : (
-                  <span className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-2xl font-semibold text-white">
+                  <span className="flex h-24 w-24 items-center justify-center rounded-full bg-brand-green text-2xl font-semibold text-white">
                     {initials(profile.full_name)}
                   </span>
                 )}

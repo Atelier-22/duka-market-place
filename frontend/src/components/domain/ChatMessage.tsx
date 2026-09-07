@@ -43,7 +43,7 @@ export function ChatMessage({
         className={[
           'max-w-[75%] rounded-xl2 px-4 py-2.5 text-sm',
           isOwn
-            ? 'bg-gradient-to-br from-brand-green to-brand-green-fresh text-white rounded-br-sm'
+            ? 'bg-brand-green text-white rounded-br-sm'
             : 'glass rounded-bl-sm text-brand-ink',
         ].join(' ')}
       >

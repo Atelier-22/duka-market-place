@@ -51,7 +51,7 @@ export function ActiveJobCard({ job, index, deciding, onDecide }: ActiveJobCardP
         {job.customer_avatar ? (
           <img src={job.customer_avatar} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
         ) : (
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-green to-brand-green-fresh text-sm font-semibold text-white">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-green text-sm font-semibold text-white">
             {initials(job.customer_name)}
           </span>
         )}
