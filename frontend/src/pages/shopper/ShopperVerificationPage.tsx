@@ -5,12 +5,15 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Select } from '../../components/ui/Select';
 import { ImageUpload } from '../../components/ui/ImageUpload';
+import { ConsentCheckbox, PrivacyLink } from '../../components/ui/ConsentCheckbox';
 import { useToast } from '../../components/ui/Toast';
 
 export function ShopperVerificationPage() {
   const { push } = useToast();
   const [documentType, setDocumentType] = useState('national_id');
   const [documentUrl, setDocumentUrl] = useState('');
+  const [consented, setConsented] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -19,6 +22,11 @@ export function ShopperVerificationPage() {
       push('Upload a photo of your document first', 'error');
       return;
     }
+    if (!consented) {
+      setConsentError('Please confirm you agree to us checking this document before submitting.');
+      return;
+    }
+    setConsentError(null);
     setSubmitting(true);
     try {
       await api.post('/shoppers/verification', { documentType, documentUrl });
@@ -52,7 +60,19 @@ export function ShopperVerificationPage() {
               <option value="selfie">Selfie holding your ID</option>
             </Select>
             <ImageUpload folder="verification" label="Upload document photo" value={documentUrl} onChange={setDocumentUrl} />
-            <GlassButton disabled={submitting} onClick={handleSubmit} fullWidth>
+            <ConsentCheckbox
+              checked={consented}
+              onChange={(v) => {
+                setConsented(v);
+                if (v) setConsentError(null);
+              }}
+              error={consentError ?? undefined}
+            >
+              I confirm this is my own identity document, and I agree to Duka checking it to verify
+              me. I understand the details read from it are kept, and that only I and a Duka
+              reviewer can open the photograph. See the <PrivacyLink />.
+            </ConsentCheckbox>
+            <GlassButton disabled={submitting || !consented} onClick={handleSubmit} fullWidth>
               {submitting ? 'Submitting…' : 'Submit for review'}
             </GlassButton>
           </div>

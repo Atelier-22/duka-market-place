@@ -5,6 +5,7 @@ import { DukaLockup } from '../../components/ui/DukaLogo';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
 import { PasswordInput } from '../../components/ui/PasswordInput';
+import { ConsentCheckbox, PrivacyLink } from '../../components/ui/ConsentCheckbox';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 
@@ -19,11 +20,18 @@ export function RegisterPage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [consented, setConsented] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!consented) {
+      setConsentError('Please agree to the Privacy Policy and Terms before creating an account.');
+      return;
+    }
+    setConsentError(null);
     setError(null);
     setLoading(true);
     try {
@@ -67,8 +75,28 @@ export function RegisterPage() {
           <Input label="Phone number" type="tel" placeholder="0700 000 000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
           <Input label="Email (optional)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           <PasswordInput label="Password" hint="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <ConsentCheckbox
+            checked={consented}
+            onChange={(v) => {
+              setConsented(v);
+              if (v) setConsentError(null);
+            }}
+            error={consentError ?? undefined}
+          >
+            I agree to the <PrivacyLink /> and the{' '}
+            <Link
+              to="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-brand-green-deep underline underline-offset-2"
+            >
+              Terms &amp; Conditions
+            </Link>
+            . I understand my name and phone number are shown to the
+            {role === 'shopper' ? ' customer' : ' shopper'} on an order I am part of.
+          </ConsentCheckbox>
           {error && <p className="text-sm font-medium text-brand-red">{error}</p>}
-          <GlassButton type="submit" disabled={loading} fullWidth>
+          <GlassButton type="submit" disabled={loading || !consented} fullWidth>
             {loading ? 'Creating account…' : `Sign up as a ${role}`}
           </GlassButton>
         </form>
