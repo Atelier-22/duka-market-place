@@ -19,19 +19,10 @@ import {
   springTransition,
 } from '../../config/motion';
 
-/**
- * App-level brand transition: the screen dims under a translucent overlay,
- * the Duka mark scales into the centre with a glow that shifts colour, holds,
- * then the overlay lifts to reveal the new screen. Whatever `task` does
- * (navigate, switch account) happens while the interface is fully covered.
- */
-
 type Phase = 'idle' | 'dim' | 'logo' | 'out';
 
 interface PlayOptions {
-  /** Small line under the brand name, e.g. "Switching to Shopper". */
   label?: string;
-  /** Runs once the overlay is fully up. Rejections propagate after the overlay lifts. */
   task?: () => Promise<unknown> | unknown;
 }
 

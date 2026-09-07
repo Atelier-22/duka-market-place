@@ -20,7 +20,6 @@ const STEP_ICONS: Record<string, LucideIcon> = {
 };
 
 export interface TimelineAction {
-
   targetId?: string;
 
   to?: string;
@@ -47,7 +46,6 @@ export function revealPanel(targetId: string) {
   window.setTimeout(() => el.classList.remove('flash-target'), 2000);
 }
 
-/** 32px step markers: done and active are solid brand green, upcoming sit quietly on the surface. */
 const MARKER = {
   done: 'bg-brand-green text-white',
   active: 'bg-brand-green text-white shadow-focus',

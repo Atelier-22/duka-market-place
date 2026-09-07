@@ -13,7 +13,6 @@ interface ListRowProps {
   className?: string;
 }
 
-/** A tappable row for menus and settings lists. Put several inside a Card with padding="none". */
 export function ListRow({ label, description, icon: Icon, to, onClick, right, chevron = true, className = '' }: ListRowProps) {
   const inner = (
     <>

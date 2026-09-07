@@ -35,7 +35,6 @@ export function AdminStaffPage() {
   const { push } = useToast();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  /** 'create' or `${staffId}:${action}` while a request is in flight. */
   const [busy, setBusy] = useState<string | null>(null);
   const [temporary, setTemporary] = useState<{ name: string; password: string } | null>(null);
 

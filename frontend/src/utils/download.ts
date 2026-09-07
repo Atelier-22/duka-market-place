@@ -9,7 +9,6 @@ export async function downloadUrl(url: string, filename?: string): Promise<void>
 
     setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
   } catch {
-
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 }

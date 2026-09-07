@@ -9,7 +9,6 @@ interface AvatarProps {
   className?: string;
 }
 
-/** Photo when there is one, brand-green initials when there is not. */
 export function Avatar({ name, src, size = 40, className = '' }: AvatarProps) {
   const style = { width: size, height: size, fontSize: Math.max(11, Math.round(size * 0.36)) };
   if (src) {

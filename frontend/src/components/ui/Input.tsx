@@ -4,9 +4,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   hint?: string;
-  /** Leading icon, 18px. */
   icon?: ReactNode;
-  /** Trailing element (e.g. a show/hide button); sits inside the field. */
   trailing?: ReactNode;
 }
 

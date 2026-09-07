@@ -81,7 +81,6 @@ function writeLocal(prefs: Preferences) {
   const json = JSON.stringify(prefs);
   try { sessionStorage.setItem(LOCAL_KEY, json); } catch {  }
   try { localStorage.setItem(LOCAL_KEY, json); } catch {
-
   }
 }
 

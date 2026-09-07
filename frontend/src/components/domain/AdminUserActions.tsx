@@ -17,7 +17,6 @@ type Action = 'suspend' | 'reactivate' | 'reset' | 'role' | 'revoke';
 
 export function AdminUserActions({ userId, name, role, isActive, onChanged }: AdminUserActionsProps) {
   const { push } = useToast();
-  /** Which action is in flight, so only its button spins. */
   const [busy, setBusy] = useState<Action | null>(null);
   const [temporary, setTemporary] = useState<string | null>(null);
 

@@ -18,7 +18,6 @@ export function useLocationPermission() {
       setState(status.state as PermissionState);
       status.onchange = () => setState(status.state as PermissionState);
     } catch {
-
     }
   }, []);
 

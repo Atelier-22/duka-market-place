@@ -33,7 +33,6 @@ interface DisputeButtonProps {
   size?: 'sm' | 'md';
 }
 
-/** Low-emphasis entry point to raise a dispute on an order that has gone wrong. */
 export function DisputeButton({ orderId, perspective, onRaised, size = 'sm' }: DisputeButtonProps) {
   const { push } = useToast();
   const [open, setOpen] = useState(false);

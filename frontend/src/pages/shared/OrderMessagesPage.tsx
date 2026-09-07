@@ -1,31 +1,37 @@
-import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { FormEvent, KeyboardEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ImagePlus, Mic, Phone, Send, Square, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ClipboardList, ImagePlus, MessageCircle, Mic, Phone, Send, Square, Trash2, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+import { Avatar } from '../../components/ui/Avatar';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { fieldClasses } from '../../components/ui/Input';
+import { Bone, BoneCircle, BoneText, SkeletonRegion } from '../../components/ui/Skeleton';
+import { useToast } from '../../components/ui/Toast';
 import { ChatMessage } from '../../components/domain/ChatMessage';
 import { VoiceNotePlayer } from '../../components/domain/VoiceNotePlayer';
 import { PresenceDot, lastSeenLabel } from '../../components/domain/PresenceDot';
 import { ShopperProfileModal } from '../../components/domain/ShopperProfileModal';
 import { tickStateFor } from '../../components/domain/MessageTicks';
-import { Bone, BoneCircle, BoneText, SkeletonRegion } from '../../components/ui/Skeleton';
-import { useToast } from '../../components/ui/Toast';
 import { useAuth } from '../../context/AuthContext';
 import { useConversations } from '../../hooks/useConversations';
 import { Recording, formatDuration, useVoiceRecorder, voiceRecordingSupported } from '../../hooks/useVoiceRecorder';
 
 const POLL_MS = 5_000;
+const COMPOSER_MAX_PX = 160;
+
+const ICON_BASE =
+  'flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-[background-color,border-color,color,transform,opacity] duration-150 ease-standard active:scale-[0.96] focus-visible:outline-none focus-visible:shadow-focus disabled:pointer-events-none disabled:opacity-50';
+const ICON_PRIMARY = `${ICON_BASE} bg-brand-green text-white shadow-card hover:bg-brand-green-deep`;
+const ICON_SECONDARY = `${ICON_BASE} border border-line bg-surface text-brand-green-deep hover:border-line-strong hover:bg-surface-2`;
+const ICON_TERTIARY = `${ICON_BASE} text-ink-2 hover:bg-surface-2 hover:text-brand-green-deep`;
+const ICON_DANGER = `${ICON_BASE} border border-brand-red/30 bg-surface text-brand-red hover:bg-danger-soft`;
+const REMOVE_BUTTON =
+  'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-surface hover:text-brand-red focus-visible:outline-none focus-visible:shadow-focus';
 
 interface PendingVoice {
   previewUrl: string;
   durationMs: number;
-
   upload: Promise<string>;
-}
-
-function initials(name: string): string {
-  return name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
 }
 
 function safeDurationMs(ms: number): number | undefined {
@@ -53,6 +59,7 @@ export function OrderMessagesPage() {
   const [pending, setPending] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const holdRecording = useCallback((result: Recording) => {
     const upload = uploadBlob(result.blob, result.filename);
@@ -94,6 +101,13 @@ export function OrderMessagesPage() {
 
   useEffect(() => () => { if (voice) URL.revokeObjectURL(voice.previewUrl); }, [voice]);
 
+  useLayoutEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight + 2, COMPOSER_MAX_PX)}px`;
+  }, [body, recorder.recording]);
+
   async function uploadBlob(file: Blob, filename: string): Promise<string> {
     const form = new FormData();
     form.append('file', file, filename);
@@ -128,8 +142,14 @@ export function OrderMessagesPage() {
     setVoice(null);
   }
 
-  async function handleSend(e: FormEvent) {
-    e.preventDefault();
+  const name = conversation?.other_name ?? 'Conversation';
+
+  const viewableShopperId = conversation?.other_role === 'shopper' ? conversation.other_id : null;
+  const canSend = Boolean(body.trim() || attachment || voice);
+  const composerDisabled = recorder.recording;
+  const visible = [...messages, ...pending];
+
+  async function submit() {
     if (!body.trim() && !attachment && !voice) return;
     const text = body;
     const image = attachment;
@@ -152,7 +172,6 @@ export function OrderMessagesPage() {
     }]);
 
     try {
-
       const uploadedUrl = note ? await note.upload : image;
 
       if (uploadedUrl && uploadedUrl.startsWith('blob:')) {
@@ -173,7 +192,6 @@ export function OrderMessagesPage() {
       if (note) URL.revokeObjectURL(note.previewUrl);
       load();
     } catch (err) {
-
       setPending((current) => current.filter((m) => m.id !== localId));
       setBody(text);
       setAttachment(image);
@@ -182,173 +200,184 @@ export function OrderMessagesPage() {
     }
   }
 
-  const name = conversation?.other_name ?? 'Conversation';
+  function handleSend(e: FormEvent) {
+    e.preventDefault();
+    void submit();
+  }
 
-  const viewableShopperId = conversation?.other_role === 'shopper' ? conversation.other_id : null;
-  const canSend = Boolean(body.trim() || attachment || voice);
-  const composerDisabled = recorder.recording;
-  const visible = [...messages, ...pending];
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    if (!uploading && canSend) void submit();
+  }
 
   return (
-
-    <div className="mx-auto flex h-[calc(100dvh-13rem)] min-h-[24rem] max-w-2xl flex-col pb-4 lg:h-[calc(100dvh-6rem)]">
-      <div className="mb-2 flex items-center gap-2">
+    <div
+      className="-mx-4 -mt-5 flex min-h-[22rem] flex-col overflow-hidden bg-page [--chat-gap:6.75rem] [--chat-safe:env(safe-area-inset-bottom)] sm:mx-auto sm:mt-0 sm:max-w-2xl sm:rounded-2xl sm:border sm:border-line sm:shadow-card sm:[--chat-gap:8rem] lg:[--chat-gap:5rem] lg:[--chat-safe:0px]"
+      style={{ height: 'calc(100dvh - var(--duka-topbar, 56px) - var(--chat-gap) - var(--chat-safe))' }}
+    >
+      <header className="flex shrink-0 items-center gap-2 border-b border-line bg-surface px-2 py-2 sm:px-3">
         <button
+          type="button"
           onClick={() => navigate(`${base}/messages`)}
-          className="text-sm font-medium text-brand-ink/50 hover:text-brand-green-deep"
+          aria-label="Back to chats"
+          title="Back to chats"
+          className={ICON_TERTIARY}
         >
-          <ArrowLeft size={15} strokeWidth={2} className="inline" /> Chats
+          <ArrowLeft size={20} strokeWidth={2} />
         </button>
-      </div>
 
-      <Card hover={false} padding="md" className="flex flex-1 flex-col overflow-hidden">
-
-        <div className="flex items-center gap-3 border-b border-brand-green/10 pb-3">
-
-          <button
-            type="button"
-            onClick={() => viewableShopperId && setShowProfile(true)}
-            disabled={!viewableShopperId}
-            aria-label={viewableShopperId ? `View ${name}'s profile` : undefined}
-            className="relative shrink-0"
-          >
-            {headerLoading ? (
-              <BoneCircle size={40} />
-            ) : conversation?.other_avatar ? (
-              <img src={conversation.other_avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
-            ) : (
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-green text-xs font-semibold text-white">
-                {initials(name)}
-              </span>
-            )}
-            <PresenceDot online={presence.online} variant="avatar" />
-          </button>
-          <div className="min-w-0 flex-1">
-            {headerLoading ? (
-              <BoneText w="w-32" className="h-4" />
-            ) : (
-              <button
-                type="button"
-                onClick={() => viewableShopperId && setShowProfile(true)}
-                disabled={!viewableShopperId}
-                className="block max-w-full truncate text-left font-semibold text-brand-green-deep disabled:cursor-default"
-              >
-                {name}
-              </button>
-            )}
-            <p className="flex items-center gap-1.5 truncate text-xs">
-              <PresenceDot online={presence.online} />
-              <span className={presence.online ? 'font-medium text-brand-green-fresh' : 'text-brand-ink/45'}>
-                {presence.online ? 'Online' : lastSeenLabel(presence.lastSeenAt)}
-              </span>
-              <span className="truncate text-brand-ink/35">
-                · {conversation?.request_title ?? `Order #${id?.slice(0, 8)}`}
-              </span>
-            </p>
-          </div>
-          {conversation?.other_phone && (
-            <a
-              href={`tel:${conversation.other_phone}`}
-              title="Call — opens your phone's dialler"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-green/15 text-brand-green-deep transition-colors hover:bg-brand-green-mist"
-            >
-              <Phone size={16} strokeWidth={1.75} />
-            </a>
-          )}
-          <Link
-            to={`${base}/orders/${id}`}
-            className="rounded-full border border-brand-green/15 px-3 py-1.5 text-xs font-medium text-brand-green-deep transition-colors hover:bg-brand-green-mist"
-          >
-            Order
-          </Link>
-        </div>
-
-        <div className="flex-1 overflow-y-auto pr-1 pt-3">
-          {loading ? (
-            <SkeletonRegion label="Loading messages" className="flex flex-col gap-3">
-              <Bone className="h-12 w-3/5 self-start rounded-2xl" />
-              <Bone className="h-16 w-4/5 self-end rounded-2xl" />
-              <Bone className="h-12 w-1/2 self-start rounded-2xl" />
-              <Bone className="h-12 w-3/5 self-end rounded-2xl" />
-            </SkeletonRegion>
-          ) : visible.length === 0 ? (
-            <p className="py-16 text-center text-sm text-brand-ink/40">No messages yet — say hello.</p>
+        <button
+          type="button"
+          onClick={() => viewableShopperId && setShowProfile(true)}
+          disabled={!viewableShopperId}
+          aria-label={viewableShopperId ? `View ${name}'s profile` : undefined}
+          className="relative shrink-0 rounded-full focus-visible:outline-none focus-visible:shadow-focus disabled:cursor-default"
+        >
+          {headerLoading ? (
+            <BoneCircle size={40} />
           ) : (
-            <div className="flex flex-col gap-3">
-              {visible.map((m) => (
-                <ChatMessage
-                  key={m.id}
-                  body={m.body}
-                  attachmentUrl={m.attachment_url}
-                  attachmentType={m.attachment_type}
-                  attachmentDurationMs={m.attachment_duration_ms}
-                  isOwn={m.sender_id === user?.id}
-                  senderName={m.sender_name}
-                  createdAt={m.created_at}
-                  tickState={tickStateFor(m)}
-                />
-              ))}
-              <div ref={bottomRef} />
-            </div>
+            <Avatar name={name} src={conversation?.other_avatar} size={40} />
           )}
-        </div>
+          <PresenceDot online={presence.online} variant="avatar" />
+        </button>
 
-        {attachment && (
-          <div className="mt-3 flex items-center gap-3 rounded-xl bg-brand-green-mist/60 p-2">
-            <img src={attachment} alt="" className="h-14 w-14 rounded-lg object-cover" />
-            <span className="flex-1 text-xs text-brand-ink/55">Photo ready to send</span>
+        <div className="min-w-0 flex-1">
+          {headerLoading ? (
+            <BoneText w="w-32" className="h-4" />
+          ) : (
             <button
               type="button"
-              onClick={() => setAttachment('')}
-              aria-label="Remove photo"
-              className="flex h-7 w-7 items-center justify-center rounded-full text-brand-ink/45 hover:bg-brand-white hover:text-brand-red"
+              onClick={() => viewableShopperId && setShowProfile(true)}
+              disabled={!viewableShopperId}
+              className="block max-w-full truncate text-left text-body font-semibold text-ink disabled:cursor-default"
             >
-              <X size={14} strokeWidth={2} />
+              {name}
+            </button>
+          )}
+          <p className="flex items-center gap-1.5 text-caption">
+            <PresenceDot online={presence.online} />
+            <span className={`shrink-0 ${presence.online ? 'font-medium text-brand-green-fresh' : 'text-ink-3'}`}>
+              {presence.online ? 'Online' : lastSeenLabel(presence.lastSeenAt)}
+            </span>
+            <span className="min-w-0 truncate text-ink-3">
+              · {conversation?.request_title ?? `Order #${id?.slice(0, 8)}`}
+            </span>
+          </p>
+        </div>
+
+        {conversation?.other_phone && (
+          <a
+            href={`tel:${conversation.other_phone}`}
+            title="Call — opens your phone's dialler"
+            aria-label={`Call ${name}`}
+            className={ICON_SECONDARY}
+          >
+            <Phone size={18} strokeWidth={1.75} />
+          </a>
+        )}
+        <Link
+          to={`${base}/orders/${id}`}
+          title="Open the order"
+          aria-label="Open the order"
+          className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-small font-semibold text-brand-green-deep transition-colors duration-150 ease-standard hover:border-line-strong hover:bg-surface-2 focus-visible:outline-none focus-visible:shadow-focus"
+        >
+          <ClipboardList size={18} strokeWidth={1.75} />
+          <span className="hidden sm:inline">Order</span>
+        </Link>
+      </header>
+
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-4">
+        {loading ? (
+          <SkeletonRegion label="Loading messages" className="flex flex-col gap-3">
+            <Bone className="h-12 w-3/5 self-start rounded-2xl" />
+            <Bone className="h-16 w-4/5 self-end rounded-2xl" />
+            <Bone className="h-12 w-1/2 self-start rounded-2xl" />
+            <Bone className="h-12 w-3/5 self-end rounded-2xl" />
+          </SkeletonRegion>
+        ) : visible.length === 0 ? (
+          <div className="flex h-full items-center">
+            <div className="w-full">
+              <EmptyState
+                size="sm"
+                icon={<MessageCircle />}
+                title="No messages yet"
+                description="Say hello, ask a question, or send a photo."
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            {visible.map((m) => (
+              <ChatMessage
+                key={m.id}
+                body={m.body}
+                attachmentUrl={m.attachment_url}
+                attachmentType={m.attachment_type}
+                attachmentDurationMs={m.attachment_duration_ms}
+                isOwn={m.sender_id === user?.id}
+                senderName={m.sender_name}
+                createdAt={m.created_at}
+                tickState={tickStateFor(m)}
+              />
+            ))}
+            <div ref={bottomRef} />
+          </div>
+        )}
+      </div>
+
+      <div className="shrink-0 border-t border-line bg-surface px-3 pb-3 pt-2.5 sm:px-4">
+        {attachment && (
+          <div className="mb-2 flex items-center gap-3 rounded-xl border border-line bg-surface-2 p-2">
+            <img src={attachment} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
+            <span className="min-w-0 flex-1 text-small text-ink-2">Photo ready to send</span>
+            <button type="button" onClick={() => setAttachment('')} aria-label="Remove photo" className={REMOVE_BUTTON}>
+              <X size={16} strokeWidth={2} />
             </button>
           </div>
         )}
 
         {voice && (
-          <div className="mt-3 flex items-center gap-3 rounded-xl bg-brand-green-mist/60 p-2">
-
+          <div className="mb-2 flex items-center gap-3 rounded-xl border border-line bg-surface-2 p-2 pl-3">
             <VoiceNotePlayer src={voice.previewUrl} durationMs={voice.durationMs} tone="other" />
-            <button
-              type="button"
-              onClick={discardVoice}
-              aria-label="Discard voice note"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-brand-ink/45 hover:bg-brand-white hover:text-brand-red"
-            >
-              <X size={14} strokeWidth={2} />
+            <button type="button" onClick={discardVoice} aria-label="Discard voice note" className={REMOVE_BUTTON}>
+              <X size={16} strokeWidth={2} />
             </button>
           </div>
         )}
 
         {recorder.recording ? (
-          <div className="mt-3 flex items-center gap-3 border-t border-brand-green/10 pt-3">
+          <div className="flex items-center gap-2" role="status" aria-live="polite">
             <button
               type="button"
               onClick={recorder.cancel}
               aria-label="Cancel recording"
               title="Cancel"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-red/25 text-brand-red transition-colors hover:bg-brand-red/10"
+              className={ICON_DANGER}
             >
-              <Trash2 size={16} strokeWidth={1.75} />
+              <Trash2 size={18} strokeWidth={1.75} />
             </button>
-            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-brand-red/8 px-4 py-2.5">
-              <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-brand-red" />
-              <span className="text-sm font-medium tabular-nums text-brand-ink/70">
+            <div className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-line bg-surface-2 px-3.5">
+              <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-brand-red" aria-hidden />
+              <span className="text-small font-semibold tabular-nums text-ink">
                 {formatDuration(recorder.elapsedMs)}
               </span>
-              <span className="truncate text-xs text-brand-ink/40">
-                Recording — speak in any language, then tap the square to stop
+              <span className="truncate text-caption text-ink-3">
+                Recording — tap the square to stop
               </span>
             </div>
-            <Button type="button" size="sm" onClick={finishRecording}>
-              <Square size={14} strokeWidth={2.5} />
-            </Button>
+            <button
+              type="button"
+              onClick={finishRecording}
+              aria-label="Stop recording"
+              title="Stop"
+              className={ICON_PRIMARY}
+            >
+              <Square size={16} strokeWidth={2.5} />
+            </button>
           </div>
         ) : (
-          <form onSubmit={handleSend} className="mt-3 flex items-center gap-2 border-t border-brand-green/10 pt-3">
+          <form onSubmit={handleSend} className="flex items-end gap-2">
             <input
               ref={fileRef}
               type="file"
@@ -366,9 +395,9 @@ export function OrderMessagesPage() {
               disabled={uploading || composerDisabled}
               title="Send a photo"
               aria-label="Send a photo"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-green/15 text-brand-green-deep transition-colors hover:bg-brand-green-mist disabled:opacity-50"
+              className={ICON_SECONDARY}
             >
-              <ImagePlus size={17} strokeWidth={1.75} />
+              <ImagePlus size={19} strokeWidth={1.75} />
             </button>
 
             {voiceRecordingSupported() && (
@@ -378,25 +407,35 @@ export function OrderMessagesPage() {
                 disabled={uploading}
                 title="Record a voice note"
                 aria-label="Record a voice note"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-green/15 text-brand-green-deep transition-colors hover:bg-brand-green-mist disabled:opacity-50"
+                className={ICON_SECONDARY}
               >
-                <Mic size={17} strokeWidth={1.75} />
+                <Mic size={19} strokeWidth={1.75} />
               </button>
             )}
 
-            <input
+            <textarea
+              ref={textareaRef}
               value={body}
               onChange={(e) => setBody(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={1}
               placeholder={uploading ? 'Uploading…' : 'Type a message…'}
-              className="min-w-0 flex-1 rounded-full border border-brand-green/15 bg-brand-white/70 px-4 py-2.5 text-sm text-brand-ink outline-none transition-colors placeholder:text-brand-ink/35 focus:border-brand-green-fresh"
+              aria-label="Message"
+              className={fieldClasses(undefined, 'min-h-[44px] max-h-40 min-w-0 flex-1 resize-none px-3.5 py-2.5 leading-[1.4]')}
             />
 
-            <Button type="submit" size="sm" disabled={uploading || !canSend}>
-              <Send size={15} strokeWidth={2} />
-            </Button>
+            <button
+              type="submit"
+              disabled={uploading || !canSend}
+              aria-label="Send"
+              title="Send"
+              className={ICON_PRIMARY}
+            >
+              <Send size={18} strokeWidth={2} />
+            </button>
           </form>
         )}
-      </Card>
+      </div>
 
       {showProfile && viewableShopperId && (
         <ShopperProfileModal shopperId={viewableShopperId} onClose={() => setShowProfile(false)} />

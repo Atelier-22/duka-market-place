@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Coins, Eye, Store } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
+import { PROSE_LINK } from '../../components/layout/LegalDoc';
 import { BRAND } from '../../config/brand';
 
 const PRINCIPLES = [
@@ -8,8 +9,6 @@ const PRINCIPLES = [
   { icon: Coins, title: 'Shoppers paid fairly', body: 'Fees are shown up front and never depend on hiding what the item cost.' },
   { icon: Store, title: 'Markets first', body: 'We meet the market where it is instead of asking it to move online first.' },
 ];
-
-const PROSE_LINK = 'font-medium text-brand-green hover:underline';
 
 export function AboutPage() {
   return (

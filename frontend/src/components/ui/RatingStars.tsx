@@ -10,7 +10,6 @@ interface RatingStarsProps {
 
 const STARS = [1, 2, 3, 4, 5];
 
-/** Five stars: brand yellow when filled, hairline grey when empty. Interactive stars are 40px targets. */
 export function RatingStars({ value, count, size = 'sm', interactive = false, onChange }: RatingStarsProps) {
   const filled = Math.round(value);
   const px = size === 'sm' ? 14 : 28;

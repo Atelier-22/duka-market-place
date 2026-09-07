@@ -14,10 +14,8 @@ function read(): NavStyle {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw === 'light' || raw === 'dark') return raw;
-    // Older builds stored 'labeled' | 'pop' | 'glow'.
     if (raw === 'glow') return 'dark';
   } catch {
-
   }
   return DEFAULT;
 }
@@ -38,7 +36,6 @@ export function useNavStyle(): [NavStyle, (next: NavStyle) => void] {
     try {
       localStorage.setItem(STORAGE_KEY, next);
     } catch {
-
     }
 
     window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY, newValue: next }));

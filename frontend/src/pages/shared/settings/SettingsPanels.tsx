@@ -26,10 +26,6 @@ import { BRAND } from '../../../config/brand';
 import { FAQS } from '../../public/FaqPage';
 import { SourcingType } from '../../../types';
 
-/* ------------------------------------------------------------------ */
-/* Shared building blocks                                              */
-/* ------------------------------------------------------------------ */
-
 export function Panel({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
     <Card padding="lg" className="mb-5">
@@ -98,7 +94,6 @@ function Choice<T extends string>({ value, options, onChange, columns = 1 }: {
   );
 }
 
-/** Honest placeholder for a feature that has no backend yet. */
 function NotYet({ icon: Icon, title, body, cta }: { icon: LucideIcon; title: string; body: string; cta?: ReactNode }) {
   return (
     <div className="flex flex-col items-center rounded-2xl border border-dashed border-line-strong bg-surface-2 px-6 py-10 text-center">
@@ -111,10 +106,6 @@ function NotYet({ icon: Icon, title, body, cta }: { icon: LucideIcon; title: str
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Account                                                             */
-/* ------------------------------------------------------------------ */
 
 export function PersonalInfoPanel() {
   const { user, refresh } = useAuth();
@@ -214,10 +205,6 @@ export function SecurityPanel() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Addresses & location                                                */
-/* ------------------------------------------------------------------ */
-
 export function AddressesPanel() {
   return (
     <Panel title="Saved addresses" description="Where your orders get delivered. Change them here rather than mid-order.">
@@ -233,10 +220,6 @@ export function LocationPanel() {
     </Panel>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Payments                                                            */
-/* ------------------------------------------------------------------ */
 
 export function PaymentMethodsPanel() {
   return (
@@ -273,10 +256,6 @@ export function WalletPanel() {
     </Panel>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Delivery                                                            */
-/* ------------------------------------------------------------------ */
 
 export function DeliveryPreferencesPanel() {
   const { preferences, update, saving } = usePreferences();
@@ -350,10 +329,6 @@ export function DeliveryInstructionsPanel() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Notifications                                                       */
-/* ------------------------------------------------------------------ */
-
 export function OrderNotificationsPanel() {
   const { user } = useAuth();
   const { preferences, update } = usePreferences();
@@ -395,10 +370,6 @@ export function SecurityNotificationsPanel() {
     </Panel>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Preferences                                                         */
-/* ------------------------------------------------------------------ */
 
 const THEMES: { value: Theme; label: string; icon: LucideIcon }[] = [
   { value: 'system', label: 'System', icon: Monitor },
@@ -617,10 +588,6 @@ export function RecommendationsPanel() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Rewards                                                             */
-/* ------------------------------------------------------------------ */
-
 export function PointsPanel() {
   return (
     <Panel title="Duka Points">
@@ -644,10 +611,6 @@ export function CouponsPanel() {
     </Panel>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Privacy & security                                                  */
-/* ------------------------------------------------------------------ */
 
 export function PrivacyPanel() {
   const { user } = useAuth();
@@ -822,10 +785,6 @@ export function PermissionsPanel() {
     </Panel>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Help & support                                                      */
-/* ------------------------------------------------------------------ */
 
 export function HelpCenterPanel() {
   const [open, setOpen] = useState<number | null>(0);

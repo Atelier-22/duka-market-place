@@ -10,7 +10,6 @@ const STEP = 0.4;
 interface ImageLightboxProps {
   src: string;
   alt?: string;
-
   caption?: string;
   onClose: () => void;
 }
@@ -23,6 +22,9 @@ function touchDistance(touches: { [index: number]: { clientX: number; clientY: n
   const [a, b] = [touches[0], touches[1]];
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 }
+
+const toolbarButton =
+  'flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-[background-color,transform] duration-150 ease-standard hover:bg-white/20 active:scale-[0.96] focus-visible:outline-none focus-visible:shadow-focus disabled:pointer-events-none disabled:opacity-40';
 
 export function ImageLightbox({ src, alt = '', caption, onClose }: ImageLightboxProps) {
   const [scale, setScale] = useState(1);
@@ -97,45 +99,23 @@ export function ImageLightbox({ src, alt = '', caption, onClose }: ImageLightbox
     zoomTo(pinch.scale * (touchDistance(e.touches) / pinch.distance));
   }
 
-  const toolbarButton =
-    'flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/25 disabled:opacity-40';
-
   return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label={alt || 'Image viewer'}
-      className="fixed inset-0 z-[100] flex flex-col bg-black/92 "
-
+      className="fixed inset-0 z-[100] flex animate-fade-in flex-col bg-[rgb(var(--overlay-bg)_/_0.92)]"
       onClick={onClose}
     >
-      <div
-        className="flex items-center justify-end gap-2 p-3 sm:p-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <span className="mr-auto min-w-0 truncate pl-1 text-sm text-white/70">{caption}</span>
-        <button onClick={() => zoomTo(scale - STEP)} disabled={scale <= MIN_SCALE} className={toolbarButton} aria-label="Zoom out" title="Zoom out">
-          <Minus size={18} strokeWidth={2} />
-        </button>
-        <span className="w-12 text-center text-xs font-medium tabular-nums text-white/60">
-          {Math.round(scale * 100)}%
-        </span>
-        <button onClick={() => zoomTo(scale + STEP)} disabled={scale >= MAX_SCALE} className={toolbarButton} aria-label="Zoom in" title="Zoom in">
-          <Plus size={18} strokeWidth={2} />
-        </button>
-        <button onClick={() => setRotation((r) => r + 90)} className={toolbarButton} aria-label="Rotate" title="Rotate">
-          <RotateCw size={17} strokeWidth={2} />
-        </button>
-        <button onClick={handleDownload} disabled={downloading} className={toolbarButton} aria-label="Download" title="Download">
-          <Download size={17} strokeWidth={2} />
-        </button>
-        <button onClick={onClose} className={toolbarButton} aria-label="Close" title="Close">
-          <X size={18} strokeWidth={2} />
+      <div className="flex items-center justify-between gap-3 p-3 sm:p-4" onClick={(e) => e.stopPropagation()}>
+        <span className="min-w-0 truncate pl-1 text-small text-white/80">{caption}</span>
+        <button type="button" onClick={onClose} className={toolbarButton} aria-label="Close" title="Close (Esc)">
+          <X size={20} strokeWidth={2} />
         </button>
       </div>
 
       <div
-        className="flex flex-1 items-center justify-center overflow-hidden p-2 sm:p-6"
+        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden px-2 sm:px-6"
         onClick={(e) => e.stopPropagation()}
         onWheel={(e) => zoomTo(scale - Math.sign(e.deltaY) * STEP)}
         onPointerDown={handlePointerDown}
@@ -160,9 +140,29 @@ export function ImageLightbox({ src, alt = '', caption, onClose }: ImageLightbox
         />
       </div>
 
-      <p className="pb-3 text-center text-[11px] text-white/35" onClick={(e) => e.stopPropagation()}>
-        Double-tap or scroll to zoom · drag to move · Esc to close
-      </p>
+      <div className="flex flex-col items-center gap-2 px-3 pb-3 pt-2 sm:pb-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1.5">
+          <button type="button" onClick={() => zoomTo(scale - STEP)} disabled={scale <= MIN_SCALE} className={toolbarButton} aria-label="Zoom out" title="Zoom out">
+            <Minus size={18} strokeWidth={2} />
+          </button>
+          <span className="w-12 text-center text-caption font-semibold tabular-nums text-white/70">
+            {Math.round(scale * 100)}%
+          </span>
+          <button type="button" onClick={() => zoomTo(scale + STEP)} disabled={scale >= MAX_SCALE} className={toolbarButton} aria-label="Zoom in" title="Zoom in">
+            <Plus size={18} strokeWidth={2} />
+          </button>
+          <button type="button" onClick={() => setRotation((r) => r + 90)} className={toolbarButton} aria-label="Rotate" title="Rotate">
+            <RotateCw size={17} strokeWidth={2} />
+          </button>
+          <button type="button" onClick={handleDownload} disabled={downloading} className={toolbarButton} aria-label="Download" title="Download">
+            <Download size={17} strokeWidth={2} />
+          </button>
+        </div>
+        <p className="text-center text-caption text-white/50">
+          <span className="hidden sm:inline">Double-click or scroll to zoom · drag to move · Esc to close</span>
+          <span className="sm:hidden">Pinch or double-tap to zoom · drag to move</span>
+        </p>
+      </div>
     </div>,
     document.body
   );

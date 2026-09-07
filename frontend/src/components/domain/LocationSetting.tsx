@@ -14,7 +14,6 @@ export function LocationSetting({ compact = false }: { compact?: boolean }) {
 
   async function toggle(next: boolean) {
     if (!next) {
-
       await update({ shareLocation: false });
       return;
     }

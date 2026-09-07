@@ -77,7 +77,6 @@ export function LandingPage() {
 
   return (
     <div>
-      {/* Hero */}
       <section className="mx-auto max-w-6xl px-4 pt-12 sm:px-6 lg:pt-20">
         <div className="grid animate-fade-up items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <div className="min-w-0">
@@ -157,12 +156,10 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Statement panel */}
       <section className={SECTION}>
         <HeroCarousel />
       </section>
 
-      {/* How it works */}
       <section className={SECTION}>
         <SectionIntro
           eyebrow="How it works"
@@ -192,7 +189,6 @@ export function LandingPage() {
         </p>
       </section>
 
-      {/* Use cases */}
       <section className={SECTION}>
         <SectionIntro
           eyebrow="Popular requests"
@@ -216,7 +212,6 @@ export function LandingPage() {
         </ul>
       </section>
 
-      {/* Trust panel */}
       <section className={SECTION}>
         <div className="surface-deep rounded-3xl px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
           <p className="text-label font-semibold uppercase text-white/60">Why people trust {BRAND.name}</p>
@@ -232,7 +227,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* For shoppers */}
       <section className={SECTION}>
         <Card padding="lg" className="grid items-center gap-8 md:grid-cols-2 md:gap-12">
           <div className="min-w-0">
@@ -261,7 +255,6 @@ export function LandingPage() {
         </Card>
       </section>
 
-      {/* Final CTA */}
       <section className="mx-auto mt-16 max-w-3xl px-4 text-center sm:px-6 lg:mt-24">
         <h2 className="font-display text-h2 font-medium text-brand-green-deep sm:text-h1">
           Ready to get something you can&rsquo;t go and get yourself?

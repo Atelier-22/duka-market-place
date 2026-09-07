@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Info } from 'lucide-react';
 import { BRAND } from '../../config/brand';
 
-/** Inline link inside running text. */
 export const PROSE_LINK = 'font-medium text-brand-green hover:underline';
 
 const LEGAL_LINKS = [
@@ -13,7 +12,6 @@ const LEGAL_LINKS = [
   { to: '/cookies', label: 'Cookies & Storage' },
 ];
 
-/** Shell for a legal page: title, date, intro, clauses, then a quiet footer. */
 export function LegalDoc({
   title,
   updated,
@@ -51,7 +49,6 @@ export function LegalDoc({
   );
 }
 
-/** One clause. `level` 3 renders a sub-heading for clauses nested in a larger section. */
 export function Clause({ heading, children, level = 2 }: { heading: string; children: ReactNode; level?: 2 | 3 }) {
   const Heading = level === 3 ? 'h3' : 'h2';
   return (
@@ -66,7 +63,6 @@ export function Clause({ heading, children, level = 2 }: { heading: string; chil
   );
 }
 
-/** A note flagging something that still needs a decision or professional review. */
 export function Pending({ children }: { children: ReactNode }) {
   return (
     <div role="note" className="flex gap-3 rounded-xl border border-line bg-surface-2 px-4 py-3.5">

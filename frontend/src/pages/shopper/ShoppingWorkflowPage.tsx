@@ -81,7 +81,6 @@ export function ShoppingWorkflowPage() {
   }
   useEffect(load, [id]);
 
-  // The customer's approval arrives without a reload.
   useEffect(() => {
     const interval = setInterval(load, 8000);
     return () => clearInterval(interval);
@@ -159,7 +158,6 @@ export function ShoppingWorkflowPage() {
     }
     setActing(true);
     try {
-
       const res = await api.post(`/orders/${id}/out-for-delivery`, {
         receiptPhotoUrl: receiptUrl,
         amountUgx: recordedPrice ?? undefined,
@@ -197,7 +195,6 @@ export function ShoppingWorkflowPage() {
     order.status === step ? { [step]: { targetId: `step-${step}`, hint } } as any : {};
 
   const timelineActions: Partial<Record<OrderStatus, TimelineAction>> = {
-
     ...(order.status !== 'requested' && { requested: { to: chat, hint: 'Message the customer' } }),
     ...at('requested', 'Accept or decline'),
     ...at('shopper_assigned', 'Say you are on your way'),

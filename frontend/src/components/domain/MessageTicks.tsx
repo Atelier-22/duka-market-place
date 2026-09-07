@@ -20,7 +20,6 @@ const LABEL: Record<TickState, string> = {
   read: 'Read',
 };
 
-/** Delivery state of one message: clock, one tick, two ticks, two green ticks. */
 export function MessageTicks({ state }: { state: TickState }) {
   const label = LABEL[state];
 

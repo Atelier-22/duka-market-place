@@ -15,7 +15,6 @@ interface ShoppingDonePanelProps {
   onDone: () => void;
 }
 
-/** A sub-section at the foot of the route card, separated by a hairline rather than another card. */
 const SECTION = 'mt-5 border-t border-line pt-4';
 const HEADING = 'flex items-center gap-2 font-display text-h3 font-medium text-brand-green-deep';
 

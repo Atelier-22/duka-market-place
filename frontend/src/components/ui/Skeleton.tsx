@@ -1,24 +1,15 @@
 import { CSSProperties, ReactNode } from 'react';
 import { Card } from './Card';
 
-/**
- * Content-shaped loading placeholders. Every skeleton mirrors the layout it
- * stands in for so the page does not jump when real data lands. All colours
- * come from brand tokens (see .shimmer-bg in index.css), so they work in
- * dark mode and under every accent.
- */
-
 interface BoneProps {
   className?: string;
   style?: CSSProperties;
 }
 
-/** One shimmering bar or block. Size it with Tailwind classes. */
 export function Bone({ className = '', style }: BoneProps) {
   return <span aria-hidden className={`block animate-shimmer shimmer-bg rounded-lg ${className}`} style={style} />;
 }
 
-/** A line of text. `w` is any Tailwind width class. */
 export function BoneText({ w = 'w-2/3', className = '' }: { w?: string; className?: string }) {
   return <Bone className={`h-3.5 ${w} ${className}`} />;
 }
@@ -35,7 +26,6 @@ export function BoneButton({ w = 'w-full', className = '' }: { w?: string; class
   return <Bone className={`h-11 rounded-xl ${w} ${className}`} />;
 }
 
-/** Wraps a skeleton so screen readers announce loading once, not per bone. */
 export function SkeletonRegion({ label = 'Loading', children, className = '' }: { label?: string; children: ReactNode; className?: string }) {
   return (
     <div role="status" aria-busy="true" aria-label={label} className={className}>
@@ -44,9 +34,6 @@ export function SkeletonRegion({ label = 'Loading', children, className = '' }: 
   );
 }
 
-/* ---------- Recurring shapes ---------- */
-
-/** Page title + one-line subtitle. */
 export function SkeletonHeading({ subtitle = true }: { subtitle?: boolean }) {
   return (
     <div>
@@ -56,7 +43,6 @@ export function SkeletonHeading({ subtitle = true }: { subtitle?: boolean }) {
   );
 }
 
-/** 2×2 / 4-up DashboardStat grid. */
 export function SkeletonStats({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -73,7 +59,6 @@ export function SkeletonStats({ count = 4 }: { count?: number }) {
   );
 }
 
-/** Rows shaped like "Order #… / meta line" with a status pill on the right. */
 export function SkeletonRows({ count = 4 }: { count?: number }) {
   return (
     <div className="flex flex-col gap-3">
@@ -90,7 +75,6 @@ export function SkeletonRows({ count = 4 }: { count?: number }) {
   );
 }
 
-/** A RequestCard: title, uppercase sourcing line, badge, two lines, price row. */
 export function SkeletonRequestCard() {
   return (
     <Card hover={false}>
@@ -119,7 +103,6 @@ export function SkeletonRequestGrid({ count = 3 }: { count?: number }) {
   );
 }
 
-/** Chat list row: avatar, name + time, preview, request title, badge column. */
 export function SkeletonChatRows({ count = 5 }: { count?: number }) {
   return (
     <Card hover={false} padding="md">
@@ -143,7 +126,6 @@ export function SkeletonChatRows({ count = 5 }: { count?: number }) {
   );
 }
 
-/** A detail page: back link, title + badge, banner, and a tall main card. */
 export function SkeletonDetail({ withMap = false }: { withMap?: boolean }) {
   return (
     <div className="mx-auto max-w-3xl pb-16">
@@ -189,7 +171,6 @@ export function SkeletonDetail({ withMap = false }: { withMap?: boolean }) {
   );
 }
 
-/** Admin-style table inside a Card: header row + N body rows. */
 export function SkeletonTable({ rows = 6, cols = 5 }: { rows?: number; cols?: number }) {
   return (
     <Card padding="sm" hover={false}>
@@ -211,7 +192,6 @@ export function SkeletonTable({ rows = 6, cols = 5 }: { rows?: number; cols?: nu
   );
 }
 
-/** Whole-app shell placeholder used while the session is being restored. */
 export function SkeletonAppShell() {
   return (
     <SkeletonRegion label="Loading your account" className="min-h-screen">

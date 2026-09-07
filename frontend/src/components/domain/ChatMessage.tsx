@@ -13,9 +13,11 @@ interface ChatMessageProps {
   isOwn: boolean;
   senderName: string;
   createdAt: string;
-
   tickState?: TickState;
 }
+
+const overlayButton =
+  'flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/75 focus-visible:outline-none focus-visible:shadow-focus';
 
 export function ChatMessage({
   body,
@@ -40,20 +42,18 @@ export function ChatMessage({
     <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
       <div
         className={[
-          'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm',
-          isOwn
-            ? 'bg-brand-green text-white rounded-br-sm'
-            : 'surface rounded-bl-sm text-brand-ink',
+          'max-w-[80%] rounded-2xl px-3.5 py-2.5 text-body',
+          isOwn ? 'rounded-br-md bg-brand-green text-white' : 'surface rounded-bl-md text-ink',
         ].join(' ')}
       >
-        {!isOwn && <p className="mb-0.5 text-xs font-semibold opacity-60">{senderName}</p>}
+        {!isOwn && <p className="mb-0.5 text-caption font-semibold text-ink-2">{senderName}</p>}
 
         {kind === 'image' && (
-          <div className="group relative mb-2">
+          <div className="relative mb-2">
             <button
               type="button"
               onClick={() => setZoomed(true)}
-              className="block w-full cursor-zoom-in overflow-hidden rounded-lg"
+              className="block w-full cursor-zoom-in overflow-hidden rounded-lg focus-visible:outline-none focus-visible:shadow-focus"
               aria-label="Open photo full screen"
             >
               <img
@@ -65,20 +65,12 @@ export function ChatMessage({
             </button>
 
             <div className="absolute right-1.5 top-1.5 flex gap-1.5">
-              <span
-                onClick={() => setZoomed(true)}
-                title="Zoom"
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/70"
-              >
-                <Maximize2 size={13} strokeWidth={2.25} />
-              </span>
-              <span
-                onClick={() => downloadUrl(attachmentUrl!)}
-                title="Download photo"
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/70"
-              >
-                <Download size={13} strokeWidth={2.25} />
-              </span>
+              <button type="button" onClick={() => setZoomed(true)} title="Zoom" aria-label="Zoom photo" className={overlayButton}>
+                <Maximize2 size={14} strokeWidth={2.25} />
+              </button>
+              <button type="button" onClick={() => downloadUrl(attachmentUrl!)} title="Download photo" aria-label="Download photo" className={overlayButton}>
+                <Download size={14} strokeWidth={2.25} />
+              </button>
             </div>
           </div>
         )}
@@ -97,8 +89,8 @@ export function ChatMessage({
           <button
             type="button"
             onClick={() => downloadUrl(attachmentUrl!)}
-            className={`mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium ${
-              isOwn ? 'bg-white/20 text-white' : 'bg-brand-green-mist text-brand-green-deep'
+            className={`mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-caption font-semibold transition-colors focus-visible:outline-none focus-visible:shadow-focus ${
+              isOwn ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-brand-green-mist text-brand-green-deep hover:bg-surface-2'
             }`}
           >
             <Download size={14} strokeWidth={2} /> Download attachment
@@ -108,7 +100,7 @@ export function ChatMessage({
         {body && <p className="whitespace-pre-wrap break-words">{body}</p>}
       </div>
 
-      <span className="mt-1 flex items-center gap-1 text-[11px] text-brand-ink/35">
+      <span className="mt-1 flex items-center gap-1 px-1 text-caption text-ink-3">
         {timestamp}
         {isOwn && tickState && <MessageReceipt state={tickState} />}
       </span>

@@ -1,15 +1,6 @@
 import { ButtonHTMLAttributes, ReactNode, forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
 
-/**
- * Button hierarchy:
- *  primary     — the one action on a screen, brand green
- *  secondary   — bordered, for the alternative
- *  tertiary    — text-only, for low-emphasis actions in a row
- *  destructive — red, for cancel / delete
- *  link        — inline text link
- * Legacy names (ghost, surface, danger) map onto these.
- */
 export type ButtonVariant =
   | 'primary' | 'secondary' | 'tertiary' | 'destructive' | 'link'
   | 'ghost' | 'surface' | 'danger';
@@ -21,7 +12,6 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
-  /** Shows a spinner and disables the button; keeps the label so the width holds. */
   loading?: boolean;
 }
 

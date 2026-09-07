@@ -9,7 +9,6 @@ export interface MapPoint {
 }
 
 interface LiveMapProps {
-
   you: MapPoint | null;
 
   them: MapPoint | null;
@@ -18,11 +17,6 @@ interface LiveMapProps {
   className?: string;
 }
 
-/**
- * Leaflet paints vector layers with SVG presentation attributes, which cannot
- * read CSS variables, so the route colour is resolved from the token at
- * creation time. Marker icons are plain HTML and use `rgb(var(--…))` inline.
- */
 function tokenColor(name: string): string {
   if (typeof window === 'undefined') return 'currentColor';
   const triplet = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -81,7 +75,6 @@ export function LiveMap({ you, them, destination, className = '' }: LiveMapProps
         map.fitBounds(L.latLngBounds(line as L.LatLngTuple[]), { padding: [40, 40], maxZoom: 16 });
       }
     } else if (!userMoved.current) {
-
       const focus = them ?? destination ?? you;
       if (focus) map.setView([focus.lat, focus.lng], 15);
     }
@@ -106,9 +99,6 @@ function place(
   next.bindTooltip(point.label ?? fallbackLabel, { direction: 'top', offset: [0, -12] });
   return next;
 }
-
-/* Markers sit on light map tiles in every theme, so they use the accent
-   tokens that do not flip in dark mode, plus a white keyline. */
 
 const otherPartyIcon = L.divIcon({
   className: '',

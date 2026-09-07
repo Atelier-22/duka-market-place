@@ -12,7 +12,6 @@ interface TabsProps<T extends string> {
   className?: string;
 }
 
-/** Segmented control for switching views inside a page. */
 export function Tabs<T extends string>({ value, onChange, items, ariaLabel, className = '' }: TabsProps<T>) {
   return (
     <div role="tablist" aria-label={ariaLabel} className={`inline-flex max-w-full gap-1 rounded-xl border border-line bg-surface-2 p-1 ${className}`}>

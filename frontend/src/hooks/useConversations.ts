@@ -35,7 +35,6 @@ export function useConversations(enabled = true) {
       const res = await api.get('/messages/conversations');
       setConversations(res.data.conversations);
     } catch {
-
     } finally {
       setLoading(false);
     }

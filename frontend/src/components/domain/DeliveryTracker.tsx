@@ -23,7 +23,6 @@ function useCountdown(startedAt: string | null, etaMinutes: number | null) {
   return Math.round(etaMinutes - elapsedMin);
 }
 
-/** A "needs attention" note inside the card. */
 const NOTE = 'rounded-lg border border-brand-yellow/40 bg-warning-soft/50 px-4 py-3';
 
 export function DeliveryTracker({

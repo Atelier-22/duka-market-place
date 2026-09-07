@@ -1,22 +1,14 @@
 import { HTMLAttributes, ReactNode } from 'react';
 
-/**
- * The one container. Solid surface, hairline border, a whisper of shadow.
- * `tone` colours the border for cards that need attention.
- */
 export type CardTone = 'default' | 'brand' | 'success' | 'warning' | 'danger';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   padding?: 'none' | 'sm' | 'md' | 'lg';
   tone?: CardTone;
-  /** Lifts on hover; set automatically when there is an onClick. */
   hover?: boolean;
-  /** Stronger shadow for things that sit above the page (menus, popovers). */
   elevated?: boolean;
-  /** Deep brand panel with white text. */
   deep?: boolean;
-  /** Legacy alias for `tone`. */
   glow?: 'none' | 'green' | 'yellow' | 'red';
 }
 

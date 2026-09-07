@@ -18,7 +18,6 @@ interface Draft {
 
 const EMPTY: Draft = { id: null, label: 'Home', line1: '', landmark: '', city: 'Kampala' };
 
-/** Tertiary, icon-only action for a row; 44px tap target. */
 function IconButton({
   label, onClick, tone = 'default', children,
 }: { label: string; onClick: () => void; tone?: 'default' | 'danger'; children: ReactNode }) {

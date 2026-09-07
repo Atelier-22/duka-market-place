@@ -22,7 +22,6 @@ import {
   springTransition,
 } from '../../config/motion';
 
-/** Which brand token the bar leans toward while this tab is active. */
 export type NavTint = 'fresh' | 'green' | 'deep' | 'yellow' | 'red' | 'ink';
 
 export interface NavItem {
@@ -62,7 +61,6 @@ interface SlotProps {
   spring: { easing: string; duration: number };
 }
 
-/** One tab. The icon lifts into the floating indicator on the same spring the indicator travels on. */
 function Slot({ icon: Icon, label, count, isActive, ready, spring }: SlotProps) {
   const iconStyle: CSSProperties = {
     width: NAV_ICON_BOX,
@@ -114,7 +112,6 @@ export function MobileNav({ items }: MobileNavProps) {
 
   const spring = springTransition(NAVIGATION_SPRING);
 
-  /* ---- measure slot centres so the indicator is never hardcoded ---- */
   const barRef = useRef<HTMLDivElement>(null);
   const slotRefs = useRef<(HTMLElement | null)[]>([]);
   const [centers, setCenters] = useState<number[]>([]);
@@ -137,8 +134,6 @@ export function MobileNav({ items }: MobileNavProps) {
     return () => observer.disconnect();
   }, [slotCount]);
 
-  // Arm transitions one frame after the first measurement so the indicator
-  // appears in place instead of sliding in from x=0 on page load.
   useEffect(() => {
     if (ready || centers.length === 0) return;
     const id = requestAnimationFrame(() => setReady(true));

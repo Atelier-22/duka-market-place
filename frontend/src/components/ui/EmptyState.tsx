@@ -5,11 +5,9 @@ interface EmptyStateProps {
   title: string;
   description?: string;
   action?: ReactNode;
-  /** Compact for inside cards. */
   size?: 'md' | 'sm';
 }
 
-/** Says what is empty, why, and what to do about it. */
 export function EmptyState({ icon, title, description, action, size = 'md' }: EmptyStateProps) {
   return (
     <div

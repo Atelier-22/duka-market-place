@@ -33,7 +33,6 @@ export function AdminOrderDetailPage() {
   const [disputeReason, setDisputeReason] = useState('');
   const [disputeDetail, setDisputeDetail] = useState('');
   const [onBehalfOf, setOnBehalfOf] = useState<Side>('customer');
-  /** Which admin action is in flight, so only its button spins. */
   const [busy, setBusy] = useState<'cancel' | 'dispute' | null>(null);
 
   const load = useCallback(() => {

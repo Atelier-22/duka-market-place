@@ -219,7 +219,6 @@ export function AdminOverviewPage() {
       setActivity(a.data.activity);
       setLastRefresh(Date.now());
     } catch {
-
     } finally {
       setLoading(false);
     }

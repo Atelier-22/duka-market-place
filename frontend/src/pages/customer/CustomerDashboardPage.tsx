@@ -20,7 +20,6 @@ function formatUgx(n: number) {
 
 const FINISHED: OrderStatus[] = ['completed', 'cancelled', 'refunded'];
 
-/** What the big button on the active-order card should say, by status. */
 const CTA: Partial<Record<OrderStatus, string>> = {
   awaiting_customer_approval: 'Approve the purchase',
   out_for_delivery: 'Confirm delivery',
@@ -69,7 +68,6 @@ export function CustomerDashboardPage() {
     );
   }
 
-  // The order that needs the customer comes first; otherwise the newest live one.
   const live = orders.filter((o) => !FINISHED.includes(o.status));
   const activeOrder = live.find((o) => isYourTurn(o.status, 'customer')) ?? live[0];
   const withOffers = requests.filter((r) => r.status === 'offer_received');
@@ -90,7 +88,6 @@ export function CustomerDashboardPage() {
         className="mb-0"
       />
 
-      {/* Anything that needs the customer, right at the top. */}
       {(withOffers.length > 0 || activeOrder) && (
         <div className="-mt-2 flex flex-col">
           {withOffers.length > 0 && (

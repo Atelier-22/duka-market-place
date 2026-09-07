@@ -14,7 +14,6 @@ export function AdminVerificationsPage() {
   const { push } = useToast();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  /** `${id}:${decision}` while a review request is in flight. */
   const [busy, setBusy] = useState<string | null>(null);
 
   function load() {

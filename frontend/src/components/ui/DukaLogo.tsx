@@ -1,7 +1,6 @@
 import { BRAND } from '../../config/brand';
 
 interface DukaMarkProps {
-
   size?: number;
 
   variant?: 'brand' | 'light';
@@ -24,7 +23,6 @@ export function DukaMark({ size = 32, variant = 'brand', className = '' }: DukaM
 }
 
 interface DukaLockupProps {
-
   markSize?: number;
 
   roleLabel?: string;
@@ -77,7 +75,6 @@ export function DukaLockup({
 }
 
 interface DukaLogoProps {
-
   width?: number;
   className?: string;
 }

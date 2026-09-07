@@ -5,9 +5,7 @@ import { formatDuration } from '../../hooks/useVoiceRecorder';
 
 interface VoiceNotePlayerProps {
   src: string;
-
   durationMs?: number | null;
-
   tone: 'own' | 'other';
 }
 
@@ -59,7 +57,6 @@ export function VoiceNotePlayer({ src, durationMs, tone }: VoiceNotePlayerProps)
     const audio = audioRef.current;
     if (!audio) return;
     if (audio.paused) {
-
       document.querySelectorAll('audio').forEach((a) => { if (a !== audio) a.pause(); });
       void audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
     } else {
@@ -82,18 +79,18 @@ export function VoiceNotePlayer({ src, durationMs, tone }: VoiceNotePlayerProps)
     ? 'bg-white/25 text-white hover:bg-white/35'
     : 'bg-brand-green text-white hover:bg-brand-green-deep';
   const playedBar = own ? 'bg-white' : 'bg-brand-green';
-  const unplayedBar = own ? 'bg-white/35' : 'bg-brand-ink/20';
-  const metaText = own ? 'text-white/70' : 'text-brand-ink/45';
+  const unplayedBar = own ? 'bg-white/35' : 'bg-line-strong';
+  const metaText = own ? 'text-white/70' : 'text-ink-3';
 
   return (
-    <div className="flex min-w-[210px] items-center gap-3">
+    <div className="flex w-60 min-w-[180px] max-w-full items-center gap-3">
       <audio ref={audioRef} src={src} preload="metadata" />
 
       <button
         type="button"
         onClick={toggle}
         aria-label={playing ? 'Pause voice note' : 'Play voice note'}
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors ${buttonClass}`}
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-[background-color,transform] duration-150 ease-standard active:scale-[0.96] focus-visible:outline-none focus-visible:shadow-focus ${buttonClass}`}
       >
         {playing ? <Pause size={16} strokeWidth={2.5} /> : <Play size={16} strokeWidth={2.5} className="ml-0.5" />}
       </button>
@@ -107,7 +104,7 @@ export function VoiceNotePlayer({ src, durationMs, tone }: VoiceNotePlayerProps)
           aria-valuenow={Math.round(positionMs)}
           tabIndex={0}
           onClick={seek}
-          className="flex h-8 cursor-pointer items-center gap-[2px]"
+          className="flex h-8 cursor-pointer items-center gap-[2px] rounded-sm"
         >
           {shape.map((height, i) => (
             <span
@@ -117,7 +114,7 @@ export function VoiceNotePlayer({ src, durationMs, tone }: VoiceNotePlayerProps)
             />
           ))}
         </div>
-        <div className={`flex items-center justify-between text-[11px] ${metaText}`}>
+        <div className={`flex items-center justify-between text-caption ${metaText}`}>
           <span className="tabular-nums">
             {formatDuration(playing || positionMs > 0 ? positionMs : total)}
           </span>
@@ -126,9 +123,9 @@ export function VoiceNotePlayer({ src, durationMs, tone }: VoiceNotePlayerProps)
             onClick={() => downloadUrl(src)}
             title="Download voice note"
             aria-label="Download voice note"
-            className="flex items-center gap-1 hover:underline"
+            className="-mr-1 flex h-6 w-6 items-center justify-center rounded-full transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:shadow-focus"
           >
-            <Download size={11} strokeWidth={2} />
+            <Download size={12} strokeWidth={2} />
           </button>
         </div>
       </div>

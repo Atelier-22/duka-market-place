@@ -11,10 +11,6 @@ interface ModalProps {
   maxWidth?: string;
 }
 
-/**
- * Bottom sheet on phones, centred dialog from `sm` up. Solid surface,
- * one shadow, scroll inside when tall, Escape and backdrop close it.
- */
 export function Modal({ open, onClose, title, description, children, maxWidth = 'max-w-lg' }: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);

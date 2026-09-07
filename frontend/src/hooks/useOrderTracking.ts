@@ -32,7 +32,6 @@ export function useOrderTracking(orderId: string | undefined, enabled: boolean) 
       const res = await api.get(`/orders/${orderId}/tracking`);
       setTracking(res.data);
     } catch {
-
     }
   }, [orderId]);
 
@@ -76,7 +75,6 @@ export function useBroadcastPosition(orderId: string | undefined, active: boolea
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
         }).catch((err) => {
-
           setSharing(false);
           setError(apiErrorMessage(err));
 

@@ -5,6 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { Button } from '../../components/ui/Button';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { api, apiErrorMessage } from '../../services/api';
 import { useToast } from '../../components/ui/Toast';
 import { useAuth } from '../../context/AuthContext';
@@ -44,13 +45,21 @@ export function ShopperProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl pb-10">
-      <h1 className="font-display text-2xl font-medium text-brand-green-deep">Profile</h1>
-      <Card padding="lg" hover={false} className="mt-6">
+    <div className="mx-auto max-w-3xl pb-10">
+      <PageHeader title="Profile" subtitle="What customers see when you make an offer." />
+
+      <Card hover={false}>
         <div className="flex flex-col gap-4">
-          <Input label="Full name" defaultValue={user?.fullName} disabled />
-          <Input label="Phone number" defaultValue={user?.phone} disabled />
-          <Input label="Operating area" placeholder="e.g. Kampala Central, near Owino" value={operatingArea} onChange={(e) => setOperatingArea(e.target.value)} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input label="Full name" defaultValue={user?.fullName} disabled />
+            <Input label="Phone number" defaultValue={user?.phone} disabled />
+          </div>
+          <Input
+            label="Operating area"
+            placeholder="e.g. Kampala Central, near Owino"
+            value={operatingArea}
+            onChange={(e) => setOperatingArea(e.target.value)}
+          />
           <Textarea
             label="Bio"
             placeholder="Which markets you know well, what you are good at finding, how long you have been doing this."
@@ -58,27 +67,31 @@ export function ShopperProfilePage() {
             value={bio}
             onChange={(e) => setBio(e.target.value)}
           />
-          <Button disabled={saving} onClick={handleSave}>
-            {saving ? 'Saving…' : 'Save changes'}
-          </Button>
+          <div className="flex justify-end">
+            <Button loading={saving} onClick={handleSave}>Save changes</Button>
+          </div>
         </div>
       </Card>
 
-      <Card padding="lg" hover={false} className="mt-6">
-        <p className="font-display text-lg font-medium text-brand-green-deep">Need something yourself?</p>
-        <p className="mt-1.5 text-sm text-brand-ink/60">
-          The same account can post shopping requests. Switch to customer mode to have
-          someone else do the running around — you can switch back any time.
-        </p>
-        <Button
-          className="mt-4"
-          variant="secondary"
-          disabled={switching}
-          onClick={handleSwitchToCustomer}
-        >
-          {switching ? 'Switching…' : <><ShoppingCart size={17} strokeWidth={2} /> Switch to customer mode</>}
-        </Button>
-      </Card>
+      <section className="mt-6">
+        <Card hover={false}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-green-mist text-brand-green" aria-hidden>
+              <ShoppingCart size={20} strokeWidth={1.75} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-display text-h3 font-medium text-brand-green-deep">Need something yourself?</h2>
+              <p className="mt-1 text-small text-ink-2">
+                The same account can post shopping requests. Switch to customer mode to have
+                someone else do the running around — you can switch back any time.
+              </p>
+            </div>
+            <Button variant="secondary" loading={switching} onClick={handleSwitchToCustomer} className="sm:shrink-0">
+              Switch to customer mode
+            </Button>
+          </div>
+        </Card>
+      </section>
     </div>
   );
 }

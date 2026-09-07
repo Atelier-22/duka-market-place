@@ -22,7 +22,6 @@ import { useBroadcastPosition, useOrderTracking } from '../../hooks/useOrderTrac
 
 const TRACKABLE_STATUSES = ['shopper_assigned', 'shopping', 'item_found', 'awaiting_customer_approval', 'purchased', 'out_for_delivery'];
 
-/** Mirrors ORDER_TRANSITIONS on the backend: cancelling is only allowed before the shopper has paid. */
 const CANCELLABLE: OrderStatus[] = ['requested', 'shopper_assigned', 'shopping', 'item_found', 'awaiting_customer_approval'];
 const DISPUTABLE: OrderStatus[] = ['shopping', 'item_found', 'awaiting_customer_approval', 'purchased', 'out_for_delivery', 'delivered', 'completed'];
 
@@ -153,8 +152,6 @@ export function ActiveOrderPage() {
     </p>
   );
 
-  // The thing the customer must do, kept directly under the banner so it is
-  // never buried beneath the map and the timeline on a phone.
   const actionCard = (
     <>
       {order.status === 'awaiting_customer_approval' && (

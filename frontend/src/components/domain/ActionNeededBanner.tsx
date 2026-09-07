@@ -3,16 +3,6 @@ import { ArrowDown, ArrowRight, CircleAlert, Clock, Star } from 'lucide-react';
 import { OrderPerspective, OrderStatus } from '../../types';
 import { revealPanel } from './OrderTimeline';
 
-/**
- * The one strip that tells the person looking at an order what is going on
- * and whether it is their move. Every status has an entry for both sides so
- * nobody is ever left with a bare timeline.
- *
- *  act   → warning tone, "Your turn", tap to jump to the action card
- *  wait  → neutral, says who you are waiting on and roughly how long
- *  done  → success, the order is finished (rate the other side)
- *  alert → danger, cancelled / disputed
- */
 export type ActionTone = 'act' | 'wait' | 'done' | 'alert';
 
 export interface ActionCopy {
@@ -72,12 +62,10 @@ const ACTION: Partial<Record<OrderStatus, Record<OrderPerspective, ActionCopy | 
   },
 };
 
-/** Copy for a status from one side's point of view; used by list pages too. */
 export function actionFor(status: OrderStatus, perspective: OrderPerspective): ActionCopy | null {
   return ACTION[status]?.[perspective] ?? null;
 }
 
-/** True when the person looking must do something to move the order on. */
 export function isYourTurn(status: OrderStatus, perspective: OrderPerspective): boolean {
   return actionFor(status, perspective)?.tone === 'act';
 }
@@ -116,13 +104,9 @@ const TONE = {
 interface ActionNeededBannerProps {
   status: OrderStatus;
   perspective: OrderPerspective;
-  /** Panel to scroll to when tapped (on the order page). */
   targetId?: string;
-  /** Navigate here instead of scrolling (on list pages / dashboards). */
   to?: string;
-  /** Shopper's estimate from their offer, in minutes; shown while waiting. */
   estimateMinutes?: number | null;
-  /** Hide the "rate" prompt once the rating is in. */
   rated?: boolean;
   className?: string;
 }

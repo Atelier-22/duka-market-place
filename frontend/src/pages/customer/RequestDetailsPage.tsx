@@ -41,7 +41,6 @@ export function RequestDetailsPage() {
 
   useEffect(load, [id]);
 
-  // New offers show up on their own while the request is still open.
   const waiting = request?.status === 'open' || request?.status === 'offer_received';
   useEffect(() => {
     if (!waiting) return;
@@ -113,7 +112,6 @@ export function RequestDetailsPage() {
     <div className="mx-auto max-w-3xl pb-16">
       <PageHeader back="/app/orders?view=requests" backLabel="Requests" title={request.title} actions={<StatusBadge status={request.status} />} />
 
-      {/* Once a shopper is chosen, this page's job is to hand over to the order. */}
       {assigned && order && (
         <Card glow="green" hover={false} className="mb-4">
           <p className="flex items-center gap-2 font-medium text-brand-green-deep">

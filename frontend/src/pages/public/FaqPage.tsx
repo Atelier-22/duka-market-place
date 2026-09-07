@@ -1,21 +1,20 @@
 import { useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
+import { PROSE_LINK } from '../../components/layout/LegalDoc';
 import { BRAND } from '../../config/brand';
 
 export const FAQS = [
-  { category: 'Shopping', q: 'What can I ask a shopper to buy?', a: 'Almost anything sold in a physical market, shop, supermarket, or by a seller you found on social media — as long as it’s legal to buy and deliver.' },
-  { category: 'Shopping', q: 'What if I don’t know exactly where to buy something?', a: 'Choose "Let shopper find it" when creating your request. Your shopper can search local shops and submit a few priced options for you to choose from.' },
+  { category: 'Shopping', q: 'What can I ask a shopper to buy?', a: 'Almost anything sold in a physical market, shop, supermarket, or by a seller you found on social media — as long as it\u2019s legal to buy and deliver.' },
+  { category: 'Shopping', q: 'What if I don\u2019t know exactly where to buy something?', a: 'Choose "Let shopper find it" when creating your request. Your shopper can search local shops and submit a few priced options for you to choose from.' },
   { category: 'Payments', q: 'How is the price broken down?', a: 'Every order shows the item price, shopping fee, delivery fee, and platform fee as separate line items — never a single bundled number.' },
   { category: 'Payments', q: 'How do I pay?', a: 'The MVP supports cash on delivery and manually confirmed payments. Mobile money and card payments are coming as we integrate licensed payment providers.' },
   { category: 'Delivery', q: 'How long does delivery take?', a: 'It depends on the item and distance, but most requests are completed within a few hours. Your shopper gives you an estimate when they accept.' },
-  { category: 'Refunds', q: 'What if the item isn’t what I asked for?', a: 'Don’t confirm delivery — raise a dispute instead. Our support team reviews the evidence (photos, receipts, messages) and resolves it fairly.' },
+  { category: 'Refunds', q: 'What if the item isn\u2019t what I asked for?', a: 'Don\u2019t confirm delivery — raise a dispute instead. Our support team reviews the evidence (photos, receipts, messages) and resolves it fairly.' },
   { category: 'Shopper verification', q: 'How are shoppers verified?', a: 'Shoppers submit identification documents for review before they can accept jobs. Verified shoppers are marked on their profile.' },
-  { category: 'Safety', q: 'Is my payment protected?', a: 'You approve the exact price and see photo evidence before any purchase is made, and you only confirm delivery once you’ve received the item.' },
-  { category: 'Disputes', q: 'What happens if there’s a disagreement?', a: 'Either side can raise a dispute on an order. Our admin team reviews the order history, evidence, and messages to resolve it.' },
+  { category: 'Safety', q: 'Is my payment protected?', a: 'You approve the exact price and see photo evidence before any purchase is made, and you only confirm delivery once you\u2019ve received the item.' },
+  { category: 'Disputes', q: 'What happens if there\u2019s a disagreement?', a: 'Either side can raise a dispute on an order. Our admin team reviews the order history, evidence, and messages to resolve it.' },
 ];
-
-const PROSE_LINK = 'font-medium text-brand-green hover:underline';
 
 function slug(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-');

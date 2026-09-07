@@ -4,20 +4,11 @@ import { Card, CardTone } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
 
-/* ====================================================================
- * Shared admin building blocks.
- * Detail frame, panels, fields, pills, stat tiles and the one table
- * pattern every admin list uses. All colour goes through brand tokens.
- * ==================================================================== */
-
-/* ---------- Detail page frame ---------- */
-
 export function AdminDetailShell({
   title, subtitle, badges, children,
 }: {
   title: string;
   subtitle?: ReactNode;
-  /** Status pills shown on the right of the header. */
   badges?: ReactNode;
   children: ReactNode;
 }) {
@@ -29,14 +20,11 @@ export function AdminDetailShell({
   );
 }
 
-/* ---------- Panel: one card with a heading ---------- */
-
 export function Panel({
   title, count, action, tone, children, className = '',
 }: {
   title: string;
   count?: number;
-  /** Right-aligned element next to the heading. */
   action?: ReactNode;
   tone?: CardTone;
   children: ReactNode;
@@ -60,8 +48,6 @@ export function Panel({
   );
 }
 
-/* ---------- Empty: compact empty state for inside a Panel ---------- */
-
 export function Empty({
   title, description, action, icon,
 }: {
@@ -73,8 +59,6 @@ export function Empty({
   return <EmptyState size="sm" icon={icon} title={title} description={description} action={action} />;
 }
 
-/* ---------- Field: label over value ---------- */
-
 export function Field({ label, value, className = '' }: { label: string; value: ReactNode; className?: string }) {
   return (
     <div className={className}>
@@ -83,8 +67,6 @@ export function Field({ label, value, className = '' }: { label: string; value: 
     </div>
   );
 }
-
-/* ---------- Pill: small status chip (same shape as StatusBadge) ---------- */
 
 export type PillTone = 'neutral' | 'brand' | 'success' | 'warning' | 'danger';
 
@@ -100,7 +82,6 @@ export function Pill({
   tone = 'neutral', dot = false, children, className = '',
 }: {
   tone?: PillTone;
-  /** Leading status dot. */
   dot?: boolean;
   children: ReactNode;
   className?: string;
@@ -114,8 +95,6 @@ export function Pill({
     </span>
   );
 }
-
-/* ---------- StatTile: the DashboardStat shape, with an optional link ---------- */
 
 export type StatTone = 'default' | 'success' | 'warning' | 'danger';
 
@@ -133,11 +112,8 @@ export function StatTile({
   value: ReactNode;
   tone?: StatTone;
   icon?: ReactNode;
-  /** Small trailing text after the value, e.g. "of 6". */
   sub?: ReactNode;
-  /** Makes the tile a link. */
   to?: string;
-  /** Extra content under the value (e.g. a capacity bar). */
   children?: ReactNode;
 }) {
   const tile = (
@@ -160,32 +136,13 @@ export function StatTile({
   ) : tile;
 }
 
-/* ---------- Table: the one admin table pattern ----------
- *
- *   <AdminTable head={<><Th>Name</Th><Th align="right">Total</Th></>}>
- *     {rows.map((r) => (
- *       <Tr key={r.id} onClick={() => navigate(...)}>
- *         <Td>{r.name}</Td>
- *         <Td numeric>{formatUgx(r.total)}</Td>
- *       </Tr>
- *     ))}
- *   </AdminTable>
- *
- * The table scrolls inside its card; the page never scrolls sideways.
- * Row borders live on <Tr>, not on cells, so the last row is clean.
- * ---------------------------------------------------------- */
-
 export function AdminTable({
   head, children, minWidth = 'min-w-[640px]', className = '', caption,
 }: {
-  /** One or more <Th> elements. */
   head: ReactNode;
-  /** <Tr> rows. */
   children: ReactNode;
-  /** Tailwind min-width so columns never crush on phones; the wrapper scrolls. */
   minWidth?: string;
   className?: string;
-  /** Screen-reader caption. */
   caption?: string;
 }) {
   return (
@@ -252,9 +209,7 @@ export function Tr({ className = '', onClick, children, ...rest }: HTMLAttribute
 export function Td({
   numeric = false, muted = false, align, className = '', children, ...rest
 }: Omit<TdHTMLAttributes<HTMLTableCellElement>, 'align'> & {
-  /** Right-aligned, tabular figures. */
   numeric?: boolean;
-  /** Secondary text colour. */
   muted?: boolean;
   align?: 'left' | 'right';
 }) {
@@ -274,8 +229,6 @@ export function Td({
     </td>
   );
 }
-
-/* ---------- Formatting ---------- */
 
 export function formatUgx(n: number | null | undefined) {
   return new Intl.NumberFormat('en-UG').format(Number(n ?? 0)) + ' UGX';

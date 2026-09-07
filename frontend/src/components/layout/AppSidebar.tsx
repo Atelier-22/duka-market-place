@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { LogOut, LucideIcon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { AccountToggle } from './AccountToggle';
 import { useConversations } from '../../hooks/useConversations';
 import { Avatar } from '../ui/Avatar';
+import { useSignOut } from '../../hooks/useSignOut';
 
 interface NavItem {
   to: string;
@@ -19,11 +20,10 @@ interface AppSidebarProps {
 
 const STORAGE_KEY = 'duka_sidebar_collapsed';
 
-/** Desktop navigation: a quiet list on the page background, no container. */
 export function AppSidebar({ items }: AppSidebarProps) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const signOut = useSignOut();
   const { totalUnread } = useConversations(!!user);
-  const navigate = useNavigate();
 
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -37,7 +37,6 @@ export function AppSidebar({ items }: AppSidebarProps) {
     try {
       localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
     } catch {
-
     }
   }, [collapsed]);
 
@@ -111,7 +110,7 @@ export function AppSidebar({ items }: AppSidebarProps) {
         <div className={`mt-2 flex ${collapsed ? 'flex-col items-center gap-1' : 'items-center justify-between gap-1'}`}>
           <button
             type="button"
-            onClick={() => { logout(); navigate('/'); }}
+            onClick={() => { void signOut(); }}
             title={collapsed ? 'Log out' : undefined}
             aria-label="Log out"
             className={[

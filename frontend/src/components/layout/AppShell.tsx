@@ -12,11 +12,6 @@ interface AppShellProps {
   maxWidth?: string;
 }
 
-/**
- * Signed-in layout. Top bar on every width; a quiet sidebar from `lg`,
- * the floating capsule nav below that. Each route settles in with a
- * short fade so screens never pop.
- */
 export function AppShell({ items, roleLabel, maxWidth = 'max-w-6xl' }: AppShellProps) {
   const location = useLocation();
   const barRef = useRef<HTMLDivElement>(null);
@@ -32,8 +27,6 @@ export function AppShell({ items, roleLabel, maxWidth = 'max-w-6xl' }: AppShellP
     return () => observer.disconnect();
   }, []);
 
-  // Only the first path segments matter for the transition key, so section
-  // tabs inside a page (e.g. settings panels) do not re-animate the shell.
   const pageKey = location.pathname.split('/').slice(0, 4).join('/');
 
   return (

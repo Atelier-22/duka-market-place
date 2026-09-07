@@ -14,7 +14,6 @@ export function AdminDisputesPage() {
   const { push } = useToast();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  /** `${id}:${outcome}` while a decision is being saved. */
   const [busy, setBusy] = useState<string | null>(null);
 
   function load() {

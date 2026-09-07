@@ -1,11 +1,9 @@
 interface PresenceDotProps {
   online: boolean;
-  /** `avatar` pins the dot to the corner of a `relative` avatar wrapper; `inline` sits in text. */
   variant?: 'avatar' | 'inline';
   className?: string;
 }
 
-/** Presence: fresh green (with a soft halo inline) when online, muted when away. */
 export function PresenceDot({ online, variant = 'inline', className = '' }: PresenceDotProps) {
   const label = online ? 'Online' : 'Offline';
   const colour = online ? 'bg-brand-green-fresh' : 'bg-ink-3';

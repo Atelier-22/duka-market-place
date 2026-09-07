@@ -1,4 +1,4 @@
-import { CSSProperties, FormEvent, useEffect, useRef, useState } from 'react';
+import { CSSProperties, FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Lock, Mail, MessageCircle, Phone, ShoppingBag, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -9,22 +9,22 @@ import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { ConsentCheckbox, PrivacyLink } from '../../components/ui/ConsentCheckbox';
 import { DukaMark } from '../../components/ui/DukaLogo';
-import { AuthIllustration } from '../../components/ui/AuthIllustration';
-import { AUTH_SPRING, AUTH_TEXT_DURATION, springTransition } from '../../config/motion';
+import { PandaMascot } from '../../components/ui/PandaMascot';
+import { AUTH_PHASES, prefersReducedMotion } from '../../config/motion';
 import { BRAND } from '../../config/brand';
 import { UserRole } from '../../types';
 import { homeFor } from '../../utils/home';
 import '../../styles/auth.css';
 
 export type AuthMode = 'login' | 'signup';
+type Phase = 'idle' | 'out' | 'trough' | 'in';
+
+const TROUGH_AT = AUTH_PHASES.cloudDelay + AUTH_PHASES.cloudCollapse;
+const SWAP_AT = TROUGH_AT + AUTH_PHASES.trough;
+const SETTLE_AT = SWAP_AT + AUTH_PHASES.cloudExpand;
 
 function firstName(full: string): string {
   return full.trim().split(' ')[0] ?? '';
-}
-
-/** Hidden panels are inert so keyboard focus and screen readers skip them. */
-function inertWhen(hidden: boolean): Record<string, string> {
-  return hidden ? { inert: '' } : {};
 }
 
 export function AuthPage({ mode }: { mode: AuthMode }) {
@@ -32,33 +32,50 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
   const [params] = useSearchParams();
   const { user, login, register } = useAuth();
   const { play } = useBrandTransition();
-  const transitioning = useRef(false);
+  const leaving = useRef(false);
+  const timers = useRef<number[]>([]);
 
-  const initialRole: UserRole = params.get('role') === 'shopper' ? 'shopper' : 'customer';
-  const [role, setRole] = useState<UserRole>(initialRole);
+  const [shown, setShown] = useState<AuthMode>(mode);
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [role, setRole] = useState<UserRole>(params.get('role') === 'shopper' ? 'shopper' : 'customer');
+
+  useEffect(() => () => { timers.current.forEach(clearTimeout); }, []);
 
   useEffect(() => {
-    if (user && !transitioning.current) navigate(homeFor(user.role), { replace: true });
+    if (user && !leaving.current) navigate(homeFor(user.role), { replace: true });
   }, [user, navigate]);
 
   useEffect(() => {
-    document.title = mode === 'login' ? `Sign in · ${BRAND.name}` : `Create account · ${BRAND.name}`;
-  }, [mode]);
+    document.title = shown === 'login' ? `Sign in · ${BRAND.name}` : `Create account · ${BRAND.name}`;
+  }, [shown]);
 
-  function switchTo(next: AuthMode) {
-    navigate(next === 'login' ? '/login' : `/register${role === 'shopper' ? '?role=shopper' : ''}`, { replace: true });
-  }
+  const switchTo = useCallback((next: AuthMode) => {
+    if (next === shown || phase !== 'idle') return;
+    const url = next === 'login' ? '/login' : `/register${role === 'shopper' ? '?role=shopper' : ''}`;
 
-  const spring = springTransition(AUTH_SPRING);
-  const style = {
-    '--auth-ms': `${spring.duration}ms`,
-    '--auth-ease': spring.easing,
-    '--auth-text-ms': `${AUTH_TEXT_DURATION}ms`,
-  } as CSSProperties;
+    if (prefersReducedMotion()) {
+      setShown(next);
+      navigate(url, { replace: true });
+      return;
+    }
 
-  /* ---------------- Login ---------------- */
+    setPhase('out');
+    timers.current.forEach(clearTimeout);
+    timers.current = [
+      window.setTimeout(() => setPhase('trough'), TROUGH_AT),
+      window.setTimeout(() => {
+        setShown(next);
+        navigate(url, { replace: true });
+        setPhase('in');
+      }, SWAP_AT),
+      window.setTimeout(() => setPhase('idle'), SETTLE_AT),
+    ];
+  }, [shown, phase, role, navigate]);
+
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loggingIn, setLoggingIn] = useState(false);
@@ -68,7 +85,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
     e.preventDefault();
     setLoginError(null);
     setLoggingIn(true);
-    transitioning.current = true;
+    leaving.current = true;
     try {
       const me = await login(identifier.trim(), password, remember);
       const first = firstName(me.fullName);
@@ -77,41 +94,44 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
         task: () => navigate(homeFor(me.role), { replace: true }),
       });
     } catch (err) {
-      transitioning.current = false;
+      leaving.current = false;
       setLoginError(err instanceof Error ? err.message : 'Could not sign you in');
       setLoggingIn(false);
     }
   }
 
-  /* ---------------- Sign up ---------------- */
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [newVisible, setNewVisible] = useState(false);
+  const [newFocused, setNewFocused] = useState(false);
   const [confirm, setConfirm] = useState('');
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [confirmFocused, setConfirmFocused] = useState(false);
   const [consented, setConsented] = useState(false);
-  const [signupErrors, setSignupErrors] = useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [signupError, setSignupError] = useState<string | null>(null);
   const [signingUp, setSigningUp] = useState(false);
 
-  function validateSignup(): boolean {
+  function validate(): boolean {
     const next: Record<string, string> = {};
     if (fullName.trim().length < 2) next.fullName = 'Tell us your name so your shopper knows who to look for.';
-    if (phone.replace(/\D/g, '').length < 9) next.phone = 'Enter the phone number you will log in with.';
+    if (phone.replace(/\D/g, '').length < 9) next.phone = 'Enter the phone number you will sign in with.';
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) next.email = 'That email does not look right.';
     if (newPassword.length < 8) next.password = 'Use at least 8 characters.';
     if (confirm !== newPassword) next.confirm = 'The two passwords do not match.';
     if (!consented) next.consent = 'Please agree to the Privacy Policy and Terms before creating an account.';
-    setSignupErrors(next);
+    setFieldErrors(next);
     return Object.keys(next).length === 0;
   }
 
   async function handleSignup(e: FormEvent) {
     e.preventDefault();
     setSignupError(null);
-    if (!validateSignup()) return;
+    if (!validate()) return;
     setSigningUp(true);
-    transitioning.current = true;
+    leaving.current = true;
     try {
       await register({ role, fullName: fullName.trim(), phone: phone.trim(), email: email.trim() || undefined, password: newPassword });
       const first = firstName(fullName);
@@ -120,127 +140,129 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
         task: () => navigate(homeFor(role), { replace: true }),
       });
     } catch (err) {
-      transitioning.current = false;
+      leaving.current = false;
       setSignupError(err instanceof Error ? err.message : 'Could not create your account');
       setSigningUp(false);
     }
   }
 
-  const isLogin = mode === 'login';
+  const isLogin = shown === 'login';
+  const hiding = isLogin ? passwordFocused : newFocused || confirmFocused;
+  const peeking = isLogin ? passwordVisible : (newFocused && newVisible) || (confirmFocused && confirmVisible);
   const waDigits = BRAND.supportPhone.replace(/[^\d]/g, '');
 
+  const style = {
+    '--cloud-delay': `${AUTH_PHASES.cloudDelay}ms`,
+    '--cloud-collapse': `${AUTH_PHASES.cloudCollapse}ms`,
+    '--cloud-expand': `${AUTH_PHASES.cloudExpand}ms`,
+    '--content-out': `${AUTH_PHASES.contentOut}ms`,
+    '--content-in': `${AUTH_PHASES.contentIn}ms`,
+    '--content-in-delay': `${AUTH_PHASES.contentInDelay}ms`,
+  } as CSSProperties;
+
   return (
-    <div className="auth" style={style}>
+    <div className="auth" data-phase={phase} data-mode={shown} style={style}>
       <Link to="/" className="auth__home">
         <ArrowLeft size={15} strokeWidth={2} /> Back to {BRAND.name}
       </Link>
 
-      <div className="auth__stage" data-mode={mode}>
-        <div className="auth__surface" aria-hidden />
-
-        <div className="auth__welcomes">
-          <aside className="auth__panel auth__panel--welcome auth__panel--welcome-login" aria-hidden={!isLogin} {...inertWhen(!isLogin)}>
-            <div className="auth__panel-inner">
-              <h2 className="auth__welcome-title">Welcome back!</h2>
-              <p className="auth__welcome-body">
-                Sign in to see what your shopper has found, follow deliveries and post something new.
-              </p>
-              <button type="button" className="auth__ghost" onClick={() => switchTo('signup')}>
-                New here? Create an account
-              </button>
-            </div>
-          </aside>
-          <aside className="auth__panel auth__panel--welcome auth__panel--welcome-signup" aria-hidden={isLogin} {...inertWhen(isLogin)}>
-            <div className="auth__panel-inner">
-              <h2 className="auth__welcome-title">Hello, friend!</h2>
-              <p className="auth__welcome-body">
-                Tell us what you need, choose a trusted shopper nearby, and have it brought to your door.
-              </p>
-              <button type="button" className="auth__ghost" onClick={() => switchTo('login')}>
-                Already with us? Sign in
-              </button>
-            </div>
-          </aside>
+      <div className="auth__stage">
+        <div className="auth__cloud" aria-hidden>
+          <span className="auth__cloud-body" />
+          <span className="auth__cloud-bump auth__cloud-bump--1" />
+          <span className="auth__cloud-bump auth__cloud-bump--2" />
+          <span className="auth__cloud-bump auth__cloud-bump--3" />
+          <span className="auth__cloud-bump auth__cloud-bump--4" />
+          <span className="auth__cloud-bump auth__cloud-bump--5" />
+          <span className="auth__cloud-bump auth__cloud-bump--6" />
         </div>
 
-        <div className="auth__forms">
-          {/* ---------------- Login form ---------------- */}
-          <section className="auth__panel auth__panel--form auth__panel--login" aria-hidden={!isLogin} {...inertWhen(!isLogin)}>
-            <div className="auth__panel-inner">
-              <div className="flex items-center gap-2.5">
-                <DukaMark size={34} />
-                <span className="font-display text-xl font-semibold leading-none text-brand-green-deep">{BRAND.name}</span>
-              </div>
-              <h1 className="mt-6 font-display text-h1 font-medium text-brand-green-deep">Sign in</h1>
-              <p className="mt-1 text-body text-ink-2">Good to see you again.</p>
-              <AuthIllustration className="mt-5 h-20 w-full max-w-[300px]" />
+        <aside className="auth__welcome">
+          <div>
+            <h2 className="auth__welcome-title">{isLogin ? 'Welcome back!' : 'Hello, friend!'}</h2>
+            <p className="auth__welcome-body">
+              {isLogin
+                ? 'Sign in to see what your shopper has found, follow deliveries and post something new.'
+                : 'Tell us what you need, choose a trusted shopper nearby, and have it brought to your door.'}
+            </p>
+            <button type="button" className="auth__ghost" onClick={() => switchTo(isLogin ? 'signup' : 'login')}>
+              {isLogin ? 'Create account' : 'Sign in'}
+            </button>
+          </div>
+        </aside>
 
-              <form onSubmit={handleLogin} className="mt-5 flex flex-col gap-4" noValidate>
-                <Input
-                  label="Phone number or email"
-                  type="text"
-                  inputMode="email"
-                  autoComplete="username"
-                  icon={<User size={18} strokeWidth={1.8} />}
-                  placeholder="0700 000 000 or you@example.com"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  required
-                />
-                <PasswordInput
-                  label="Password"
-                  autoComplete="current-password"
-                  icon={<Lock size={18} strokeWidth={1.8} />}
-                  placeholder="Your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <div className="flex items-center justify-between gap-3">
-                  <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-2">
-                    <input
-                      type="checkbox"
-                      checked={remember}
-                      onChange={(e) => setRemember(e.target.checked)}
-                      className="h-4 w-4 rounded border-line-strong accent-brand-green"
-                    />
-                    Remember me
-                  </label>
-                  <button type="button" onClick={() => setForgotOpen(true)} className="text-sm font-medium text-brand-green hover:underline">
-                    Forgot password?
-                  </button>
-                </div>
-                {loginError && <p role="alert" className="text-sm font-medium text-brand-red">{loginError}</p>}
-                <Button type="submit" size="lg" fullWidth loading={loggingIn}>
-                  {loggingIn ? 'Signing in…' : 'Sign in'}
-                </Button>
-              </form>
-
-              <p className="mt-6 text-center text-sm text-ink-2">
-                Don't have an account?{' '}
-                <button type="button" onClick={() => switchTo('signup')} className="font-semibold text-brand-green hover:underline">
-                  Create one
-                </button>
-              </p>
+        <div className="auth__content">
+          <div className="auth__inner">
+            <div className="auth__panda">
+              <PandaMascot hiding={hiding} peeking={peeking} />
             </div>
-          </section>
 
-          {/* ---------------- Sign-up form ---------------- */}
-          <section className="auth__panel auth__panel--form auth__panel--signup" aria-hidden={isLogin} {...inertWhen(isLogin)}>
-            <div className="auth__panel-inner">
-              <div className="flex items-center gap-2.5">
-                <DukaMark size={34} />
-                <span className="font-display text-xl font-semibold leading-none text-brand-green-deep">{BRAND.name}</span>
+            <div className="auth__brand">
+              <DukaMark size={30} />
+              <span className="auth__brand-name">{BRAND.name}</span>
+            </div>
+
+            {isLogin ? (
+              <div key="login">
+                <h1 className="auth__title">Hello!</h1>
+                <p className="auth__lede">Sign in to pick up where you left off.</p>
+
+                <form onSubmit={handleLogin} className="auth__form auth__stagger" noValidate>
+                  <Input
+                    label="Email or phone number"
+                    type="text"
+                    inputMode="email"
+                    autoComplete="username"
+                    icon={<User size={18} strokeWidth={1.8} />}
+                    placeholder="0700 000 000 or you@example.com"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    required
+                  />
+                  <PasswordInput
+                    label="Password"
+                    autoComplete="current-password"
+                    icon={<Lock size={18} strokeWidth={1.8} />}
+                    placeholder="Your password"
+                    value={password}
+                    visible={passwordVisible}
+                    onVisibleChange={setPasswordVisible}
+                    onFocus={() => setPasswordFocused(true)}
+                    onBlur={() => setPasswordFocused(false)}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <div className="auth__meta">
+                    <label className="auth__remember">
+                      <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+                      Remember me
+                    </label>
+                    <button type="button" className="auth__link" onClick={() => setForgotOpen(true)}>
+                      Forgot password?
+                    </button>
+                  </div>
+                  {loginError && <p role="alert" className="auth__error">{loginError}</p>}
+                  <Button type="submit" size="lg" fullWidth loading={loggingIn} className="auth__submit">
+                    {loggingIn ? 'Signing in' : 'Sign in'}
+                  </Button>
+                </form>
+
+                <p className="auth__swap">
+                  Don't have an account?{' '}
+                  <button type="button" className="auth__link" onClick={() => switchTo('signup')}>
+                    Create one
+                  </button>
+                </p>
               </div>
-              <h1 className="mt-5 font-display text-h1 font-medium text-brand-green-deep">Create account</h1>
-              <p className="mt-1 text-body text-ink-2">It takes about a minute.</p>
+            ) : (
+              <div key="signup">
+                <h1 className="auth__title">Create account</h1>
+                <p className="auth__lede">It takes about a minute.</p>
 
-              <form onSubmit={handleSignup} className="mt-5 flex flex-col gap-3.5" noValidate>
-                <div>
-                  <p className="mb-1.5 block text-sm font-medium text-ink">I want to</p>
-                  <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Account type">
+                <form onSubmit={handleSignup} className="auth__form auth__stagger" noValidate>
+                  <div className="auth__row auth__row--always" role="radiogroup" aria-label="Account type">
                     {([
-                      { value: 'customer', label: 'Get things delivered', icon: ShoppingBag },
+                      { value: 'customer', label: 'Get things', icon: ShoppingBag },
                       { value: 'shopper', label: 'Shop for others', icon: User },
                     ] as { value: UserRole; label: string; icon: typeof User }[]).map((opt) => {
                       const selected = role === opt.value;
@@ -252,7 +274,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                           aria-checked={selected}
                           onClick={() => setRole(opt.value)}
                           className={[
-                            'flex min-h-[44px] items-center gap-2 rounded-lg border px-3 text-left text-sm font-medium transition-[background-color,border-color,box-shadow] duration-150',
+                            'flex min-h-[44px] items-center justify-center gap-2 rounded-full border px-3 text-sm font-medium transition-[background-color,border-color,box-shadow] duration-150',
                             selected
                               ? 'border-brand-green bg-brand-green-mist text-brand-green-deep shadow-focus'
                               : 'border-line bg-surface text-ink-2 hover:border-line-strong',
@@ -264,88 +286,98 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                       );
                     })}
                   </div>
-                </div>
-                <div className="auth__grid">
+                  <div className="auth__row">
+                    <Input
+                      label="Full name"
+                      autoComplete="name"
+                      icon={<User size={18} strokeWidth={1.8} />}
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      error={fieldErrors.fullName}
+                      required
+                    />
+                    <Input
+                      label="Phone number"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      icon={<Phone size={18} strokeWidth={1.8} />}
+                      placeholder="0700 000 000"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      error={fieldErrors.phone}
+                      required
+                    />
+                  </div>
                   <Input
-                    label="Full name"
-                    autoComplete="name"
-                    icon={<User size={18} strokeWidth={1.8} />}
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    error={signupErrors.fullName}
-                    required
+                    label="Email address (optional)"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    icon={<Mail size={18} strokeWidth={1.8} />}
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    error={fieldErrors.email}
                   />
-                  <Input
-                    label="Phone number"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    icon={<Phone size={18} strokeWidth={1.8} />}
-                    placeholder="0700 000 000"
-                    hint="You sign in with this."
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    error={signupErrors.phone}
-                    required
-                  />
-                </div>
-                <Input
-                  label="Email address (optional)"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  icon={<Mail size={18} strokeWidth={1.8} />}
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  error={signupErrors.email}
-                />
-                <div className="auth__grid">
-                  <PasswordInput
-                    label="Password"
-                    autoComplete="new-password"
-                    icon={<Lock size={18} strokeWidth={1.8} />}
-                    hint="At least 8 characters"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    error={signupErrors.password}
-                    required
-                  />
-                  <PasswordInput
-                    label="Confirm password"
-                    autoComplete="new-password"
-                    icon={<Lock size={18} strokeWidth={1.8} />}
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    error={signupErrors.confirm}
-                    required
-                  />
-                </div>
-                <ConsentCheckbox
-                  checked={consented}
-                  onChange={(v) => { setConsented(v); if (v) setSignupErrors((s) => { const { consent, ...rest } = s; return rest; }); }}
-                  error={signupErrors.consent}
-                >
-                  I agree to the <PrivacyLink /> and the{' '}
-                  <Link to="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-green-deep underline underline-offset-2">
-                    Terms &amp; Conditions
-                  </Link>
-                  . My name and phone number are shown to the {role === 'shopper' ? 'customer' : 'shopper'} on an order I am part of.
-                </ConsentCheckbox>
-                {signupError && <p role="alert" className="text-sm font-medium text-brand-red">{signupError}</p>}
-                <Button type="submit" size="lg" fullWidth loading={signingUp}>
-                  {signingUp ? 'Creating your account…' : 'Create account'}
-                </Button>
-              </form>
+                  <div className="auth__row">
+                    <PasswordInput
+                      label="Password"
+                      autoComplete="new-password"
+                      icon={<Lock size={18} strokeWidth={1.8} />}
+                      hint="At least 8 characters"
+                      value={newPassword}
+                      visible={newVisible}
+                      onVisibleChange={setNewVisible}
+                      onFocus={() => setNewFocused(true)}
+                      onBlur={() => setNewFocused(false)}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      error={fieldErrors.password}
+                      required
+                    />
+                    <PasswordInput
+                      label="Confirm password"
+                      autoComplete="new-password"
+                      icon={<Lock size={18} strokeWidth={1.8} />}
+                      value={confirm}
+                      visible={confirmVisible}
+                      onVisibleChange={setConfirmVisible}
+                      onFocus={() => setConfirmFocused(true)}
+                      onBlur={() => setConfirmFocused(false)}
+                      onChange={(e) => setConfirm(e.target.value)}
+                      error={fieldErrors.confirm}
+                      required
+                    />
+                  </div>
+                  <ConsentCheckbox
+                    checked={consented}
+                    onChange={(v) => {
+                      setConsented(v);
+                      if (v) setFieldErrors((s) => { const { consent, ...rest } = s; return rest; });
+                    }}
+                    error={fieldErrors.consent}
+                  >
+                    I agree to the <PrivacyLink /> and the{' '}
+                    <Link to="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-green-deep underline underline-offset-2">
+                      Terms &amp; Conditions
+                    </Link>
+                    . My name and phone number are shown to the {role === 'shopper' ? 'customer' : 'shopper'} on an order I am part of.
+                  </ConsentCheckbox>
+                  {signupError && <p role="alert" className="auth__error">{signupError}</p>}
+                  <Button type="submit" size="lg" fullWidth loading={signingUp} className="auth__submit">
+                    {signingUp ? 'Creating account' : 'Create account'}
+                  </Button>
+                </form>
 
-              <p className="mt-5 text-center text-sm text-ink-2">
-                Already have an account?{' '}
-                <button type="button" onClick={() => switchTo('login')} className="font-semibold text-brand-green hover:underline">
-                  Sign in
-                </button>
-              </p>
-            </div>
-          </section>
+                <p className="auth__swap">
+                  Already have an account?{' '}
+                  <button type="button" className="auth__link" onClick={() => switchTo('login')}>
+                    Sign in
+                  </button>
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

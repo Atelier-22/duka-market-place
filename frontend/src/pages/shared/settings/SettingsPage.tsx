@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../../context/AuthContext';
 import { UserRole } from '../../../types';
 import { homeFor } from '../../../utils/home';
+import { useSignOut } from '../../../hooks/useSignOut';
 import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
 import { ListRow } from '../../../components/ui/ListRow';
@@ -18,10 +19,6 @@ import {
   PrivacyPanel, PromotionNotificationsPanel, RecommendationsPanel, SecurityNotificationsPanel,
   SecurityPanel, ShoppingPreferencesPanel, WalletPanel,
 } from './SettingsPanels';
-
-/* ------------------------------------------------------------------ */
-/* Information architecture                                            */
-/* ------------------------------------------------------------------ */
 
 type Role = UserRole;
 
@@ -136,12 +133,9 @@ function groupLabel(g: Group, role: Role): string {
   return typeof g.label === 'function' ? g.label(role) : g.label;
 }
 
-/* ------------------------------------------------------------------ */
-/* Page                                                                */
-/* ------------------------------------------------------------------ */
-
 export function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const signOut = useSignOut();
   const navigate = useNavigate();
   const { section } = useParams<{ section?: string }>();
   const role: Role = user?.role ?? 'customer';
@@ -160,7 +154,6 @@ export function SettingsPage() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Desktop always shows a panel; default to the first one.
   useEffect(() => {
     if (!isMobile && !current && items.length > 0) navigate(`${base}/${items[0].id}`, { replace: true });
   }, [isMobile, current, items, base, navigate]);
@@ -176,8 +169,7 @@ export function SettingsPage() {
   }, [search, items, role]);
 
   function handleLogout() {
-    logout();
-    navigate('/');
+    void signOut();
   }
 
   const searching = search.trim().length > 0;
@@ -185,7 +177,6 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-5xl pb-16">
-      {/* Header */}
       {(!isMobile || !current) && (
         <>
           <PageHeader title="Settings" subtitle="Make Duka work the way you want it to." className="mb-4" />
@@ -204,7 +195,6 @@ export function SettingsPage() {
         <PageHeader back={base} backLabel="Settings" title={current.label} subtitle={groupLabel(current.group, role)} />
       )}
 
-      {/* Search results replace everything */}
       {searching && (
         <div className="mt-5">
           {matches.length === 0 ? (
@@ -225,7 +215,6 @@ export function SettingsPage() {
 
       {!searching && (
         <div className={`mt-6 flex flex-col gap-6 ${isMobile ? '' : 'md:flex-row'}`}>
-          {/* Index: grouped list on phones, sidebar on desktop */}
           {showIndex && (
             <div className={isMobile ? 'flex flex-col gap-4' : 'w-64 shrink-0'}>
               {isMobile && user && (
@@ -281,7 +270,6 @@ export function SettingsPage() {
                 );
               })}
 
-              {/* Legal + log out */}
               <div className={isMobile ? 'mt-2' : 'mt-2 border-t border-line pt-4'}>
                 <div className={isMobile ? 'flex flex-col' : 'flex flex-col gap-0.5'}>
                   {LEGAL.map((l) => (
@@ -314,7 +302,6 @@ export function SettingsPage() {
             </div>
           )}
 
-          {/* Panel */}
           {current && (
             <div className="min-w-0 flex-1">
               <PanelFor id={current.id} onLogout={handleLogout} />

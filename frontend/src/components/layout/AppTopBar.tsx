@@ -8,10 +8,12 @@ import { Avatar } from '../ui/Avatar';
 import { NotificationBell } from '../domain/NotificationBell';
 import { useToast } from '../ui/Toast';
 import { homeFor } from '../../utils/home';
+import { useSignOut } from '../../hooks/useSignOut';
 import { BRAND } from '../../config/brand';
 
 export function AppTopBar({ roleLabel }: { roleLabel: string }) {
-  const { user, refresh, logout } = useAuth();
+  const { user, refresh } = useAuth();
+  const signOut = useSignOut();
   const { push } = useToast();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -134,7 +136,7 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
                 <button type="button" role="menuitem" className={item} onClick={() => { setOpen(false); navigate(settings); }}>
                   <Settings size={16} strokeWidth={1.9} /> Settings
                 </button>
-                <button type="button" role="menuitem" className={`${item} text-brand-red hover:bg-danger-soft/40`} onClick={() => { logout(); navigate('/'); }}>
+                <button type="button" role="menuitem" className={`${item} text-brand-red hover:bg-danger-soft/40`} onClick={() => { setOpen(false); void signOut(); }}>
                   <LogOut size={16} strokeWidth={1.9} /> Log out
                 </button>
               </div>

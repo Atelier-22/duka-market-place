@@ -30,7 +30,6 @@ api.interceptors.response.use(
         axios
           .post(`${API_URL}/auth/refresh`, { refreshToken })
           .then((r) => {
-
             setAccessToken(r.data.accessToken);
             return r.data.accessToken as string;
           })

@@ -54,11 +54,8 @@ export function CreateRequestPage() {
   const [notes, setNotes] = useState(preferences.delivery_instructions ?? '');
   const [notesTouched, setNotesTouched] = useState(false);
 
-  // Standing delivery instructions arrive after mount on a fresh device; adopt
-  // them unless the customer has already started typing their own.
   useEffect(() => {
     if (!notesTouched && !notes && preferences.delivery_instructions) setNotes(preferences.delivery_instructions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preferences.delivery_instructions]);
 
   const locationsByCity = useMemo(() => {
@@ -69,7 +66,6 @@ export function CreateRequestPage() {
       if (existing) existing.push(l);
       else groups.set(city, [l]);
     }
-    // The customer's own town first, then Kampala, then the rest.
     const home = preferences.default_city;
     return [...groups.entries()].sort(([a], [b]) =>
       a === home ? -1 : b === home ? 1 : a === 'Kampala' ? -1 : b === 'Kampala' ? 1 : a.localeCompare(b)
@@ -177,7 +173,6 @@ export function CreateRequestPage() {
     <div className="mx-auto max-w-2xl pb-16">
       <PageHeader title="Request something" subtitle="Tell us what you need. We'll find someone nearby to get it." />
 
-      {/* Progress */}
       <div>
         <ol className="flex items-center gap-1.5" aria-label="Steps">
           {STEPS.map((s, i) => (

@@ -33,12 +33,6 @@ const SLIDES: Slide[] = [
 
 const SLIDE_MS = 6000;
 
-/**
- * A solid deep-brand statement panel that rotates four short statements.
- * Slides are stacked in one grid cell and crossfade; the dots are real
- * buttons with 44px targets. Auto-advance pauses on hover/focus and is
- * skipped entirely when the user prefers reduced motion.
- */
 export function HeroCarousel() {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);

@@ -2,16 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ==================================================================== */
-/* Duka design tokens                                                    */
-/* Every colour is an RGB triplet so Tailwind can add alpha, and every   */
-/* accent / dark-mode variant only redefines the triplets.               */
-/* ==================================================================== */
-
 :root {
   color-scheme: light;
 
-  /* Brand */
   --brand-green-deep: 11 61 46;
   --brand-green: 19 122 76;
   --brand-green-fresh: 31 174 107;
@@ -23,7 +16,6 @@
   --brand-surface: 255 255 255;
   --brand-ink: 12 26 20;
 
-  /* Semantic surfaces and text */
   --app-bg: 246 248 247;
   --surface: 255 255 255;
   --surface-2: 244 247 245;
@@ -36,11 +28,9 @@
   --warning: 176 112 16;
   --shadow-ink: 11 61 46;
 
-  /* Phone nav: indicator colour and the dark-variant surface. */
   --nav-indicator: var(--brand-green);
   --nav-dark-bg: 18 23 20;
 
-  /* Full-screen brand transition backdrop. */
   --overlay-bg: 8 14 11;
 }
 
@@ -95,11 +85,6 @@
 [data-theme='dark'][data-accent='forest']   { --brand-green-deep: 213 236 219; --brand-green-mist: 24 38 28; }
 [data-theme='dark'][data-accent='slate']    { --brand-green-deep: 224 231 238; --brand-green-mist: 30 36 44; }
 
-/* ==================================================================== */
-/* Base                                                                  */
-/* ==================================================================== */
-
-/* The document is the only scroller; body and #root just fill it. */
 html {
   height: 100%;
 }
@@ -139,11 +124,6 @@ body {
   }
 }
 
-/* ==================================================================== */
-/* Surfaces                                                              */
-/* Solid, bordered, barely shadowed. Utilities can still override.       */
-/* ==================================================================== */
-
 @layer components {
   .surface {
     background-color: rgb(var(--surface));
@@ -176,7 +156,6 @@ body {
   .app-main { padding-bottom: 1rem; }
 }
 
-/* Route change: a short settle, never a slide. */
 .page-enter {
   animation: duka-page 240ms cubic-bezier(0.2, 0, 0, 1) both;
 }
@@ -208,11 +187,6 @@ body {
 @keyframes duka-ping {
   75%, 100% { transform: scale(2.2); opacity: 0; }
 }
-
-/* ==================================================================== */
-/* Phone navigation: solid capsule + travelling indicator.               */
-/* Geometry and spring values come from src/config/motion.ts.            */
-/* ==================================================================== */
 
 .duka-nav {
   --nav-tint: var(--brand-green-fresh);
@@ -332,10 +306,6 @@ body {
   box-shadow: 0 0 0 2px var(--nav-surface);
 }
 
-/* ==================================================================== */
-/* Brand transition overlay                                              */
-/* ==================================================================== */
-
 .duka-brand-overlay {
   position: fixed;
   inset: 0;
@@ -408,10 +378,6 @@ body {
   45%  { background: rgb(var(--brand-yellow)); opacity: 0.55; }
   100% { background: rgb(255 255 255); opacity: 0.35; }
 }
-
-/* ==================================================================== */
-/* Maps                                                                  */
-/* ==================================================================== */
 
 .leaflet-container {
   font-family: inherit;

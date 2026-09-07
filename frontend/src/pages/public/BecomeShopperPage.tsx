@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Bell, Check, Clock, Coins, MapPin, ShoppingBag, Star } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { PROSE_LINK } from '../../components/layout/LegalDoc';
 
 const BENEFITS = [
   { icon: Clock, title: 'Flexible work', body: 'Go online when you want, offline when you don’t. No shifts, no minimums.' },
@@ -23,8 +24,6 @@ const REQUIREMENTS = [
   'A smartphone with data',
   'Good knowledge of the markets and shops near you',
 ];
-
-const PROSE_LINK = 'font-medium text-brand-green hover:underline';
 
 export function BecomeShopperPage() {
   const navigate = useNavigate();

@@ -5,17 +5,13 @@ import { ArrowLeft } from 'lucide-react';
 interface PageHeaderProps {
   title: ReactNode;
   subtitle?: ReactNode;
-  /** Small uppercase line above the title. */
   eyebrow?: ReactNode;
-  /** Right-aligned actions (buttons, badges). */
   actions?: ReactNode;
-  /** A route to go back to, or `true` for history back. */
   back?: string | true;
   backLabel?: string;
   className?: string;
 }
 
-/** Every screen starts the same way: optional back, title, one line of context, actions. */
 export function PageHeader({ title, subtitle, eyebrow, actions, back, backLabel = 'Back', className = '' }: PageHeaderProps) {
   const navigate = useNavigate();
   const backClass = 'mb-3 inline-flex min-h-[36px] items-center gap-1 text-sm font-medium text-ink-2 transition-colors hover:text-brand-green-deep';
@@ -44,7 +40,6 @@ export function PageHeader({ title, subtitle, eyebrow, actions, back, backLabel 
   );
 }
 
-/** Section heading inside a page. */
 export function SectionHeader({ title, action, className = '' }: { title: ReactNode; action?: ReactNode; className?: string }) {
   return (
     <div className={`mb-3 flex items-baseline justify-between gap-4 ${className}`}>
