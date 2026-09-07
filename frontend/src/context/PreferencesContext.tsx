@@ -34,7 +34,7 @@ export interface Preferences {
 }
 
 const DEFAULTS: Preferences = {
-  theme: 'system',
+  theme: 'light',
   accent: 'green',
   language: 'en',
   tone: 'friendly',

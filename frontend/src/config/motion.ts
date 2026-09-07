@@ -43,11 +43,11 @@ export const AUTH_TEXT_DURATION = 360;
 export const AUTH_PHASES = {
   contentOut: 200,
   cloudDelay: 90,
-  cloudCollapse: 420,
-  trough: 150,
-  cloudExpand: 620,
+  cloudCollapse: 460,
+  trough: 160,
+  cloudExpand: 680,
   contentIn: 360,
-  contentInDelay: 220,
+  contentInDelay: 240,
 } as const;
 
 export const PRESS_SCALE = 0.94;

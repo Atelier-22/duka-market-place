@@ -7,7 +7,7 @@ interface PandaMascotProps {
   className?: string;
 }
 
-const LOOK_EASE = 0.16;
+const LOOK_EASE = 0.11;
 const IDLE_AFTER = 2600;
 
 export function PandaMascot({ hiding = false, peeking = false, className = '' }: PandaMascotProps) {
