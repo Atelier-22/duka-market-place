@@ -51,7 +51,13 @@ export function ShopperProfilePage() {
           <Input label="Full name" defaultValue={user?.fullName} disabled />
           <Input label="Phone number" defaultValue={user?.phone} disabled />
           <Input label="Operating area" placeholder="e.g. Kampala Central, near Owino" value={operatingArea} onChange={(e) => setOperatingArea(e.target.value)} />
-          <Textarea label="Bio" placeholder="Tell customers about your experience shopping in local markets." value={bio} onChange={(e) => setBio(e.target.value)} />
+          <Textarea
+            label="Bio"
+            placeholder="Which markets you know well, what you are good at finding, how long you have been doing this."
+            hint="Shown publicly to customers. Do not put your phone number, WhatsApp or social handles here — customers already get your number once an order is matched, and contact details posted publicly can be used to scam you."
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+          />
           <GlassButton disabled={saving} onClick={handleSave}>
             {saving ? 'Saving…' : 'Save changes'}
           </GlassButton>

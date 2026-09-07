@@ -292,7 +292,13 @@ export function CreateRequestPage() {
                 Add
               </GlassButton>
             </div>
-            <Textarea label="Notes for your shopper (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Gate code, landmark, preferred delivery time…" />
+            <Textarea
+              label="Notes for your shopper (optional)"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Landmark, which gate to use, a good time to deliver…"
+              hint="Your shopper sees this. Only what they need to find you and deliver — your phone number is already shared with them, so there is no need to repeat it here."
+            />
           </div>
         )}
 

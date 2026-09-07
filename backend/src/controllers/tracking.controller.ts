@@ -20,7 +20,6 @@ const TRACKABLE = ['shopper_assigned', 'shopping', 'item_found', 'awaiting_custo
 const positionSchema = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
-  accuracyM: z.number().nonnegative().max(100000).optional(),
 });
 
 export async function postPosition(req: Request, res: Response) {
@@ -38,9 +37,9 @@ export async function postPosition(req: Request, res: Response) {
   }
 
   await query(
-    `INSERT INTO order_locations (order_id, user_id, party, lat, lng, accuracy_m)
-     VALUES ($1,$2,$3,$4,$5,$6)`,
-    [order.id, req.user!.id, party, input.lat, input.lng, input.accuracyM ?? null]
+    `INSERT INTO order_locations (order_id, user_id, party, lat, lng)
+     VALUES ($1,$2,$3,$4,$5)`,
+    [order.id, req.user!.id, party, input.lat, input.lng]
   );
 
   res.status(201).json({ ok: true, party });
@@ -61,14 +60,13 @@ function haversineMetres(a: LatLng, b: LatLng): number {
 
 const TRAVEL_METRES_PER_MINUTE = 300;
 
-interface PositionRow { lat: string; lng: string; accuracy_m: string | null; recorded_at: string; party: string }
+interface PositionRow { lat: string; lng: string; recorded_at: string; party: string }
 
 function toPoint(row: PositionRow | undefined) {
   if (!row) return null;
   return {
     lat: Number(row.lat),
     lng: Number(row.lng),
-    accuracyM: row.accuracy_m ? Number(row.accuracy_m) : null,
     recordedAt: row.recorded_at,
   };
 }
@@ -77,7 +75,7 @@ export async function getTracking(req: Request, res: Response) {
   const order = await loadParticipantOrder(req.params.id, req.user!.id, req.user!.role);
 
   const positions = await query<PositionRow>(
-    `SELECT DISTINCT ON (party) party, lat, lng, accuracy_m, recorded_at
+    `SELECT DISTINCT ON (party) party, lat, lng, recorded_at
        FROM order_locations WHERE order_id = $1
       ORDER BY party, recorded_at DESC`,
     [order.id]

@@ -4,9 +4,9 @@ import { api, apiErrorMessage } from '../services/api';
 export interface TrackingState {
   trackable: boolean;
   status: string;
-  shopper: { lat: number; lng: number; accuracyM: number | null; recordedAt: string } | null;
+  shopper: { lat: number; lng: number; recordedAt: string } | null;
 
-  customer: { lat: number; lng: number; accuracyM: number | null; recordedAt: string } | null;
+  customer: { lat: number; lng: number; recordedAt: string } | null;
   destination: { lat: number; lng: number; label: string } | null;
 
   deliveryAddressId: string | null;
@@ -75,7 +75,6 @@ export function useBroadcastPosition(orderId: string | undefined, active: boolea
         api.post(`/orders/${orderId}/location`, {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
-          accuracyM: pos.coords.accuracy,
         }).catch((err) => {
 
           setSharing(false);
