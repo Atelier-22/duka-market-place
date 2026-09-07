@@ -26,8 +26,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           id={areaId}
           aria-describedby={describedBy}
           className={[
-            'w-full rounded-xl border bg-white/70 px-4 py-3 text-[15px] text-brand-ink placeholder:text-brand-ink/40',
-            'backdrop-blur-sm transition-all duration-150 min-h-[100px]',
+            'w-full rounded-xl border bg-brand-white px-4 py-3 text-[15px] text-brand-ink placeholder:text-brand-ink/40',
+            'transition-all duration-150 min-h-[100px]',
             'focus:outline-none focus:ring-2 focus:ring-brand-green-fresh/50 focus:border-brand-green-fresh',
             error ? 'border-brand-red' : 'border-brand-green/15',
             className,

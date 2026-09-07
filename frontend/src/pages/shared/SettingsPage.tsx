@@ -14,6 +14,7 @@ import { ImageUpload } from '../../components/ui/ImageUpload';
 import { LocationSetting } from '../../components/domain/LocationSetting';
 import { AddressBook } from '../../components/domain/AddressBook';
 import { NAV_STYLES, NavStyle, useNavStyle } from '../../hooks/useNavStyle';
+import { setUnreadRemindersEnabled, unreadRemindersEnabled } from '../../hooks/useUnreadReminder';
 import { useToast } from '../../components/ui/Toast';
 
 type SectionId = 'personalization' | 'account' | 'addresses' | 'appearance' | 'general' | 'location' | 'notifications' | 'security';
@@ -172,6 +173,7 @@ export function SettingsPage() {
   const { user } = useAuth();
   const { preferences, update } = usePreferences();
   const [navStyle, setNavStyle] = useNavStyle();
+  const [unreadReminders, setUnreadReminders] = useState(unreadRemindersEnabled());
   const { push } = useToast();
 
   const [search, setSearch] = useState('');
@@ -580,6 +582,15 @@ export function SettingsPage() {
                 onChange={(v) => update({ notifyMarketing: v })}
                 label="News and offers from Duka"
                 description="Occasional product news. Off by default."
+              />
+              <Toggle
+                checked={unreadReminders}
+                onChange={(v) => {
+                  setUnreadRemindersEnabled(v);
+                  setUnreadReminders(v);
+                }}
+                label="Remind me about unread messages"
+                description="Shows the newest unread message every ten minutes until you read it. Kept on this device."
               />
             </SectionCard>
           )}

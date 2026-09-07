@@ -26,8 +26,8 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             id={inputId}
             type={visible ? 'text' : 'password'}
             className={[
-              'w-full rounded-xl border bg-white/70 py-3 pl-4 pr-12 text-[15px] text-brand-ink placeholder:text-brand-ink/40',
-              'backdrop-blur-sm transition-all duration-150',
+              'w-full rounded-xl border bg-brand-white py-3 pl-4 pr-12 text-[15px] text-brand-ink placeholder:text-brand-ink/40',
+              'transition-all duration-150',
               'focus:outline-none focus:ring-2 focus:ring-brand-green-fresh/50 focus:border-brand-green-fresh',
               error ? 'border-brand-red' : 'border-brand-green/15',
               className,
@@ -38,8 +38,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             type="button"
 
             onClick={() => setVisible((v) => !v)}
-
-            tabIndex={-1}
+            aria-pressed={visible}
             aria-label={visible ? 'Hide password' : 'Show password'}
             title={visible ? 'Hide password' : 'Show password'}
             className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-brand-ink/40 transition-colors hover:bg-brand-green-mist hover:text-brand-green-deep"

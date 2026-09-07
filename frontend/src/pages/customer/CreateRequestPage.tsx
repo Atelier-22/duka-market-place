@@ -209,7 +209,7 @@ export function CreateRequestPage() {
                     'rounded-xl2 border p-4 text-left transition-all',
                     sourcingType === opt.value
                       ? 'border-brand-green-fresh bg-brand-green-mist shadow-glass'
-                      : 'border-brand-green/15 bg-white/50 hover:bg-brand-green-mist/50',
+                      : 'border-brand-green/15 bg-brand-white hover:bg-brand-green-mist/50',
                   ].join(' ')}
                 >
                   <opt.icon size={20} strokeWidth={1.6} className="text-brand-green-fresh" />
@@ -278,7 +278,7 @@ export function CreateRequestPage() {
                     onClick={() => setAddressId(a.id)}
                     className={[
                       'rounded-xl border p-3 text-left text-sm transition-all',
-                      addressId === a.id ? 'border-brand-green-fresh bg-brand-green-mist' : 'border-brand-green/15 bg-white/50',
+                      addressId === a.id ? 'border-brand-green-fresh bg-brand-green-mist' : 'border-brand-green/15 bg-brand-white',
                     ].join(' ')}
                   >
                     <span className="font-medium text-brand-green-deep">{a.label}</span> — {a.line1}
@@ -318,8 +318,8 @@ export function CreateRequestPage() {
 
       <div
         className={[
-          'sticky bottom-0 z-10 mt-6 -mx-4 border-t border-brand-green/10 bg-white/85 px-4 py-3',
-          'backdrop-blur-md sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:backdrop-blur-none',
+          'sticky bottom-0 z-10 mt-6 -mx-4 border-t border-brand-green/10 bg-brand-white px-4 py-3',
+          'sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 ',
         ].join(' ')}
       >
 

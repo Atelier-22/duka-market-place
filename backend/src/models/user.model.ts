@@ -41,6 +41,13 @@ export async function findUserByPhoneAndRole(phone: string, role: UserRole): Pro
   );
 }
 
+export async function findUsersByEmail(email: string): Promise<UserRow[]> {
+  return query<UserRow>(
+    'SELECT * FROM users WHERE LOWER(email) = $1 ORDER BY created_at',
+    [normalizeEmail(email)]
+  );
+}
+
 export async function findUserByEmailAndRole(email: string, role: UserRole): Promise<UserRow | null> {
   return queryOne<UserRow>('SELECT * FROM users WHERE LOWER(email) = $1 AND role = $2', [
     normalizeEmail(email),

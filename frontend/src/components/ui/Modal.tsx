@@ -22,7 +22,7 @@ export function Modal({ open, onClose, title, children, maxWidth = 'max-w-lg' }:
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-brand-green-deep/30 backdrop-blur-sm animate-fade-up"
+        className="absolute inset-0 bg-brand-green-deep/30 animate-fade-up"
         onClick={onClose}
         aria-hidden
       />

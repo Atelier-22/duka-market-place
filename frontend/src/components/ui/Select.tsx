@@ -20,8 +20,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={selectId}
           className={[
-            'w-full appearance-none rounded-xl border bg-white/70 px-4 py-3 text-[15px] text-brand-ink',
-            'backdrop-blur-sm transition-all duration-150',
+            'w-full appearance-none rounded-xl border bg-brand-white px-4 py-3 text-[15px] text-brand-ink',
+            'transition-all duration-150',
             'focus:outline-none focus:ring-2 focus:ring-brand-green-fresh/50 focus:border-brand-green-fresh',
             error ? 'border-brand-red' : 'border-brand-green/15',
             className,

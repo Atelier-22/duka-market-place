@@ -98,14 +98,14 @@ export function ImageLightbox({ src, alt = '', caption, onClose }: ImageLightbox
   }
 
   const toolbarButton =
-    'flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/25 disabled:opacity-40';
+    'flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/25 disabled:opacity-40';
 
   return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label={alt || 'Image viewer'}
-      className="fixed inset-0 z-[100] flex flex-col bg-black/92 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex flex-col bg-black/92 "
 
       onClick={onClose}
     >

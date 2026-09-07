@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { AppTopBar } from './AppTopBar';
 import { LocationPrompt } from '../domain/LocationPrompt';
+import { UnreadReminder } from '../domain/UnreadReminder';
 import { MobileNav, NavItem } from './MobileNav';
 
 interface AppShellProps {
@@ -37,6 +38,7 @@ export function AppShell({ items, roleLabel, maxWidth = 'max-w-7xl' }: AppShellP
       <MobileNav items={items} />
 
       <LocationPrompt />
+      <UnreadReminder />
 
       <div className={`mx-auto flex ${maxWidth} gap-4 p-3 sm:p-4`}>
         <div className="hidden lg:block">

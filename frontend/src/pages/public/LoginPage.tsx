@@ -11,7 +11,7 @@ import { homeFor } from '../../utils/home';
 export function LoginPage() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +21,7 @@ export function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await login(phone, password);
+      await login(identifier.trim(), password);
       navigate('/app');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -42,11 +42,13 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           <Input
-            label="Phone number"
-            type="tel"
-            placeholder="0700 000 000"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            label="Phone number or email"
+            type="text"
+            inputMode="email"
+            autoComplete="username"
+            placeholder="0700 000 000 or you@example.com"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             required
           />
           <PasswordInput

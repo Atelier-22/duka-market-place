@@ -183,11 +183,16 @@ export function NotificationBell() {
         onClick={toggle}
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
         aria-expanded={open}
-        className="relative flex h-10 w-10 items-center justify-center rounded-full border border-brand-green/15 bg-white/70 text-brand-green-deep transition-colors hover:bg-brand-green-mist"
+        className={[
+          'relative flex h-10 w-10 items-center justify-center rounded-full border transition-colors',
+          unread > 0
+            ? 'border-brand-red bg-brand-red text-white hover:bg-brand-red/90'
+            : 'border-brand-green/15 bg-brand-white text-brand-green-deep hover:bg-brand-green-mist',
+        ].join(' ')}
       >
-        <Bell size={18} strokeWidth={1.75} />
+        <Bell size={18} strokeWidth={unread > 0 ? 2.25 : 1.75} />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand-red px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand-red px-1 text-[10px] font-bold text-white ring-2 ring-brand-white">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -195,7 +200,7 @@ export function NotificationBell() {
 
       {open && isMobile && createPortal(
         <div
-          className="fixed inset-0 z-[70] flex items-end bg-brand-ink/40 backdrop-blur-sm"
+          className="fixed inset-0 z-[70] flex items-end bg-brand-ink/40 "
           onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"

@@ -68,14 +68,14 @@ export function ChatMessage({
               <span
                 onClick={() => setZoomed(true)}
                 title="Zoom"
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/70"
               >
                 <Maximize2 size={13} strokeWidth={2.25} />
               </span>
               <span
                 onClick={() => downloadUrl(attachmentUrl!)}
                 title="Download photo"
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/70"
               >
                 <Download size={13} strokeWidth={2.25} />
               </span>

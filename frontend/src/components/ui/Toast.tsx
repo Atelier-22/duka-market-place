@@ -12,6 +12,8 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
+export const TOAST_MS = 3000;
+
 const VARIANT_STYLES: Record<Toast['variant'], string> = {
   success: 'border-brand-green-fresh/40 text-brand-green-deep',
   error: 'border-brand-red/40 text-brand-red',
@@ -22,19 +24,24 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const push = useCallback((message: string, variant: Toast['variant'] = 'info') => {
-    const id = Date.now();
+    const id = Date.now() + Math.random();
     setToasts((t) => [...t, { id, message, variant }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4000);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), TOAST_MS);
   }, []);
 
   return (
     <ToastContext.Provider value={{ push }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      <div
+        className="pointer-events-none fixed inset-x-3 bottom-24 z-[60] flex flex-col items-center gap-2 sm:inset-x-auto sm:right-4 sm:bottom-4 sm:items-end"
+        aria-live="polite"
+        aria-atomic="false"
+      >
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`glass animate-fade-up rounded-xl border px-4 py-3 text-sm font-medium shadow-glass-lg ${VARIANT_STYLES[t.variant]}`}
+            role="status"
+            className={`pointer-events-auto w-full max-w-sm animate-fade-up rounded-xl border bg-brand-white px-4 py-3 text-sm font-medium shadow-lg ${VARIANT_STYLES[t.variant]}`}
           >
             {t.message}
           </div>

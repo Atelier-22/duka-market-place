@@ -43,6 +43,13 @@ export async function findStaffById(id: string): Promise<StaffRow | null> {
   return queryOne<StaffRow>('SELECT * FROM staff WHERE id = $1', [id]);
 }
 
+export async function findStaffByEmail(email: string): Promise<StaffRow | null> {
+  return queryOne<StaffRow>(
+    'SELECT * FROM staff WHERE LOWER(email) = LOWER($1) LIMIT 1',
+    [email]
+  );
+}
+
 export async function findStaffByPhone(phone: string): Promise<StaffRow | null> {
   return queryOne<StaffRow>(
     `SELECT * FROM staff

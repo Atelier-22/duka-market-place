@@ -52,7 +52,7 @@ export function LocationPrompt() {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-brand-ink/40 backdrop-blur-sm p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-brand-ink/40 p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="location-prompt-title"

@@ -157,7 +157,7 @@ export function MobileNav({ items }: MobileNavProps) {
           className={[
             'relative flex items-stretch rounded-xl3 shadow-glass-lg',
             navStyle === 'glow'
-              ? 'bg-brand-ink/95 backdrop-blur-md'
+              ? 'bg-brand-ink/95 '
               : 'glass border border-brand-green/10',
           ].join(' ')}
         >
@@ -221,7 +221,7 @@ export function MobileNav({ items }: MobileNavProps) {
 
       {menuOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-end bg-brand-ink/40 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-50 flex items-end bg-brand-ink/40 lg:hidden"
           onClick={() => setMenuOpen(false)}
           role="dialog"
           aria-modal="true"

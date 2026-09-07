@@ -60,7 +60,7 @@ export function ImageUpload({ folder, label, value, onChange, shape = 'card' }: 
               type="button"
               onClick={() => onChange('')}
               aria-label="Remove photo"
-              className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+              className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/70"
             >
               <X size={14} strokeWidth={2.25} />
             </button>

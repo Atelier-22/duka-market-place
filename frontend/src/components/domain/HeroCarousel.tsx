@@ -91,7 +91,7 @@ export function HeroCarousel() {
             aria-current={i === active}
             className={[
               'h-2.5 rounded-full transition-all duration-500 ease-out',
-              i === active ? 'w-8 bg-white' : 'w-2.5 bg-white/45 hover:bg-white/70',
+              i === active ? 'w-8 bg-white' : 'w-2.5 bg-white/45 hover:bg-brand-white',
             ].join(' ')}
           />
         ))}

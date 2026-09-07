@@ -26,7 +26,7 @@ export function ZoomableImage({ src, alt = '', caption, className = '', wrapperC
         className={`group relative block cursor-zoom-in overflow-hidden ${wrapperClassName}`}
       >
         <img src={src} alt={alt} loading="lazy" className={className} />
-        <span className="pointer-events-none absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/40 text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+        <span className="pointer-events-none absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100">
           <Maximize2 size={12} strokeWidth={2.25} />
         </span>
       </button>

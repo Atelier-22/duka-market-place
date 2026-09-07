@@ -56,7 +56,7 @@ export function ShopperProfileModal({ shopperId, onClose }: ShopperProfileModalP
       aria-modal="true"
       aria-label="Shopper profile"
       onClick={onClose}
-      className="fixed inset-0 z-[90] flex items-end justify-center bg-brand-ink/40 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[90] flex items-end justify-center bg-brand-ink/40 sm:items-center"
     >
       <div
         onClick={(e) => e.stopPropagation()}

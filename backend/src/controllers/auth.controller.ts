@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   createUser,
   findUsersByPhone,
+  findUsersByEmail,
   findUserByPhoneAndRole,
   findUserByEmailAndRole,
   findSiblingAccounts,
@@ -16,7 +17,7 @@ import {
   normalizeEmail,
 } from '../models/user.model';
 import { hashPassword, verifyPassword, signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/auth';
-import { findStaffById, findStaffByPhone, toPublicStaff, touchStaffLogin } from '../models/staff.model';
+import { findStaffById, findStaffByPhone, findStaffByEmail, toPublicStaff, touchStaffLogin } from '../models/staff.model';
 import { ApiError } from '../middleware/errorHandler';
 
 const registerSchema = z.object({
@@ -86,14 +87,24 @@ function toLinkedAccount(row: UserRow) {
 }
 
 const loginSchema = z.object({
-  phone: z.string().min(9),
+  identifier: z.string().min(3).optional(),
+  phone: z.string().min(3).optional(),
+  email: z.string().optional(),
   password: z.string().min(1),
+}).refine((v) => v.identifier || v.phone || v.email, {
+  message: 'Enter your phone number or email address',
 });
+
+function looksLikeEmail(value: string): boolean {
+  return value.includes('@');
+}
 
 export async function login(req: Request, res: Response) {
   const input = loginSchema.parse(req.body);
+  const raw = (input.identifier ?? input.phone ?? input.email ?? '').trim();
+  const byEmail = looksLikeEmail(raw);
 
-  const staff = await findStaffByPhone(input.phone);
+  const staff = byEmail ? await findStaffByEmail(normalizeEmail(raw)) : await findStaffByPhone(raw);
   if (staff && (await verifyPassword(input.password, staff.password_hash))) {
     if (!staff.is_active) throw new ApiError(403, 'This account has been suspended');
     await touchStaffLogin(staff.id);
@@ -105,13 +116,17 @@ export async function login(req: Request, res: Response) {
     });
   }
 
-  const candidates = await findUsersByPhone(input.phone);
+  const candidates = byEmail
+    ? await findUsersByEmail(normalizeEmail(raw))
+    : await findUsersByPhone(raw);
   const matches = await Promise.all(
     candidates.map(async (c) => ((await verifyPassword(input.password, c.password_hash)) ? c : null))
   );
   const owned = matches.filter((c): c is UserRow => c !== null);
 
-  if (owned.length === 0) throw new ApiError(401, 'Invalid phone number or password');
+  if (owned.length === 0) {
+    throw new ApiError(401, byEmail ? 'Invalid email or password' : 'Invalid phone number or password');
+  }
 
   const active = owned.filter((u) => u.is_active);
   if (active.length === 0) throw new ApiError(403, 'This account has been deactivated');
