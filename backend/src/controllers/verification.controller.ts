@@ -84,6 +84,11 @@ export async function submit(req: Request, res: Response) {
     ]
   );
 
+  await query(
+    `UPDATE shopper_profiles SET verification_status = $2, updated_at = now() WHERE user_id = $1`,
+    [userId, rejected ? 'rejected' : 'pending']
+  );
+
   if (rejected && record) {
     await destroyDocument(record.id);
     if (idHash) await setIdentityOutcome(idHash, 'rejected', auto.reason, auto.fraudFlag);

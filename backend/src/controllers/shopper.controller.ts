@@ -79,19 +79,11 @@ export async function updateProfile(req: Request, res: Response) {
   res.json({ profile: row });
 }
 
-const verificationSchema = z.object({
-  documentType: z.string().min(2).max(50),
-  documentUrl: mediaUrl,
-});
-
-export async function submitVerification(req: Request, res: Response) {
-  const input = verificationSchema.parse(req.body);
-  const record = await queryOne(
-    `INSERT INTO verification_records (shopper_id, document_type, document_url) VALUES ($1,$2,$3) RETURNING *`,
-    [req.user!.id, input.documentType, input.documentUrl]
-  );
-  await query(`UPDATE shopper_profiles SET verification_status = 'pending' WHERE user_id = $1`, [req.user!.id]);
-  res.status(201).json({ record });
+export async function submitVerification(_req: Request, res: Response) {
+  res.status(410).json({
+    error:
+      'This endpoint has been withdrawn. It accepted a public file URL for an identity document. Submit the file itself to POST /api/verification, which stores it privately and destroys it once a decision is made.',
+  });
 }
 
 export async function getPublicProfile(req: Request, res: Response) {

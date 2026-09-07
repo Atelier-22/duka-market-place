@@ -45,8 +45,18 @@ export async function upload(req: Request, res: Response) {
   res.status(201).json({ url, key, mimeType: mime, size: file.size });
 }
 
+const FOLDERS_REQUIRING_PRIVATE_STORAGE = ['verification', 'identity', 'id', 'kyc'];
+
 function folderOf(req: Request): string {
   const folder = typeof req.query.folder === 'string' ? req.query.folder : 'misc';
+  const clean = folder.replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'misc';
 
-  return folder.replace(/[^a-z0-9_-]/gi, '') || 'misc';
+  if (FOLDERS_REQUIRING_PRIVATE_STORAGE.includes(clean)) {
+    throw new ApiError(
+      400,
+      'Identity documents cannot be uploaded here. Use POST /api/verification, which stores them privately.'
+    );
+  }
+
+  return clean;
 }
