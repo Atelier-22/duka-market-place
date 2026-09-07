@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { GlassCard } from '../../components/ui/GlassCard';
 
-const FAQS = [
+export const FAQS = [
   { category: 'Shopping', q: 'What can I ask a shopper to buy?', a: 'Almost anything sold in a physical market, shop, supermarket, or by a seller you found on social media — as long as it\u2019s legal to buy and deliver.' },
   { category: 'Shopping', q: 'What if I don\u2019t know exactly where to buy something?', a: 'Choose "Let shopper find it" when creating your request. Your shopper can search local shops and submit a few priced options for you to choose from.' },
   { category: 'Payments', q: 'How is the price broken down?', a: 'Every order shows the item price, shopping fee, delivery fee, and platform fee as separate line items — never a single bundled number.' },

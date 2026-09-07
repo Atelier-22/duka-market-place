@@ -9,6 +9,8 @@ export type Accent =
   | 'lime' | 'plum' | 'sky' | 'copper' | 'forest' | 'slate';
 export type Language = 'en' | 'sw' | 'lg';
 export type Tone = 'professional' | 'friendly' | 'candid' | 'efficient' | 'encouraging';
+export type DeliveryHandoff = 'meet' | 'gate' | 'call';
+export type DeliveryContact = 'call' | 'message' | 'either';
 
 export interface Preferences {
   theme: Theme;
@@ -23,6 +25,12 @@ export interface Preferences {
   notify_new_requests: boolean;
   share_location: boolean;
   location_prompt_dismissed_at: string | null;
+  notify_security: boolean;
+  delivery_instructions: string | null;
+  delivery_handoff: DeliveryHandoff;
+  delivery_contact: DeliveryContact;
+  default_city: string | null;
+  default_sourcing: string | null;
 }
 
 const DEFAULTS: Preferences = {
@@ -38,6 +46,12 @@ const DEFAULTS: Preferences = {
   notify_new_requests: true,
   share_location: false,
   location_prompt_dismissed_at: null,
+  notify_security: true,
+  delivery_instructions: null,
+  delivery_handoff: 'meet',
+  delivery_contact: 'either',
+  default_city: null,
+  default_sourcing: null,
 };
 
 interface PreferencesContextValue {

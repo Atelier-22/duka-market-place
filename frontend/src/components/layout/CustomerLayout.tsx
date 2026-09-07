@@ -3,11 +3,11 @@ import { AppShell } from './AppShell';
 import { NavItem } from './MobileNav';
 
 const ITEMS: NavItem[] = [
-  { to: '/app', label: 'Home', icon: Home },
-  { to: '/app/requests/new', label: 'Request', icon: PlusCircle },
-  { to: '/app/orders', label: 'Orders', icon: Package },
-  { to: '/app/messages', label: 'Chats', icon: MessageCircle, badge: 'messages' as const },
-  { to: '/app/account', label: 'Account', icon: User },
+  { to: '/app', label: 'Home', icon: Home, tint: 'fresh' },
+  { to: '/app/requests/new', label: 'Request', icon: PlusCircle, tint: 'yellow' },
+  { to: '/app/orders', label: 'Orders', icon: Package, tint: 'green' },
+  { to: '/app/messages', label: 'Chats', icon: MessageCircle, badge: 'messages' as const, tint: 'deep' },
+  { to: '/app/account', label: 'Account', icon: User, tint: 'ink' },
 ];
 
 export function CustomerLayout() {

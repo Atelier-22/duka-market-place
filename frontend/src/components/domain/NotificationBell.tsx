@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Check, X } from 'lucide-react';
 import { api } from '../../services/api';
+import { BoneText, SkeletonRegion } from '../ui/Skeleton';
 
 interface Notification {
   id: string;
@@ -31,6 +32,7 @@ export function NotificationBell() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notification[]>([]);
+  const [listLoading, setListLoading] = useState(false);
   const [unread, setUnread] = useState(0);
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT
@@ -56,12 +58,15 @@ export function NotificationBell() {
   }, []);
 
   const loadAll = useCallback(async () => {
+    setListLoading(true);
     try {
       const res = await api.get('/notifications');
       setItems(res.data.notifications);
       setUnread(res.data.unread);
     } catch {
       setItems([]);
+    } finally {
+      setListLoading(false);
     }
   }, []);
 
@@ -148,7 +153,17 @@ export function NotificationBell() {
 
   const list = (
     <div className={isMobile ? 'max-h-[60vh] overflow-y-auto' : 'max-h-96 overflow-y-auto'}>
-      {items.length === 0 ? (
+      {listLoading && items.length === 0 ? (
+        <SkeletonRegion label="Loading notifications">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="border-b border-brand-green/5 px-4 py-3 last:border-0">
+              <BoneText w="w-3/4" />
+              <BoneText w="w-1/2" className="mt-2 h-3" />
+              <BoneText w="w-12" className="mt-2 h-2.5" />
+            </div>
+          ))}
+        </SkeletonRegion>
+      ) : items.length === 0 ? (
         <p className="px-4 py-10 text-center text-sm text-brand-ink/40">Nothing yet.</p>
       ) : (
         items.map((n) => (

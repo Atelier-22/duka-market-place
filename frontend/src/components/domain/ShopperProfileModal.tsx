@@ -3,7 +3,7 @@ import { BadgeCheck, Briefcase, CalendarDays, MapPin, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { api } from '../../services/api';
 import { RatingStars } from '../ui/RatingStars';
-import { LoadingState } from '../ui/LoadingState';
+import { Bone, BoneCircle, BoneText, SkeletonRegion } from '../ui/Skeleton';
 import { ZoomableImage } from '../ui/ZoomableImage';
 import { PresenceDot } from './PresenceDot';
 
@@ -75,7 +75,18 @@ export function ShopperProfileModal({ shopperId, onClose }: ShopperProfileModalP
         {error ? (
           <p className="py-10 text-center text-sm text-brand-red">{error}</p>
         ) : !profile ? (
-          <LoadingState label="Loading profile…" />
+          <SkeletonRegion label="Loading profile" className="flex flex-col items-center py-2">
+            <BoneCircle size={96} />
+            <Bone className="mt-3 h-6 w-40" />
+            <BoneText w="w-24" className="mt-2.5" />
+            <div className="mt-6 grid w-full grid-cols-3 gap-3">
+              <Bone className="h-14 w-full rounded-xl" />
+              <Bone className="h-14 w-full rounded-xl" />
+              <Bone className="h-14 w-full rounded-xl" />
+            </div>
+            <BoneText w="w-full" className="mt-6" />
+            <BoneText w="w-4/5" className="mt-2" />
+          </SkeletonRegion>
         ) : (
           <>
             <div className="flex flex-col items-center text-center">

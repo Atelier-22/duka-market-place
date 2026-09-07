@@ -19,9 +19,23 @@
   --brand-ink: 12 26 20;
 
   --app-bg: #F3FBF6;
+
+  /* Glass: restrained. Tone these numbers, never the rules below. */
   --glass-bg: 255 255 255;
-  --glass-bg-alpha: 0.6;
-  --glass-border-alpha: 0.55;
+  --glass-bg-alpha: 0.92;
+  --glass-blur: 6px;
+  --glass-border: var(--brand-green);
+  --glass-border-alpha: 0.14;
+
+  /* Phone nav: the floating indicator's colour and the dark-variant surface.
+     Swap --nav-indicator-a/b to any brand token to recolour the active tab. */
+  --nav-indicator-a: var(--brand-green-fresh);
+  --nav-indicator-b: var(--brand-green);
+  --nav-dark-bg: 18 23 20;
+  --nav-shadow: 11 61 46;
+
+  /* Full-screen brand transition backdrop. */
+  --overlay-bg: 8 14 11;
 }
 
 [data-accent='ocean'] {
@@ -158,8 +172,10 @@
 
   --app-bg: #0E1512;
   --glass-bg: 30 40 35;
-  --glass-bg-alpha: 0.66;
+  --glass-bg-alpha: 0.92;
+  --glass-border: 255 255 255;
   --glass-border-alpha: 0.10;
+  --nav-shadow: 0 0 0;
 }
 
 [data-theme='dark'][data-accent='ocean']    { --brand-green-deep: 205 231 248; --brand-green-mist: 22 38 52; --app-bg: #0C1219; }
@@ -199,24 +215,40 @@ body {
   100% { box-shadow: 0 0 0 0 rgb(var(--brand-green-fresh) / 0); }
 }
 
-.glass-liquid {
-  background: rgb(var(--glass-bg));
-  border: 1px solid rgb(var(--brand-green) / 0.14);
-}
+/* Glass surfaces live in the components layer so Tailwind utilities
+   (border-*, bg-*) can still override them per element. */
+@layer components {
+  .glass,
+  .glass-liquid {
+    background: rgb(var(--glass-bg) / var(--glass-bg-alpha));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
+  }
 
-[data-theme='dark'] .glass-liquid {
-  background: rgb(var(--glass-bg));
-  border-color: rgb(255 255 255 / 0.10);
-}
+  /* Chips sit on top of glass already; same surface, no second blur pass. */
+  .glass-chip {
+    background: rgb(var(--glass-bg) / var(--glass-bg-alpha));
+    border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
+  }
 
-.glass-chip {
-  background: rgb(var(--glass-bg));
-  border: 1px solid rgb(var(--brand-green) / 0.14);
-}
+  .glass-deep {
+    background: rgb(var(--brand-green-deep) / var(--glass-bg-alpha));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid rgb(255 255 255 / 0.10);
+    color: white;
+  }
+  [data-theme='dark'] .glass-deep {
+    background: rgb(var(--brand-green-mist) / var(--glass-bg-alpha));
+  }
 
-[data-theme='dark'] .glass-chip {
-  background: rgb(var(--glass-bg));
-  border-color: rgb(255 255 255 / 0.12);
+  .glass-hover {
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .glass-hover:hover {
+    border-color: rgb(var(--glass-border) / calc(var(--glass-border-alpha) * 2));
+  }
 }
 
 .app-main {
@@ -247,11 +279,11 @@ body {
 }
 
 ::selection {
-  background: rgba(31, 174, 107, 0.25);
+  background: rgb(var(--brand-green-fresh) / 0.25);
 }
 
 :focus-visible {
-  outline: 2px solid #1FAE6B;
+  outline: 2px solid rgb(var(--brand-green-fresh));
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -263,31 +295,236 @@ body {
   background: var(--app-bg);
 }
 
-.glass {
-  background: rgb(var(--glass-bg));
-  border: 1px solid rgb(var(--brand-green) / 0.14);
-}
-
-.glass-deep {
-  background: rgb(11 61 46);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  color: white;
-}
-
-.glass-hover {
-  transition: border-color 160ms ease;
-}
-.glass-hover:hover {
-  border-color: rgb(var(--brand-green) / 0.28);
-}
 
 .text-gradient-brand {
   color: rgb(var(--brand-green));
 }
 
 .shimmer-bg {
-  background: linear-gradient(90deg, #E7F5EC 25%, #FFFFFF 50%, #E7F5EC 75%);
+  background: linear-gradient(
+    90deg,
+    rgb(var(--brand-green-mist)) 25%,
+    rgb(var(--glass-bg)) 50%,
+    rgb(var(--brand-green-mist)) 75%
+  );
   background-size: 200% 100%;
+}
+
+/* ------------------------------------------------------------------ */
+/* Phone navigation: floating capsule + travelling indicator.          */
+/* Geometry and spring values come from src/config/motion.ts.          */
+/* ------------------------------------------------------------------ */
+
+.duka-nav {
+  --nav-tint: var(--brand-green-fresh);
+  --nav-mix: 10%;
+  --nav-base: var(--glass-bg);
+  --nav-base-alpha: var(--glass-bg-alpha);
+  --nav-surface: rgb(var(--nav-base) / var(--nav-base-alpha));
+  --nav-fg-muted: rgb(var(--brand-ink) / 0.45);
+  --nav-fg-active: rgb(var(--brand-green));
+
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  border-radius: 2rem;
+  background-color: var(--nav-surface);
+  border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  box-shadow:
+    0 20px 50px -12px rgb(var(--nav-shadow) / 0.28),
+    0 2px 8px -2px rgb(var(--nav-shadow) / 0.12);
+}
+@supports (background: color-mix(in srgb, red, blue)) {
+  .duka-nav {
+    --nav-surface: color-mix(
+      in srgb,
+      rgb(var(--nav-base) / var(--nav-base-alpha)),
+      rgb(var(--nav-tint)) var(--nav-mix)
+    );
+  }
+}
+[data-theme='dark'] .duka-nav {
+  --nav-fg-active: rgb(var(--brand-green-fresh));
+}
+.duka-nav--dark {
+  --nav-base: var(--nav-dark-bg);
+  --nav-base-alpha: 0.94;
+  --nav-mix: 14%;
+  --nav-fg-muted: rgb(255 255 255 / 0.5);
+  --nav-fg-active: rgb(255 255 255);
+  border-color: rgb(255 255 255 / 0.08);
+  box-shadow:
+    0 20px 50px -12px rgb(0 0 0 / 0.55),
+    0 2px 8px -2px rgb(0 0 0 / 0.3);
+}
+
+.duka-nav__indicator {
+  position: absolute;
+  left: 0;
+  border-radius: 9999px;
+  background: linear-gradient(140deg, rgb(var(--nav-indicator-a)), rgb(var(--nav-indicator-b)));
+  box-shadow:
+    0 0 0 4px var(--nav-surface),
+    0 12px 24px -8px rgb(var(--nav-indicator-a) / 0.7),
+    0 0 20px -2px rgb(var(--nav-indicator-a) / 0.35);
+  will-change: transform;
+  pointer-events: none;
+}
+
+.duka-nav__slot {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  outline-offset: -4px;
+}
+.duka-nav__press {
+  display: block;
+  transition: transform 120ms ease;
+}
+.duka-nav__slot:active .duka-nav__press {
+  transform: scale(0.94);
+}
+.duka-nav__icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--nav-fg-muted);
+  will-change: transform;
+}
+.duka-nav__icon.is-active {
+  color: #fff;
+}
+@media (hover: hover) {
+  .duka-nav__slot:hover .duka-nav__icon:not(.is-active) {
+    color: var(--nav-fg-active);
+  }
+}
+.duka-nav__label {
+  max-width: 100%;
+  padding: 0 2px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--nav-fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 220ms ease;
+}
+.duka-nav__slot.is-active .duka-nav__label {
+  color: var(--nav-fg-active);
+}
+.duka-nav__badge {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  background: rgb(var(--brand-red));
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px var(--nav-surface);
+}
+
+/* ------------------------------------------------------------------ */
+/* Brand transition overlay                                            */
+/* ------------------------------------------------------------------ */
+
+.duka-brand-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(var(--overlay-bg) / 0.8);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: duka-overlay-in var(--overlay-ms) ease both;
+}
+.duka-brand-overlay[data-phase='out'] {
+  animation: duka-overlay-out var(--overlay-ms) ease both;
+}
+.duka-brand-overlay__stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  transform: scale(0.6);
+}
+.duka-brand-overlay[data-phase='logo'] .duka-brand-overlay__stage,
+.duka-brand-overlay[data-phase='out'] .duka-brand-overlay__stage {
+  animation: duka-logo-in var(--logo-ms) var(--logo-ease) both;
+}
+.duka-brand-overlay__glow {
+  position: absolute;
+  top: -32px;
+  width: 160px;
+  height: 160px;
+  border-radius: 9999px;
+  background: rgb(var(--brand-green-fresh));
+  filter: blur(36px);
+  opacity: 0.55;
+}
+.duka-brand-overlay[data-phase='logo'] .duka-brand-overlay__glow,
+.duka-brand-overlay[data-phase='out'] .duka-brand-overlay__glow {
+  animation: duka-logo-glow var(--glow-ms) ease-in-out both;
+}
+.duka-brand-overlay__mark {
+  position: relative;
+  filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.35));
+}
+.duka-brand-overlay__name {
+  position: relative;
+  margin-top: 14px;
+  font-family: 'Fraunces', serif;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.duka-brand-overlay__label {
+  position: relative;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(255 255 255 / 0.65);
+}
+
+@keyframes duka-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes duka-overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes duka-logo-in {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes duka-logo-glow {
+  0%   { background: rgb(var(--brand-green-fresh)); opacity: 0.55; }
+  45%  { background: rgb(var(--brand-yellow)); opacity: 0.6; }
+  100% { background: rgb(255 255 255); opacity: 0.4; }
 }
 
 @keyframes duka-ping {
@@ -296,7 +533,7 @@ body {
 
 .leaflet-container {
   font-family: inherit;
-  background: #E7F5EC;
+  background: rgb(var(--brand-green-mist));
 }
 .leaflet-control-attribution {
   font-size: 10px;

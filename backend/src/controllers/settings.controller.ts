@@ -34,6 +34,16 @@ const preferencesSchema = z.object({
   shareLocation: z.boolean().optional(),
 
   locationPromptDismissedAt: z.string().datetime().nullable().optional(),
+
+  notifySecurity: z.boolean().optional(),
+  deliveryInstructions: z.string().max(500).nullable().optional(),
+  deliveryHandoff: z.enum(['meet', 'gate', 'call']).optional(),
+  deliveryContact: z.enum(['call', 'message', 'either']).optional(),
+  defaultCity: z.string().max(80).nullable().optional(),
+  defaultSourcing: z
+    .enum(['specific_market', 'specific_shop', 'social_seller', 'shopper_choice'])
+    .nullable()
+    .optional(),
 });
 
 export async function patchPreferences(req: Request, res: Response) {
@@ -52,6 +62,12 @@ export async function patchPreferences(req: Request, res: Response) {
     notify_marketing: input.notifyMarketing,
     share_location: input.shareLocation,
     location_prompt_dismissed_at: input.locationPromptDismissedAt,
+    notify_security: input.notifySecurity,
+    delivery_instructions: input.deliveryInstructions,
+    delivery_handoff: input.deliveryHandoff,
+    delivery_contact: input.deliveryContact,
+    default_city: input.defaultCity,
+    default_sourcing: input.defaultSourcing,
   });
 
   res.json({ preferences });

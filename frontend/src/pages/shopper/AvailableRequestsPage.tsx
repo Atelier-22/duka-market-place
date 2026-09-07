@@ -7,7 +7,7 @@ import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { Modal } from '../../components/ui/Modal';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonRegion, SkeletonRequestGrid } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../components/ui/Toast';
 
@@ -101,7 +101,7 @@ export function AvailableRequestsPage() {
 
       <div className="mt-6">
         {loading ? (
-          <LoadingState />
+          <SkeletonRegion label="Loading open requests"><SkeletonRequestGrid count={3} /></SkeletonRegion>
         ) : requests.length === 0 ? (
           <EmptyState icon={<Map size={40} strokeWidth={1.25} />} title="No open requests right now" description="Check back soon, or make sure you're online." />
         ) : (

@@ -5,7 +5,7 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
 import { formatDate } from './AdminDetailShell';
 
@@ -81,7 +81,14 @@ export function AdminOpsPage() {
     }
   }
 
-  if (loading) return <LoadingState label="Loading operations…" />;
+  if (loading) {
+    return (
+      <SkeletonRegion label="Loading" className="pb-10">
+        <SkeletonHeading subtitle={false} />
+        <div className="mt-6"><SkeletonRows count={4} /></div>
+      </SkeletonRegion>
+    );
+  }
 
   const TABS: { id: Tab; label: string; icon: typeof Megaphone }[] = [
     { id: 'announce', label: 'Announce', icon: Megaphone },

@@ -80,11 +80,15 @@ export async function listRequestsForCustomer(customerId: string): Promise<Reque
 export async function listOpenRequests(filters: { locationId?: string }): Promise<RequestRow[]> {
   if (filters.locationId) {
     return query<RequestRow>(
-      `SELECT * FROM shopping_requests WHERE status = 'open' AND location_id = $1 ORDER BY created_at DESC`,
+      `SELECT * FROM shopping_requests
+        WHERE status IN ('open', 'offer_received') AND location_id = $1
+        ORDER BY created_at DESC`,
       [filters.locationId]
     );
   }
-  return query<RequestRow>(`SELECT * FROM shopping_requests WHERE status = 'open' ORDER BY created_at DESC`);
+  return query<RequestRow>(
+    `SELECT * FROM shopping_requests WHERE status IN ('open', 'offer_received') ORDER BY created_at DESC`
+  );
 }
 
 export async function updateRequestStatus(id: string, status: RequestStatus) {

@@ -4,7 +4,7 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
 
 export function AdminFeesPage() {
@@ -35,7 +35,14 @@ export function AdminFeesPage() {
     }
   }
 
-  if (loading) return <LoadingState />;
+  if (loading) {
+    return (
+      <SkeletonRegion label="Loading" className="pb-10">
+        <SkeletonHeading subtitle={false} />
+        <div className="mt-6"><SkeletonRows count={4} /></div>
+      </SkeletonRegion>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl pb-10">

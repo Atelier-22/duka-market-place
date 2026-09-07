@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonDetail, SkeletonRegion } from '../../components/ui/Skeleton';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { RatingStars } from '../../components/ui/RatingStars';
 import { ZoomableImage } from '../../components/ui/ZoomableImage';
@@ -29,7 +29,7 @@ export function AdminShopperDetailPage() {
       .finally(() => setLoading(false));
   }, [id, reloadKey]);
 
-  if (loading) return <LoadingState label="Loading shopper…" />;
+  if (loading) return <SkeletonRegion label="Loading"><SkeletonDetail /></SkeletonRegion>;
   if (error || !data) return <p className="p-8 text-sm text-brand-red">{error ?? 'Not found.'}</p>;
 
   const { user, verifications, orders, earnings, ratings, offers } = data;

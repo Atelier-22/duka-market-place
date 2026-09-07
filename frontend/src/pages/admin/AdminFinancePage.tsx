@@ -4,7 +4,7 @@ import { Banknote, Check } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
 import { formatDate, formatUgx } from './AdminDetailShell';
 
@@ -56,7 +56,14 @@ export function AdminFinancePage() {
     }
   }
 
-  if (loading) return <LoadingState label="Loading the books…" />;
+  if (loading) {
+    return (
+      <SkeletonRegion label="Loading" className="pb-10">
+        <SkeletonHeading subtitle={false} />
+        <div className="mt-6"><SkeletonTable rows={6} cols={5} /></div>
+      </SkeletonRegion>
+    );
+  }
 
   const totalOwed = payouts.reduce((s, p) => s + Number(p.owed_ugx), 0);
   const pending = payments.filter((p) => p.status === 'pending');

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, apiErrorMessage } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ZoomableImage } from '../../components/ui/ZoomableImage';
 import { useToast } from '../../components/ui/Toast';
@@ -27,7 +27,14 @@ export function AdminVerificationsPage() {
     }
   }
 
-  if (loading) return <LoadingState />;
+  if (loading) {
+    return (
+      <SkeletonRegion label="Loading" className="pb-10">
+        <SkeletonHeading subtitle={false} />
+        <div className="mt-6 grid gap-4 md:grid-cols-2"><SkeletonRequestCard /><SkeletonRequestCard /></div>
+      </SkeletonRegion>
+    );
+  }
 
   return (
     <div className="pb-10">

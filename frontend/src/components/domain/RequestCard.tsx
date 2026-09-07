@@ -1,3 +1,4 @@
+import { ArrowRight } from 'lucide-react';
 import { ShoppingRequest } from '../../types';
 import { GlassCard } from '../ui/GlassCard';
 import { StatusBadge } from '../ui/StatusBadge';
@@ -22,6 +23,8 @@ export function RequestCard({ request, onClick }: RequestCardProps) {
   return (
     <GlassCard
       onClick={onClick}
+      hover={!!onClick}
+      glow={request.status === 'offer_received' ? 'yellow' : 'none'}
       className={onClick ? 'cursor-pointer' : ''}
     >
       <div className="flex items-start justify-between gap-3">
@@ -35,6 +38,14 @@ export function RequestCard({ request, onClick }: RequestCardProps) {
       </div>
       {request.description && (
         <p className="mt-3 line-clamp-2 text-sm text-brand-ink/60">{request.description}</p>
+      )}
+      {request.status === 'offer_received' && (
+        <p className="mt-3 flex items-center gap-1 text-sm font-semibold text-yellow-800">
+          Offers are in. Choose a shopper <ArrowRight size={14} strokeWidth={2.5} />
+        </p>
+      )}
+      {request.status === 'open' && (
+        <p className="mt-3 text-xs text-brand-ink/45">Waiting for shoppers to offer.</p>
       )}
       <div className="mt-4 flex items-center justify-between border-t border-brand-green/10 pt-3">
         <span className="text-sm font-semibold text-brand-green-deep">

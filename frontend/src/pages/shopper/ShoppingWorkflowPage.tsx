@@ -7,23 +7,44 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
 import { StatusBadge } from '../../components/ui/StatusBadge';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { SkeletonDetail, SkeletonRegion } from '../../components/ui/Skeleton';
 import { OrderTimeline, TimelineAction } from '../../components/domain/OrderTimeline';
 import { ActionNeededBanner } from '../../components/domain/ActionNeededBanner';
 import { LazyLiveMap } from '../../components/domain/LazyLiveMap';
 import { ShoppingDonePanel } from '../../components/domain/ShoppingDonePanel';
+import { DisputeButton } from '../../components/domain/DisputeButton';
 import { ImageUpload } from '../../components/ui/ImageUpload';
 import { RatingStars } from '../../components/ui/RatingStars';
 import { useToast } from '../../components/ui/Toast';
 import { useBroadcastPosition, useOrderTracking } from '../../hooks/useOrderTracking';
 
 const BROADCAST_STATUSES = ['shopper_assigned', 'shopping', 'item_found', 'awaiting_customer_approval', 'purchased', 'out_for_delivery'];
+const DISPUTABLE: OrderStatus[] = ['shopping', 'item_found', 'awaiting_customer_approval', 'purchased', 'out_for_delivery', 'delivered', 'completed'];
+
+interface CustomerDelivery {
+  delivery_instructions: string | null;
+  delivery_handoff: 'meet' | 'gate' | 'call' | string;
+  delivery_contact: 'call' | 'message' | 'either' | string;
+}
+
+const HANDOFF_LABEL: Record<string, string> = {
+  meet: 'Meet them at the door',
+  gate: 'Leave with the gate or reception',
+  call: 'Call when you arrive; they will come out',
+};
+const CONTACT_LABEL: Record<string, string> = {
+  call: 'Prefers a call',
+  message: 'Prefers a message',
+  either: 'Call or message, either is fine',
+};
 
 export function ShoppingWorkflowPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { push } = useToast();
   const [order, setOrder] = useState<Order | null>(null);
+  const [delivery, setDelivery] = useState<CustomerDelivery | null>(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
 
@@ -48,9 +69,22 @@ export function ShoppingWorkflowPage() {
   }
 
   function load() {
-    api.get(`/orders/${id}`).then((res) => setOrder(res.data.order)).finally(() => setLoading(false));
+    api.get(`/orders/${id}`).then((res) => {
+      setOrder(res.data.order);
+      setDelivery(res.data.delivery ?? null);
+      if (res.data.myRating != null) {
+        setRated(true);
+        setStars(res.data.myRating);
+      }
+    }).finally(() => setLoading(false));
   }
   useEffect(load, [id]);
+
+  // The customer's approval arrives without a reload.
+  useEffect(() => {
+    const interval = setInterval(load, 8000);
+    return () => clearInterval(interval);
+  }, [id]);
 
   const broadcasting = !!order && BROADCAST_STATUSES.includes(order.status);
 
@@ -138,8 +172,24 @@ export function ShoppingWorkflowPage() {
     }
   }
 
-  if (loading) return <LoadingState />;
-  if (!order) return null;
+  if (loading) {
+    return (
+      <SkeletonRegion label="Loading this job">
+        <SkeletonDetail withMap />
+      </SkeletonRegion>
+    );
+  }
+  if (!order) {
+    return (
+      <div className="mx-auto max-w-2xl pb-16">
+        <EmptyState
+          title="We couldn't open this job"
+          description="Check your connection and try again."
+          action={<GlassButton size="sm" onClick={() => { setLoading(true); load(); }}>Try again</GlassButton>}
+        />
+      </div>
+    );
+  }
 
   const chat = `/shopper/orders/${order.id}/messages`;
   const at = (step: string, hint: string): Partial<Record<OrderStatus, TimelineAction>> =>
@@ -175,6 +225,7 @@ export function ShoppingWorkflowPage() {
         status={order.status}
         perspective="shopper"
         targetId={`step-${order.status}`}
+        rated={rated}
       />
 
       <GlassCard padding="lg" hover={false} className="mt-6">
@@ -215,14 +266,28 @@ export function ShoppingWorkflowPage() {
             </p>
           )}
 
+          {delivery && (delivery.delivery_instructions || delivery.delivery_handoff) && (
+            <div className="mt-3 rounded-xl bg-brand-green-mist/60 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">At the door</p>
+              <p className="mt-1 text-sm text-brand-ink/80">
+                {HANDOFF_LABEL[delivery.delivery_handoff] ?? delivery.delivery_handoff}
+                {' · '}
+                {CONTACT_LABEL[delivery.delivery_contact] ?? delivery.delivery_contact}
+              </p>
+              {delivery.delivery_instructions && (
+                <p className="mt-1.5 whitespace-pre-line text-sm text-brand-ink/70">{delivery.delivery_instructions}</p>
+              )}
+            </div>
+          )}
+
           {!tracking?.customer && !tracking?.destination && (
             <div className="mt-3 rounded-xl bg-brand-yellow-soft/60 px-4 py-3">
               <p className="flex items-start gap-2 text-sm text-yellow-900">
                 <CircleAlert size={15} strokeWidth={2} className="mt-0.5 shrink-0" />
                 <span>
                   Your customer hasn't put their location on the map yet — only the
-                  written address above. Ask them to open this order and tap
-                  "Pin my exact location".
+                  written address above. Ask them to open this order and tap the
+                  "Pin this address" button under Live tracking.
                 </span>
               </p>
               <GlassButton
@@ -250,15 +315,17 @@ export function ShoppingWorkflowPage() {
             </a>
           )}
 
-          <ShoppingDonePanel
-            orderId={order.id}
-            shoppingDoneAt={tracking?.shoppingDoneAt ?? null}
-            deliveryStartedAt={tracking?.deliveryStartedAt ?? null}
-            deliveryDeferredTo={tracking?.deliveryDeferredTo ?? null}
-            sharingLocation={sharing}
-            locationError={locationError}
-            onDone={() => { refreshTracking(); load(); }}
-          />
+          {(order.status === 'purchased' || order.status === 'out_for_delivery') && (
+            <ShoppingDonePanel
+              orderId={order.id}
+              shoppingDoneAt={tracking?.shoppingDoneAt ?? null}
+              deliveryStartedAt={tracking?.deliveryStartedAt ?? null}
+              deliveryDeferredTo={tracking?.deliveryDeferredTo ?? null}
+              sharingLocation={sharing}
+              locationError={locationError}
+              onDone={() => { refreshTracking(); load(); }}
+            />
+          )}
         </GlassCard>
       )}
 
@@ -309,15 +376,17 @@ export function ShoppingWorkflowPage() {
           <GlassCard id="step-awaiting_customer_approval" hover={false}>
             <p className="font-medium text-brand-green-deep">Waiting for customer approval</p>
             <p className="mt-1 text-sm text-brand-ink/60">
-              We've sent your photo and price ({recordedPrice !== null ? `${recordedPrice.toLocaleString('en-UG')} UGX` : 'the recorded price'}) to the customer. You'll be notified once they approve.
+              We've sent your photo and price ({recordedPrice !== null ? `${recordedPrice.toLocaleString('en-UG')} UGX` : 'the recorded price'}) to the customer. This page updates on its own the moment they approve, so there is no need to refresh.
             </p>
           </GlassCard>
         )}
 
         {order.status === 'purchased' && (
           <GlassCard id="step-purchased" glow="green" hover={false}>
-            <p className="font-medium text-brand-green-deep">Purchased! Upload your receipt</p>
-            <p className="mt-1 text-sm text-brand-ink/60">A photo of the receipt keeps everything transparent and protects both of you.</p>
+            <p className="font-medium text-brand-green-deep">Approved. Pay the shop, then upload the receipt</p>
+            <p className="mt-1 text-sm text-brand-ink/60">
+              The customer said yes. Buy the item with your own money, then upload a photo of the receipt. The customer pays you the full amount when you hand it over.
+            </p>
             <div className="mt-4 flex flex-col gap-3">
               <ImageUpload folder="receipts" label="Receipt photo" value={receiptUrl} onChange={setReceiptUrl} />
               <GlassButton disabled={acting} onClick={submitOutForDelivery} fullWidth>
@@ -330,7 +399,9 @@ export function ShoppingWorkflowPage() {
         {order.status === 'out_for_delivery' && (
           <GlassCard id="step-out_for_delivery" hover={false}>
             <p className="font-medium text-brand-green-deep">On the way to the customer</p>
-            <p className="mt-1 text-sm text-brand-ink/60">The customer will confirm once they receive the item — your earnings release right after.</p>
+            <p className="mt-1 text-sm text-brand-ink/60">
+              Collect {recordedPrice !== null ? `${(recordedPrice + Number(order.shopping_fee_ugx) + Number(order.delivery_fee_ugx) + Number(order.platform_fee_ugx)).toLocaleString('en-UG')} UGX` : 'the full amount'} from the customer at the door. They confirm on their side, and your earnings release right after.
+            </p>
           </GlassCard>
         )}
 
@@ -381,11 +452,16 @@ export function ShoppingWorkflowPage() {
         )}
       </div>
 
-      {!['completed', 'cancelled', 'refunded'].includes(order.status) && (
-        <GlassButton variant="ghost" size="sm" className="mt-4" onClick={() => navigate(`/shopper/orders/${id}/messages`)}>
-          <MessageCircle size={17} strokeWidth={2} /> Message customer
-        </GlassButton>
-      )}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {!['completed', 'cancelled', 'refunded', 'disputed'].includes(order.status) && (
+          <GlassButton variant="ghost" size="sm" onClick={() => navigate(`/shopper/orders/${id}/messages`)}>
+            <MessageCircle size={17} strokeWidth={2} /> Message customer
+          </GlassButton>
+        )}
+        {DISPUTABLE.includes(order.status) && (
+          <DisputeButton orderId={order.id} perspective="shopper" onRaised={load} />
+        )}
+      </div>
     </div>
   );
 }

@@ -16,6 +16,13 @@ export interface PreferencesRow {
 
   share_location: boolean;
   location_prompt_dismissed_at: string | null;
+
+  notify_security: boolean;
+  delivery_instructions: string | null;
+  delivery_handoff: 'meet' | 'gate' | 'call';
+  delivery_contact: 'call' | 'message' | 'either';
+  default_city: string | null;
+  default_sourcing: string | null;
 }
 
 export async function getOrCreatePreferences(userId: string): Promise<PreferencesRow> {
@@ -39,6 +46,8 @@ const UPDATABLE = [
   'theme', 'accent', 'language', 'tone', 'traits',
   'notify_messages', 'notify_orders', 'notify_offers', 'notify_marketing', 'notify_new_requests',
   'share_location', 'location_prompt_dismissed_at',
+  'notify_security', 'delivery_instructions', 'delivery_handoff', 'delivery_contact',
+  'default_city', 'default_sourcing',
 ] as const;
 
 export type PreferencePatch = Partial<Record<(typeof UPDATABLE)[number], unknown>>;

@@ -4,6 +4,7 @@ import { Camera, Image as ImageIcon, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DukaLockup } from '../ui/DukaLogo';
+import { NotificationBell } from '../domain/NotificationBell';
 import { useToast } from '../ui/Toast';
 
 function initials(name: string): string {
@@ -86,6 +87,8 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
         <DukaLockup markSize={26} roleLabel={roleLabel} />
       </Link>
 
+      <div className="flex shrink-0 items-center gap-2">
+      <NotificationBell />
       <div className="relative shrink-0">
         <button
           ref={buttonRef}
@@ -147,6 +150,7 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
           className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }}
         />
+      </div>
       </div>
     </header>
   );

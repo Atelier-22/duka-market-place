@@ -5,9 +5,8 @@ import { api, apiErrorMessage } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { DashboardStat } from '../../components/domain/DashboardStat';
-import { NotificationBell } from '../../components/domain/NotificationBell';
 import { ActiveJobCard } from '../../components/domain/ActiveJobCard';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonHeading, SkeletonRegion, SkeletonRows, SkeletonStats } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
 import { useAuth } from '../../context/AuthContext';
 
@@ -57,7 +56,15 @@ export function ShopperDashboardPage() {
     }
   }
 
-  if (loading || !data) return <LoadingState label="Loading your dashboard…" />;
+  if (loading || !data) {
+    return (
+      <SkeletonRegion label="Loading your dashboard" className="flex flex-col gap-6 pb-10">
+        <SkeletonHeading />
+        <SkeletonStats />
+        <SkeletonRows count={2} />
+      </SkeletonRegion>
+    );
+  }
 
   const activeJobs: any[] = data.activeOrders ?? [];
   const limit: number = data.activeJobLimit ?? 5;
@@ -75,7 +82,6 @@ export function ShopperDashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <NotificationBell />
           <GlassButton
             size="sm"
             variant={data.profile.is_online ? 'danger' : 'primary'}

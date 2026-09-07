@@ -1,20 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export type NavStyle = 'labeled' | 'pop' | 'glow';
+export type NavStyle = 'light' | 'dark';
 
 export const NAV_STYLES: { key: NavStyle; label: string; description: string }[] = [
-  { key: 'labeled', label: 'Labeled Slide', description: 'Icons with names underneath, and a highlight that slides between them.' },
-  { key: 'pop', label: 'Floating Pop', description: 'The tab you are on lifts out of the bar in a coloured circle.' },
-  { key: 'glow', label: 'Dark Glow', description: 'A dark bar, with the tab you are on glowing.' },
+  { key: 'light', label: 'Light', description: 'A white capsule. The tab you are on floats out of it in a coloured circle.' },
+  { key: 'dark', label: 'Dark', description: 'The same floating tab on a dark capsule.' },
 ];
 
 const STORAGE_KEY = 'duka_nav_style';
-const DEFAULT: NavStyle = 'labeled';
+const DEFAULT: NavStyle = 'light';
 
 function read(): NavStyle {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === 'labeled' || raw === 'pop' || raw === 'glow') return raw;
+    if (raw === 'light' || raw === 'dark') return raw;
+    // Older builds stored 'labeled' | 'pop' | 'glow'.
+    if (raw === 'glow') return 'dark';
   } catch {
 
   }

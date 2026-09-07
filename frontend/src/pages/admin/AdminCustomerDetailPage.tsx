@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonDetail, SkeletonRegion } from '../../components/ui/Skeleton';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { AdminUserActions } from '../../components/domain/AdminUserActions';
 import { AdminDetailShell, Empty, Field, Panel, formatDate, formatUgx } from './AdminDetailShell';
@@ -20,7 +20,7 @@ export function AdminCustomerDetailPage() {
       .finally(() => setLoading(false));
   }, [id, reloadKey]);
 
-  if (loading) return <LoadingState label="Loading customer…" />;
+  if (loading) return <SkeletonRegion label="Loading"><SkeletonDetail /></SkeletonRegion>;
   if (error || !data) return <p className="p-8 text-sm text-brand-red">{error ?? 'Not found.'}</p>;
 
   const { user, requests, orders, disputes, addresses, totals } = data;

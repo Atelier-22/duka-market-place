@@ -6,7 +6,7 @@ import { Conversation, useConversations } from '../../hooks/useConversations';
 import { PresenceDot } from '../../components/domain/PresenceDot';
 import { MessageReceipt, tickStateFor } from '../../components/domain/MessageTicks';
 import { GlassCard } from '../../components/ui/GlassCard';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { Bone, SkeletonChatRows, SkeletonRegion } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 
@@ -54,7 +54,20 @@ export function ChatListPage() {
     );
   }, [conversations, search]);
 
-  if (loading) return <LoadingState label="Loading your chats…" />;
+  if (loading) {
+    return (
+      <SkeletonRegion label="Loading your chats" className="mx-auto max-w-2xl pb-16">
+        <h1 className="font-display text-2xl font-medium text-brand-green-deep">Chats</h1>
+        <p className="mt-1 text-sm text-brand-ink/50">
+          {user?.role === 'shopper'
+            ? 'Every customer you have a job with.'
+            : 'Every shopper working on your orders.'}
+        </p>
+        <Bone className="mt-5 h-11 w-full rounded-full" />
+        <div className="mt-5"><SkeletonChatRows count={5} /></div>
+      </SkeletonRegion>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl pb-16">

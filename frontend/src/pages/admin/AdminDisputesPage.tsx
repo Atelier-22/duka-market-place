@@ -3,7 +3,7 @@ import { api, apiErrorMessage } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { StatusBadge } from '../../components/ui/StatusBadge';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../components/ui/Toast';
 
@@ -31,7 +31,14 @@ export function AdminDisputesPage() {
     }
   }
 
-  if (loading) return <LoadingState />;
+  if (loading) {
+    return (
+      <SkeletonRegion label="Loading" className="pb-10">
+        <SkeletonHeading subtitle={false} />
+        <div className="mt-6"><SkeletonRows count={3} /></div>
+      </SkeletonRegion>
+    );
+  }
 
   return (
     <div className="pb-10">

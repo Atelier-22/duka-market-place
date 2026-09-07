@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeftRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
+import { useBrandTransition } from '../ui/BrandTransition';
 
 const HOME_FOR: Record<UserRole, string> = {
   customer: '/app',
@@ -22,6 +23,7 @@ const LABEL_FOR: Record<UserRole, string> = {
 export function AccountToggle() {
   const { user, linkedAccounts, switchAccount } = useAuth();
   const navigate = useNavigate();
+  const { play } = useBrandTransition();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,9 +34,15 @@ export function AccountToggle() {
   async function handleSwitch(accountId: string) {
     setError(null);
     setBusy(accountId);
+    const target = switchable.find((a) => a.id === accountId);
     try {
-      const role = await switchAccount(accountId);
-      navigate(HOME_FOR[role] ?? '/app');
+      await play({
+        label: target ? `Switching to ${LABEL_FOR[target.role]}` : 'Switching account',
+        task: async () => {
+          const role = await switchAccount(accountId);
+          navigate(HOME_FOR[role] ?? '/app');
+        },
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not switch account');
     } finally {

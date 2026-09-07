@@ -8,6 +8,8 @@ import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { Select } from '../../components/ui/Select';
+import { Bone, SkeletonRegion } from '../../components/ui/Skeleton';
+import { usePreferences } from '../../context/PreferencesContext';
 import { useToast } from '../../components/ui/Toast';
 
 const STEPS = ['What', 'Details', 'Where', 'Budget', 'Delivery', 'Review'];
@@ -22,17 +24,20 @@ const SOURCING_OPTIONS: { value: SourcingType; label: string; icon: LucideIcon; 
 export function CreateRequestPage() {
   const navigate = useNavigate();
   const { push } = useToast();
+  const { preferences } = usePreferences();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
+  const [addressesLoading, setAddressesLoading] = useState(true);
 
   const [title, setTitle] = useState('');
 
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('1');
 
-  const [sourcingType, setSourcingType] = useState<SourcingType>('shopper_choice');
+  const [sourcingType, setSourcingType] = useState<SourcingType>((preferences.default_sourcing as SourcingType) || 'shopper_choice');
   const [locationId, setLocationId] = useState('');
   const [socialSellerUrl, setSocialSellerUrl] = useState('');
 
@@ -42,7 +47,15 @@ export function CreateRequestPage() {
   const [addressId, setAddressId] = useState('');
   const [newAddressLine, setNewAddressLine] = useState('');
   const [addingAddress, setAddingAddress] = useState(false);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(preferences.delivery_instructions ?? '');
+  const [notesTouched, setNotesTouched] = useState(false);
+
+  // Standing delivery instructions arrive after mount on a fresh device; adopt
+  // them unless the customer has already started typing their own.
+  useEffect(() => {
+    if (!notesTouched && !notes && preferences.delivery_instructions) setNotes(preferences.delivery_instructions);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preferences.delivery_instructions]);
 
   const locationsByCity = useMemo(() => {
     const groups = new Map<string, Location[]>();
@@ -52,20 +65,26 @@ export function CreateRequestPage() {
       if (existing) existing.push(l);
       else groups.set(city, [l]);
     }
+    // The customer's own town first, then Kampala, then the rest.
+    const home = preferences.default_city;
     return [...groups.entries()].sort(([a], [b]) =>
-      a === 'Kampala' ? -1 : b === 'Kampala' ? 1 : a.localeCompare(b)
+      a === home ? -1 : b === home ? 1 : a === 'Kampala' ? -1 : b === 'Kampala' ? 1 : a.localeCompare(b)
     );
-  }, [locations]);
+  }, [locations, preferences.default_city]);
 
   const selectedLocation = locations.find((l) => l.id === locationId);
 
   useEffect(() => {
-    api.get('/locations').then((res) => setLocations(res.data.locations));
-    api.get('/addresses').then((res) => {
-      setAddresses(res.data.addresses);
-      const def = res.data.addresses.find((a: Address) => a.is_default);
-      if (def) setAddressId(def.id);
-    });
+    api.get('/locations')
+      .then((res) => setLocations(res.data.locations))
+      .finally(() => setLocationsLoading(false));
+    api.get('/addresses')
+      .then((res) => {
+        setAddresses(res.data.addresses);
+        const def = res.data.addresses.find((a: Address) => a.is_default);
+        if (def) setAddressId(def.id);
+      })
+      .finally(() => setAddressesLoading(false));
   }, []);
 
   const blockedReason: string | null = [
@@ -224,9 +243,10 @@ export function CreateRequestPage() {
                 <Select
                   label={`Choose a location${locationsByCity.length ? ` (${locations.length} across ${locationsByCity.length} towns)` : ''}`}
                   value={locationId}
+                  disabled={locationsLoading}
                   onChange={(e) => setLocationId(e.target.value)}
                 >
-                  <option value="">Select a location…</option>
+                  <option value="">{locationsLoading ? 'Loading places…' : 'Select a location…'}</option>
 
                   {locationsByCity.map(([city, inCity]) => (
                     <optgroup key={city} label={city}>
@@ -269,6 +289,12 @@ export function CreateRequestPage() {
         {step === 4 && (
           <div className="flex flex-col gap-4">
             <p className="font-display text-lg font-medium text-brand-green-deep">Where should we deliver it?</p>
+            {addressesLoading && (
+              <SkeletonRegion label="Loading your addresses" className="flex flex-col gap-2">
+                <Bone className="h-12 w-full rounded-xl" />
+                <Bone className="h-12 w-full rounded-xl" />
+              </SkeletonRegion>
+            )}
             {addresses.length > 0 && (
               <div className="flex flex-col gap-2">
                 {addresses.map((a) => (
@@ -295,7 +321,7 @@ export function CreateRequestPage() {
             <Textarea
               label="Notes for your shopper (optional)"
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => { setNotesTouched(true); setNotes(e.target.value); }}
               placeholder="Landmark, which gate to use, a good time to deliver…"
               hint="Your shopper sees this. Only what they need to find you and deliver — your phone number is already shared with them, so there is no need to repeat it here."
             />

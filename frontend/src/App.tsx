@@ -6,6 +6,7 @@ import { ShopperLayout } from './components/layout/ShopperLayout';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { Canonical } from './components/seo/Canonical';
+import { BrandTransitionProvider } from './components/ui/BrandTransition';
 
 import { LandingPage } from './pages/public/LandingPage';
 import { HowItWorksPage } from './pages/public/HowItWorksPage';
@@ -25,7 +26,6 @@ import { RequestDetailsPage } from './pages/customer/RequestDetailsPage';
 import { ActiveOrderPage } from './pages/customer/ActiveOrderPage';
 import { OrdersListPage } from './pages/customer/OrderHistoryPage';
 import { PaymentsPage } from './pages/customer/PaymentsPage';
-import { CustomerProfilePage } from './pages/customer/CustomerProfilePage';
 import { AccountPage } from './pages/customer/AccountPage';
 
 import { ShopperDashboardPage } from './pages/shopper/ShopperDashboardPage';
@@ -37,7 +37,7 @@ import { ShopperVerificationPage } from './pages/shopper/ShopperVerificationPage
 import { ShopperProfilePage } from './pages/shopper/ShopperProfilePage';
 
 import { OrderMessagesPage } from './pages/shared/OrderMessagesPage';
-import { SettingsPage } from './pages/shared/SettingsPage';
+import { SettingsPage } from './pages/shared/settings/SettingsPage';
 import { ChatListPage } from './pages/shared/ChatListPage';
 
 import { AdminOverviewPage } from './pages/admin/AdminOverviewPage';
@@ -60,6 +60,7 @@ import { AdminGodViewPage } from './pages/admin/AdminGodViewPage';
 export default function App() {
   return (
     <ToastProvider>
+      <BrandTransitionProvider>
       <Canonical />
       <Routes>
 
@@ -88,9 +89,9 @@ export default function App() {
             <Route path="/app/orders/:id" element={<ActiveOrderPage />} />
             <Route path="/app/orders/:id/messages" element={<OrderMessagesPage />} />
             <Route path="/app/payments" element={<PaymentsPage />} />
-            <Route path="/app/profile" element={<CustomerProfilePage />} />
+            <Route path="/app/profile" element={<Navigate to="/app/settings/personal" replace />} />
             <Route path="/app/messages" element={<ChatListPage />} />
-            <Route path="/app/settings" element={<SettingsPage />} />
+            <Route path="/app/settings/:section?" element={<SettingsPage />} />
           </Route>
         </Route>
 
@@ -105,7 +106,7 @@ export default function App() {
             <Route path="/shopper/verification" element={<ShopperVerificationPage />} />
             <Route path="/shopper/profile" element={<ShopperProfilePage />} />
             <Route path="/shopper/messages" element={<ChatListPage />} />
-            <Route path="/shopper/settings" element={<SettingsPage />} />
+            <Route path="/shopper/settings/:section?" element={<SettingsPage />} />
           </Route>
         </Route>
 
@@ -129,12 +130,13 @@ export default function App() {
             <Route path="/admin/god-view" element={<AdminGodViewPage />} />
             <Route path="/admin/fees" element={<AdminFeesPage />} />
 
-            <Route path="/admin/settings" element={<SettingsPage />} />
+            <Route path="/admin/settings/:section?" element={<SettingsPage />} />
           </Route>
         </Route>
 
         <Route path="*" element={<LandingPage />} />
       </Routes>
+      </BrandTransitionProvider>
     </ToastProvider>
   );
 }

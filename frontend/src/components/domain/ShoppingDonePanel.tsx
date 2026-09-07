@@ -103,7 +103,7 @@ export function ShoppingDonePanel({
           />
           <div className="flex flex-wrap gap-2">
             <GlassButton disabled={busy} onClick={() => submit(true)}>
-              <Truck size={16} strokeWidth={2} /> Done shopping — deliver now
+              <Truck size={16} strokeWidth={2} /> Set off now — start the customer's countdown
             </GlassButton>
             <GlassButton variant="secondary" disabled={busy} onClick={() => setMode('defer')}>
               <Clock size={16} strokeWidth={2} /> Deliver later

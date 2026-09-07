@@ -29,22 +29,51 @@ function assertParticipant(order: { customer_id: string; shopper_id: string }, u
 export async function getById(req: Request, res: Response) {
   const order = await loadOrderOrThrow(req.params.id);
   assertParticipant(order, req.user!.id, req.user!.role);
-  const history = await getOrderStatusHistory(order.id);
-  const items = await query('SELECT * FROM order_items WHERE order_id = $1 ORDER BY created_at', [order.id]);
 
-  const shopper = order.shopper_id
-    ? await queryOne(
-        `SELECT u.id, u.full_name, u.avatar_url, u.phone,
-                sp.verification_status, sp.rating_avg, sp.rating_count,
-                sp.completed_jobs, sp.operating_area
-           FROM users u
-           LEFT JOIN shopper_profiles sp ON sp.user_id = u.id
-          WHERE u.id = $1`,
-        [order.shopper_id]
-      )
-    : null;
+  // Independent look-ups; run them together so the page is not paying for six round trips.
+  const [history, items, shopper, customerDelivery, offer, myRating] = await Promise.all([
+    getOrderStatusHistory(order.id),
+    query('SELECT * FROM order_items WHERE order_id = $1 ORDER BY created_at', [order.id]),
+    order.shopper_id
+      ? queryOne(
+          `SELECT u.id, u.full_name, u.avatar_url, u.phone,
+                  sp.verification_status, sp.rating_avg, sp.rating_count,
+                  sp.completed_jobs, sp.operating_area
+             FROM users u
+             LEFT JOIN shopper_profiles sp ON sp.user_id = u.id
+            WHERE u.id = $1`,
+          [order.shopper_id]
+        )
+      : Promise.resolve(null),
+    // What the customer asked for at the door.
+    queryOne<{ delivery_instructions: string | null; delivery_handoff: string; delivery_contact: string }>(
+      `SELECT delivery_instructions, delivery_handoff, delivery_contact
+         FROM user_preferences WHERE user_id = $1`,
+      [order.customer_id]
+    ),
+    // The accepted offer's estimate travels with the order.
+    order.accepted_offer_id
+      ? queryOne<{ estimated_minutes: number | null; message: string | null }>(
+          'SELECT estimated_minutes, message FROM shopper_offers WHERE id = $1',
+          [order.accepted_offer_id]
+        )
+      : Promise.resolve(null),
+    // Whether the caller already rated, so the prompt does not come back after a reload.
+    queryOne<{ stars: number }>(
+      'SELECT stars FROM ratings WHERE order_id = $1 AND rated_by = $2',
+      [order.id, req.user!.id]
+    ),
+  ]);
 
-  res.json({ order, history, items, shopper });
+  res.json({
+    order,
+    history,
+    items,
+    shopper,
+    delivery: customerDelivery ?? null,
+    offer: offer ?? null,
+    myRating: myRating?.stars ?? null,
+  });
 }
 
 export async function listMine(req: Request, res: Response) {

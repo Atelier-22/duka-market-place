@@ -9,7 +9,7 @@ import { VoiceNotePlayer } from '../../components/domain/VoiceNotePlayer';
 import { PresenceDot, lastSeenLabel } from '../../components/domain/PresenceDot';
 import { ShopperProfileModal } from '../../components/domain/ShopperProfileModal';
 import { tickStateFor } from '../../components/domain/MessageTicks';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { Bone, BoneCircle, BoneText, SkeletonRegion } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
 import { useAuth } from '../../context/AuthContext';
 import { useConversations } from '../../hooks/useConversations';
@@ -63,8 +63,9 @@ export function OrderMessagesPage() {
 
   const recorder = useVoiceRecorder(holdRecording);
 
-  const { conversations } = useConversations();
+  const { conversations, loading: conversationsLoading } = useConversations();
   const conversation = conversations.find((c) => c.order_id === id);
+  const headerLoading = !conversation && conversationsLoading;
 
   const base = user?.role === 'shopper' ? '/shopper' : '/app';
 
@@ -211,7 +212,9 @@ export function OrderMessagesPage() {
             aria-label={viewableShopperId ? `View ${name}'s profile` : undefined}
             className="relative shrink-0"
           >
-            {conversation?.other_avatar ? (
+            {headerLoading ? (
+              <BoneCircle size={40} />
+            ) : conversation?.other_avatar ? (
               <img src={conversation.other_avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
             ) : (
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-green text-xs font-semibold text-white">
@@ -221,14 +224,18 @@ export function OrderMessagesPage() {
             <PresenceDot online={presence.online} variant="avatar" />
           </button>
           <div className="min-w-0 flex-1">
-            <button
-              type="button"
-              onClick={() => viewableShopperId && setShowProfile(true)}
-              disabled={!viewableShopperId}
-              className="block max-w-full truncate text-left font-semibold text-brand-green-deep disabled:cursor-default"
-            >
-              {name}
-            </button>
+            {headerLoading ? (
+              <BoneText w="w-32" className="h-4" />
+            ) : (
+              <button
+                type="button"
+                onClick={() => viewableShopperId && setShowProfile(true)}
+                disabled={!viewableShopperId}
+                className="block max-w-full truncate text-left font-semibold text-brand-green-deep disabled:cursor-default"
+              >
+                {name}
+              </button>
+            )}
             <p className="flex items-center gap-1.5 truncate text-xs">
               <PresenceDot online={presence.online} />
               <span className={presence.online ? 'font-medium text-brand-green-fresh' : 'text-brand-ink/45'}>
@@ -258,7 +265,12 @@ export function OrderMessagesPage() {
 
         <div className="flex-1 overflow-y-auto pr-1 pt-3">
           {loading ? (
-            <LoadingState />
+            <SkeletonRegion label="Loading messages" className="flex flex-col gap-3">
+              <Bone className="h-12 w-3/5 self-start rounded-2xl" />
+              <Bone className="h-16 w-4/5 self-end rounded-2xl" />
+              <Bone className="h-12 w-1/2 self-start rounded-2xl" />
+              <Bone className="h-12 w-3/5 self-end rounded-2xl" />
+            </SkeletonRegion>
           ) : visible.length === 0 ? (
             <p className="py-16 text-center text-sm text-brand-ink/40">No messages yet — say hello.</p>
           ) : (

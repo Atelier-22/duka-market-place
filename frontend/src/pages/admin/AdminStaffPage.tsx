@@ -6,7 +6,7 @@ import { api, apiErrorMessage } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
 import { formatDate } from './AdminDetailShell';
 
@@ -107,8 +107,15 @@ export function AdminStaffPage() {
     act(s.id, `${s.full_name} removed`, () => api.delete(`/admin/staff/${s.id}`));
   }
 
-  if (loading && !data) return <LoadingState label="Loading staff…" />;
-  if (!data) return null;
+  if (loading && !data) {
+    return (
+      <SkeletonRegion label="Loading" className="pb-10">
+        <SkeletonHeading subtitle={false} />
+        <div className="mt-6"><SkeletonStats count={2} /></div><div className="mt-6"><SkeletonTable rows={5} cols={5} /></div>
+      </SkeletonRegion>
+    );
+  }
+  if (!data) return <p className="py-16 text-center text-sm text-brand-ink/45">Could not load this page. Refresh to try again.</p>;
 
   const { staff, capacity, me } = data;
   const adminsFull = capacity.admins.remaining === 0;

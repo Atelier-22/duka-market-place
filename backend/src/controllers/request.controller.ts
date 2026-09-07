@@ -3,11 +3,12 @@ import { z } from 'zod';
 import { mediaUrl } from '../utils/validators';
 import {
   createRequest, addRequestItem, findRequestById, listRequestsForCustomer,
-  listOpenRequests, getRequestItems,
+  listOpenRequests, getRequestItems, updateRequestStatus,
 } from '../models/request.model';
 import { listOffersForRequest } from '../models/offer.model';
 import { notifyShoppersOfNewRequest } from '../services/notification.service';
 import { ApiError } from '../middleware/errorHandler';
+import { query, queryOne } from '../db/pool';
 import { hasOversight } from '../utils/roles';
 
 const createRequestSchema = z.object({
@@ -74,7 +75,34 @@ export async function getById(req: Request, res: Response) {
   const items = await getRequestItems(requestRow.id);
   const offers = await listOffersForRequest(requestRow.id);
 
-  res.json({ request: requestRow, items, offers });
+  // Once a shopper is chosen the pending offers are gone; hand back the order instead.
+  const order = requestRow.status === 'assigned'
+    ? await queryOne<{ id: string; status: string }>(
+        'SELECT id, status FROM orders WHERE request_id = $1 ORDER BY created_at DESC LIMIT 1',
+        [requestRow.id]
+      )
+    : null;
+
+  res.json({ request: requestRow, items, offers, order });
+}
+
+/** Customer withdraws a request that has not been assigned yet. */
+export async function cancel(req: Request, res: Response) {
+  const requestRow = await findRequestById(req.params.id);
+  if (!requestRow) throw new ApiError(404, 'Request not found');
+  if (requestRow.customer_id !== req.user!.id && !hasOversight(req.user!.role)) {
+    throw new ApiError(403, 'Not authorized to cancel this request');
+  }
+  if (requestRow.status !== 'open' && requestRow.status !== 'offer_received') {
+    throw new ApiError(409, 'This request already has a shopper — cancel the order instead');
+  }
+
+  await query(
+    `UPDATE shopper_offers SET status = 'declined' WHERE request_id = $1 AND status = 'pending'`,
+    [requestRow.id]
+  );
+  const updated = await updateRequestStatus(requestRow.id, 'cancelled');
+  res.json({ request: updated });
 }
 
 export async function listMine(req: Request, res: Response) {

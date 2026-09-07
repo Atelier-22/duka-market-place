@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Eye } from 'lucide-react';
 import { api } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
 import { formatDate, formatUgx } from './AdminDetailShell';
 
 function Stat({ label, value, to, tone = 'ink' }: {
@@ -30,8 +30,15 @@ export function AdminGodViewPage() {
     return () => clearInterval(t);
   }, []);
 
-  if (loading && !data) return <LoadingState label="Looking at everything…" />;
-  if (!data) return null;
+  if (loading && !data) {
+    return (
+      <SkeletonRegion label="Loading" className="pb-10">
+        <SkeletonHeading subtitle={false} />
+        <div className="mt-6"><SkeletonStats /></div><div className="mt-6"><SkeletonStats /></div>
+      </SkeletonRegion>
+    );
+  }
+  if (!data) return <p className="py-16 text-center text-sm text-brand-ink/45">Could not load this page. Refresh to try again.</p>;
 
   const { platform: p, staffActivity, capacity } = data;
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Ban, Scale } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonDetail, SkeletonRegion } from '../../components/ui/Skeleton';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
@@ -80,7 +80,7 @@ export function AdminOrderDetailPage() {
     }
   }
 
-  if (loading) return <LoadingState label="Loading order…" />;
+  if (loading) return <SkeletonRegion label="Loading"><SkeletonDetail /></SkeletonRegion>;
   if (error || !data) return <p className="p-8 text-sm text-brand-red">{error ?? 'Not found.'}</p>;
 
   const { order, history, items, evidence, receipts, messages, disputes, payments } = data;

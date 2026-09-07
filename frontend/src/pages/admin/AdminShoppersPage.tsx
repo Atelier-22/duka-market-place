@@ -3,14 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { StatusBadge } from '../../components/ui/StatusBadge';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonHeading, SkeletonRegion, SkeletonTable } from '../../components/ui/Skeleton';
 
 export function AdminShoppersPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => { api.get('/admin/shoppers').then((r) => setRows(r.data.shoppers)).finally(() => setLoading(false)); }, []);
-  if (loading) return <LoadingState />;
+  if (loading) {
+    return (
+      <SkeletonRegion label="Loading" className="pb-10">
+        <SkeletonHeading subtitle={false} />
+        <div className="mt-6"><SkeletonTable rows={7} cols={5} /></div>
+      </SkeletonRegion>
+    );
+  }
 
   return (
     <div className="pb-10">

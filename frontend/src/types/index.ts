@@ -105,7 +105,7 @@ export const ORDER_STEP_LABELS: Record<OrderStatus, string> = {
   shopping: 'Shopping',
   item_found: 'Item found',
   awaiting_customer_approval: 'Awaiting your approval',
-  purchased: 'Purchased',
+  purchased: 'Shopper is buying it',
   out_for_delivery: 'Out for delivery',
   delivered: 'Delivered',
   completed: 'Completed',

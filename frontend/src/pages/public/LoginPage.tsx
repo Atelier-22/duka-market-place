@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { DukaLockup } from '../../components/ui/DukaLogo';
@@ -7,10 +7,13 @@ import { Input } from '../../components/ui/Input';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 import { useAuth } from '../../context/AuthContext';
 import { homeFor } from '../../utils/home';
+import { useBrandTransition } from '../../components/ui/BrandTransition';
 
 export function LoginPage() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
+  const { play } = useBrandTransition();
+  const transitioning = useRef(false);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -20,17 +23,25 @@ export function LoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    transitioning.current = true;
     try {
-      await login(identifier.trim(), password);
-      navigate('/app');
+      const me = await login(identifier.trim(), password);
+      const first = me.fullName.split(' ')[0];
+      await play({
+        label: first ? `Welcome back, ${first}` : 'Welcome back',
+        task: () => navigate(homeFor(me.role), { replace: true }),
+      });
     } catch (err) {
+      transitioning.current = false;
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setLoading(false);
     }
   }
 
-  if (user) navigate(homeFor(user.role));
+  useEffect(() => {
+    if (user && !transitioning.current) navigate(homeFor(user.role), { replace: true });
+  }, [user, navigate]);
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md items-center px-4 py-16">

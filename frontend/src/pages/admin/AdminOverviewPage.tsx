@@ -7,7 +7,7 @@ import {
 import { api } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { DashboardStat } from '../../components/domain/DashboardStat';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonHeading, SkeletonRegion, SkeletonRequestCard, SkeletonRows, SkeletonStats, SkeletonTable } from '../../components/ui/Skeleton';
 
 interface ActivityItem {
   type: string;
@@ -217,7 +217,14 @@ export function AdminOverviewPage() {
     [presence]
   );
 
-  if (loading) return <LoadingState label="Loading the control centre…" />;
+  if (loading) {
+    return (
+      <SkeletonRegion label="Loading" className="pb-10">
+        <SkeletonHeading subtitle={false} />
+        <div className="mt-6"><SkeletonStats /></div><div className="mt-6"><SkeletonRows count={5} /></div>
+      </SkeletonRegion>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 pb-16">

@@ -3,7 +3,7 @@ import { CalendarDays, Coins, Trophy, TrendingUp } from 'lucide-react';
 import { api } from '../../services/api';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { DashboardStat } from '../../components/domain/DashboardStat';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { SkeletonRegion, SkeletonRows, SkeletonStats } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 
 function formatUgx(n: number) {
@@ -24,7 +24,15 @@ export function ShopperEarningsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <LoadingState />;
+  if (loading) {
+    return (
+      <SkeletonRegion label="Loading your earnings" className="pb-10">
+        <h1 className="font-display text-2xl font-medium text-brand-green-deep">Earnings</h1>
+        <div className="mt-6"><SkeletonStats /></div>
+        <div className="mt-8"><SkeletonRows count={4} /></div>
+      </SkeletonRegion>
+    );
+  }
 
   return (
     <div className="pb-10">
