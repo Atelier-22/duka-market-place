@@ -131,11 +131,6 @@ export async function remove(req: Request, res: Response) {
     'UPDATE addresses SET deleted_at = now(), is_default = FALSE WHERE id = $1 AND user_id = $2',
     [existing.id, req.user!.id]
   );
-  await query(
-    'UPDATE users SET default_address_id = NULL WHERE id = $1 AND default_address_id = $2',
-    [req.user!.id, existing.id]
-  );
-
   if (existing.is_default) {
     await query(
       `UPDATE addresses SET is_default = TRUE
