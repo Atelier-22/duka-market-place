@@ -12,7 +12,8 @@
   position: relative;
   min-height: 100dvh;
   background: rgb(var(--brand-green-deep));
-  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .auth__home {

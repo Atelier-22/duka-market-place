@@ -1,25 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Camera, Image as ImageIcon, LogOut, Settings, X } from 'lucide-react';
-import { api, apiErrorMessage } from '../../services/api';
+import { ArrowLeftRight, Image as ImageIcon, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { DukaMark } from '../ui/DukaLogo';
 import { Avatar } from '../ui/Avatar';
+import { ImageLightbox } from '../ui/ImageLightbox';
 import { NotificationBell } from '../domain/NotificationBell';
-import { useToast } from '../ui/Toast';
 import { homeFor } from '../../utils/home';
 import { useSignOut } from '../../hooks/useSignOut';
 import { BRAND } from '../../config/brand';
 
 export function AppTopBar({ roleLabel }: { roleLabel: string }) {
-  const { user, refresh } = useAuth();
+  const { user, linkedAccounts } = useAuth();
   const signOut = useSignOut();
-  const { push } = useToast();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const cameraRef = useRef<HTMLInputElement>(null);
-  const libraryRef = useRef<HTMLInputElement>(null);
+  const [viewing, setViewing] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -30,7 +26,9 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
       if (buttonRef.current?.contains(t) || menuRef.current?.contains(t)) return;
       setOpen(false);
     }
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false); }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
     document.addEventListener('pointerdown', onDown);
     document.addEventListener('keydown', onKey);
     return () => {
@@ -39,42 +37,11 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
     };
   }, [open]);
 
-  async function upload(file: File) {
-    setBusy(true);
-    try {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await api.post('/uploads?folder=avatars', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      await api.patch('/settings/profile', { avatarUrl: res.data.url });
-      await refresh();
-      push('Profile picture updated', 'success');
-      setOpen(false);
-    } catch (err) {
-      push(apiErrorMessage(err), 'error');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function removePicture() {
-    setBusy(true);
-    try {
-      await api.patch('/settings/profile', { avatarUrl: null });
-      await refresh();
-      setOpen(false);
-    } catch (err) {
-      push(apiErrorMessage(err), 'error');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const home = homeFor(user?.role);
   const settings = `${home}/settings`;
+  const canSwitch = linkedAccounts.some((a) => a.role !== 'admin' && a.id !== user?.id);
   const item =
-    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-ink transition-colors hover:bg-surface-2 disabled:opacity-50';
+    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-ink transition-colors hover:bg-surface-2';
 
   return (
     <header
@@ -113,53 +80,66 @@ export function AppTopBar({ roleLabel }: { roleLabel: string }) {
               <div
                 ref={menuRef}
                 role="menu"
-                className="surface absolute right-0 z-40 mt-2 w-60 animate-scale-in origin-top-right rounded-xl p-1.5 shadow-raised"
+                className="surface absolute right-0 z-40 mt-2 w-56 animate-scale-in origin-top-right rounded-xl p-1.5 shadow-raised"
               >
                 <div className="px-3 pb-2 pt-2">
                   <p className="truncate text-sm font-semibold text-ink">{user?.fullName}</p>
                   <p className="truncate text-caption text-ink-3">{user?.phone}</p>
                 </div>
-                <p className="px-3 pb-1 text-label font-semibold uppercase text-ink-3">Profile picture</p>
-                <button type="button" role="menuitem" className={item} disabled={busy} onClick={() => libraryRef.current?.click()}>
-                  <ImageIcon size={16} strokeWidth={1.9} /> Choose from library
+                <div className="mb-1.5 border-t border-line" />
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={item}
+                  onClick={() => {
+                    setOpen(false);
+                    if (user?.avatarUrl) setViewing(true);
+                    else navigate(`${settings}/personal`);
+                  }}
+                >
+                  <ImageIcon size={16} strokeWidth={1.9} />
+                  {user?.avatarUrl ? 'View profile picture' : 'Add a profile picture'}
                 </button>
-                <button type="button" role="menuitem" className={item} disabled={busy} onClick={() => cameraRef.current?.click()}>
-                  <Camera size={16} strokeWidth={1.9} /> Take a photo
-                </button>
-                {user?.avatarUrl && (
-                  <button type="button" role="menuitem" className={item} disabled={busy} onClick={removePicture}>
-                    <X size={16} strokeWidth={1.9} /> Remove picture
-                  </button>
-                )}
-                {busy && <p className="px-3 py-2 text-caption text-ink-3">Working…</p>}
-                <div className="my-1.5 border-t border-line" />
-                <button type="button" role="menuitem" className={item} onClick={() => { setOpen(false); navigate(settings); }}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={item}
+                  onClick={() => { setOpen(false); navigate(settings); }}
+                >
                   <Settings size={16} strokeWidth={1.9} /> Settings
                 </button>
-                <button type="button" role="menuitem" className={`${item} text-brand-red hover:bg-danger-soft/40`} onClick={() => { setOpen(false); void signOut(); }}>
+                {canSwitch && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={item}
+                    onClick={() => { setOpen(false); navigate(`${settings}/switch-account`); }}
+                  >
+                    <ArrowLeftRight size={16} strokeWidth={1.9} /> Switch account
+                  </button>
+                )}
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={`${item} text-brand-red hover:bg-danger-soft/40`}
+                  onClick={() => { setOpen(false); void signOut(); }}
+                >
                   <LogOut size={16} strokeWidth={1.9} /> Log out
                 </button>
               </div>
             )}
-
-            <input
-              ref={libraryRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }}
-            />
-            <input
-              ref={cameraRef}
-              type="file"
-              accept="image/*"
-              capture="user"
-              className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }}
-            />
           </div>
         </div>
       </div>
+
+      {viewing && user?.avatarUrl && (
+        <ImageLightbox
+          src={user.avatarUrl}
+          alt={user.fullName}
+          caption={user.fullName}
+          onClose={() => setViewing(false)}
+        />
+      )}
     </header>
   );
 }

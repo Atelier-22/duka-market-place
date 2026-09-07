@@ -1,10 +1,11 @@
 import { CSSProperties, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LucideIcon, MoreHorizontal, X } from 'lucide-react';
+import { LogOut, LucideIcon, MoreHorizontal, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useConversations } from '../../hooks/useConversations';
 import { NavStyle, useNavStyle } from '../../hooks/useNavStyle';
 import { AccountToggle } from './AccountToggle';
+import { useSignOut } from '../../hooks/useSignOut';
 import {
   ACTIVE_RISE,
   ACTIVE_SCALE,
@@ -95,6 +96,7 @@ function Slot({ icon: Icon, label, count, isActive, ready, spring }: SlotProps) 
 
 export function MobileNav({ items }: MobileNavProps) {
   const { user } = useAuth();
+  const signOut = useSignOut();
   const { totalUnread } = useConversations(!!user);
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -295,6 +297,14 @@ export function MobileNav({ items }: MobileNavProps) {
             </div>
 
             <AccountToggle />
+
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); void signOut(); }}
+              className="mt-4 flex min-h-[52px] w-full items-center justify-center gap-3 rounded-2xl border border-line text-sm font-semibold text-brand-red transition-[background-color,transform] hover:bg-danger-soft/40 active:scale-[0.99]"
+            >
+              <LogOut size={18} strokeWidth={1.9} /> Log out
+            </button>
           </div>
         </div>
       )}

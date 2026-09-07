@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Bell, Camera, ChevronRight, Download, ExternalLink, Gift, LucideIcon, Mail, MapPin, MessageCircle,
+  Bell, Camera, ChevronRight, Download, ExternalLink, Gift, LogOut, LucideIcon, Mail, MapPin, MessageCircle,
   Mic, Monitor, Moon, Phone, ShieldCheck, Smartphone, Sun, Ticket, Wallet,
 } from 'lucide-react';
 import { api, apiErrorMessage } from '../../../services/api';
@@ -153,18 +153,35 @@ export function PersonalInfoPanel() {
           </Link>
         )}
       </Panel>
-      <AccountSwitchPanel />
     </>
   );
 }
 
-function AccountSwitchPanel() {
-  const { linkedAccounts } = useAuth();
-  if (linkedAccounts.filter((a) => a.role !== 'admin').length === 0) return null;
+export function SwitchAccountPanel({ onLogout }: { onLogout: () => void }) {
+  const { user, linkedAccounts } = useAuth();
+  const switchable = linkedAccounts.filter((a) => a.role !== 'admin' && a.id !== user?.id);
+
   return (
-    <Panel title="Switch account" description="You have more than one Duka account on this phone number.">
-      <div className="-mt-4">
-        <AccountToggle />
+    <Panel title="Switch account" description="Move between the Duka accounts registered to you.">
+      {switchable.length > 0 ? (
+        <div className="-mt-4">
+          <AccountToggle />
+        </div>
+      ) : (
+        <div className="rounded-xl2 border border-line bg-surface-2 p-4">
+          <p className="text-sm font-medium text-ink">You have one Duka account</p>
+          <p className="mt-1 text-small text-ink-2">
+            Signed in as {user?.fullName} ({user?.role === 'shopper' ? 'Shopper' : 'Customer'}) on {user?.phone}. Register a second account with a different phone number and it will appear here to switch between.
+          </p>
+        </div>
+      )}
+
+      <div className="mt-5 border-t border-line pt-5">
+        <p className="text-sm font-medium text-ink">Finished for now?</p>
+        <p className="mt-1 text-small text-ink-2">Signing out returns you to the public Duka site.</p>
+        <Button variant="secondary" size="sm" className="mt-3 text-brand-red" onClick={onLogout}>
+          <LogOut size={16} strokeWidth={1.9} /> Log out
+        </Button>
       </div>
     </Panel>
   );

@@ -6,6 +6,7 @@ import { ShopperLayout } from './components/layout/ShopperLayout';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { Canonical } from './components/seo/Canonical';
+import { ScrollRestoration } from './components/ui/ScrollRestoration';
 import { BrandTransitionProvider } from './components/ui/BrandTransition';
 
 import { LandingPage } from './pages/public/LandingPage';
@@ -25,7 +26,6 @@ import { RequestDetailsPage } from './pages/customer/RequestDetailsPage';
 import { ActiveOrderPage } from './pages/customer/ActiveOrderPage';
 import { OrdersListPage } from './pages/customer/OrderHistoryPage';
 import { PaymentsPage } from './pages/customer/PaymentsPage';
-import { AccountPage } from './pages/customer/AccountPage';
 
 import { ShopperDashboardPage } from './pages/shopper/ShopperDashboardPage';
 import { AvailableRequestsPage } from './pages/shopper/AvailableRequestsPage';
@@ -60,6 +60,7 @@ export default function App() {
   return (
     <ToastProvider>
       <BrandTransitionProvider>
+      <ScrollRestoration />
       <Canonical />
       <Routes>
 
@@ -83,7 +84,7 @@ export default function App() {
             <Route path="/app" element={<CustomerDashboardPage />} />
             <Route path="/app/requests/new" element={<CreateRequestPage />} />
             <Route path="/app/requests" element={<Navigate to="/app/orders?view=requests" replace />} />
-            <Route path="/app/account" element={<AccountPage />} />
+            <Route path="/app/account" element={<Navigate to="/app/settings" replace />} />
             <Route path="/app/requests/:id" element={<RequestDetailsPage />} />
             <Route path="/app/orders" element={<OrdersListPage />} />
             <Route path="/app/orders/:id" element={<ActiveOrderPage />} />

@@ -27,7 +27,9 @@ export function AppShell({ items, roleLabel, maxWidth = 'max-w-6xl' }: AppShellP
     return () => observer.disconnect();
   }, []);
 
-  const pageKey = location.pathname.split('/').slice(0, 4).join('/');
+  const segments = location.pathname.split('/');
+  const depth = segments.includes('settings') ? 3 : 4;
+  const pageKey = segments.slice(0, depth).join('/');
 
   return (
     <div className="min-h-screen bg-page" style={{ ['--duka-topbar' as string]: `${Math.round(barHeight)}px` }}>

@@ -60,6 +60,7 @@ interface PreferencesContextValue {
   loaded: boolean;
 
   update: (patch: Partial<Record<string, unknown>>) => Promise<void>;
+  reset: () => void;
   saving: boolean;
 }
 
@@ -136,8 +137,18 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     }
   }, [preferences]);
 
+  const reset = useCallback(() => {
+    setPreferences(DEFAULTS);
+    try { sessionStorage.removeItem(LOCAL_KEY); } catch {
+
+    }
+    try { localStorage.removeItem(LOCAL_KEY); } catch {
+
+    }
+  }, []);
+
   return (
-    <PreferencesContext.Provider value={{ preferences, loaded, update, saving }}>
+    <PreferencesContext.Provider value={{ preferences, loaded, update, reset, saving }}>
       {children}
     </PreferencesContext.Provider>
   );

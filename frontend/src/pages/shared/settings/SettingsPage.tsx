@@ -1,8 +1,8 @@
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  Bell, ChevronRight, CircleHelp, CreditCard, Gift, LogOut, LucideIcon, MapPin,
-  Search, ShieldCheck, SlidersHorizontal, Truck, User,
+  Bell, ChevronRight, CircleHelp, CreditCard, Gift, LogOut, LucideIcon, MapPin, Package,
+  Search, ShieldCheck, SlidersHorizontal, Truck, User, Wallet,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { UserRole } from '../../../types';
@@ -17,7 +17,7 @@ import {
   DeliveryPreferencesPanel, DevicesPanel, HelpCenterPanel, LanguagePanel, LocationPanel,
   OrderNotificationsPanel, PaymentMethodsPanel, PermissionsPanel, PersonalInfoPanel, PointsPanel,
   PrivacyPanel, PromotionNotificationsPanel, RecommendationsPanel, SecurityNotificationsPanel,
-  SecurityPanel, ShoppingPreferencesPanel, WalletPanel,
+  SecurityPanel, ShoppingPreferencesPanel, SwitchAccountPanel, WalletPanel,
 } from './SettingsPanels';
 
 type Role = UserRole;
@@ -47,6 +47,7 @@ const GROUPS: Group[] = [
     items: [
       { id: 'personal', label: 'Personal information', description: 'Name, phone, email and photo', keywords: 'profile name phone email avatar picture photo switch account' },
       { id: 'security', label: 'Password & security', description: 'Change your password', keywords: 'password login sign in credentials' },
+      { id: 'switch-account', label: 'Switch account & log out', description: 'Move between your accounts, or sign out', keywords: 'switch account change role log out sign out logout customer shopper' },
     ],
   },
   {
@@ -116,6 +117,8 @@ const LEGAL = [
   { label: 'Privacy Policy', to: '/privacy' },
 ];
 
+const scrollMemory = new Map<string, number>();
+
 function allowed(roles: Role[] | undefined, role: Role): boolean {
   if (!roles) return true;
   if (role === 'super_admin') return roles.includes('admin');
@@ -158,9 +161,31 @@ export function SettingsPage() {
     if (!isMobile && !current && items.length > 0) navigate(`${base}/${items[0].id}`, { replace: true });
   }, [isMobile, current, items, base, navigate]);
 
+  const activeKey = useRef('index');
+
   useEffect(() => {
-    if (isMobile && current) window.scrollTo({ top: 0 });
-  }, [isMobile, current]);
+    function remember() {
+      scrollMemory.set(activeKey.current, window.scrollY);
+    }
+    window.addEventListener('scroll', remember, { passive: true });
+    return () => window.removeEventListener('scroll', remember);
+  }, []);
+
+  useLayoutEffect(() => {
+    const key = current?.id ?? 'index';
+    activeKey.current = key;
+    const target = scrollMemory.get(key) ?? 0;
+    window.scrollTo(0, target);
+    if (target === 0) return;
+    let frames = 0;
+    let id = 0;
+    const settle = () => {
+      window.scrollTo(0, target);
+      if (++frames < 3) id = requestAnimationFrame(settle);
+    };
+    id = requestAnimationFrame(settle);
+    return () => cancelAnimationFrame(id);
+  }, [current?.id]);
 
   const matches = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -174,6 +199,18 @@ export function SettingsPage() {
 
   const searching = search.trim().length > 0;
   const showIndex = isMobile ? !current : true;
+
+  const shortcuts = role === 'shopper'
+    ? [
+        { to: '/shopper/orders', label: 'My jobs', icon: Package },
+        { to: '/shopper/earnings', label: 'Earnings', icon: Wallet },
+      ]
+    : role === 'customer'
+      ? [
+          { to: '/app/orders', label: 'Orders', icon: Package },
+          { to: '/app/payments', label: 'Payments', icon: CreditCard },
+        ]
+      : [];
 
   return (
     <div className="mx-auto max-w-5xl pb-16">
@@ -193,6 +230,21 @@ export function SettingsPage() {
 
       {isMobile && current && (
         <PageHeader back={base} backLabel="Settings" title={current.label} subtitle={groupLabel(current.group, role)} />
+      )}
+
+      {!searching && showIndex && shortcuts.length > 0 && (
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          {shortcuts.map((sc) => (
+            <Link
+              key={sc.to}
+              to={sc.to}
+              className="surface flex min-h-[56px] items-center justify-center gap-2.5 rounded-2xl px-4 text-sm font-semibold text-brand-green-deep shadow-card transition-[border-color,transform,box-shadow] hover:border-line-strong hover:shadow-raised active:scale-[0.99]"
+            >
+              <sc.icon size={18} strokeWidth={1.9} className="text-brand-green" />
+              {sc.label}
+            </Link>
+          ))}
+        </div>
       )}
 
       {searching && (
@@ -321,6 +373,7 @@ function PanelFor({ id, onLogout }: { id: string; onLogout: () => void }): React
   switch (id) {
     case 'personal': return <PersonalInfoPanel />;
     case 'security': return <SecurityPanel />;
+    case 'switch-account': return <SwitchAccountPanel onLogout={onLogout} />;
     case 'addresses': return <AddressesPanel />;
     case 'location': return <LocationPanel />;
     case 'payment-methods': return <PaymentMethodsPanel />;

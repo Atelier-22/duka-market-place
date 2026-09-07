@@ -38,8 +38,8 @@ export function PaymentsPage() {
       <PageHeader
         title="Payments"
         subtitle="Every payment tied to your orders."
-        back="/app/account"
-        backLabel="Account"
+        back="/app/settings"
+        backLabel="Settings"
       />
 
       <Card className="mb-5 flex items-start gap-3">
