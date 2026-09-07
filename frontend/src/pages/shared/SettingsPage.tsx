@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Bell, ChevronLeft, ChevronRight, Globe, Home, LucideIcon, MapPin, Monitor, Moon, Palette,
-  Search, ShieldCheck, Sparkles, Sun, User,
+  Search, ShieldCheck, Sun, User,
 } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { Accent, Language, Theme, Tone, usePreferences } from '../../context/PreferencesContext';
+import { Accent, Language, Theme, usePreferences } from '../../context/PreferencesContext';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { GlassButton } from '../../components/ui/GlassButton';
 import { Input } from '../../components/ui/Input';
@@ -17,7 +17,7 @@ import { NAV_STYLES, NavStyle, useNavStyle } from '../../hooks/useNavStyle';
 import { setUnreadRemindersEnabled, unreadRemindersEnabled } from '../../hooks/useUnreadReminder';
 import { useToast } from '../../components/ui/Toast';
 
-type SectionId = 'personalization' | 'account' | 'addresses' | 'appearance' | 'general' | 'location' | 'notifications' | 'security';
+type SectionId = 'account' | 'addresses' | 'appearance' | 'general' | 'location' | 'notifications' | 'security';
 
 interface Section {
   id: SectionId;
@@ -28,7 +28,6 @@ interface Section {
 }
 
 const SECTIONS: Section[] = [
-  { id: 'personalization', label: 'Personalization', icon: Sparkles, keywords: 'style tone voice traits warm friendly professional candid efficient encouraging' },
   { id: 'account', label: 'Account', icon: User, keywords: 'email phone number profile picture avatar name photo' },
   { id: 'addresses', label: 'Saved addresses', icon: Home, keywords: 'address delivery home work place where deliver landmark town' },
   { id: 'appearance', label: 'Appearance', icon: Palette, keywords: 'theme dark light system colour color accent navigation nav bar tabs phone bottom' },
@@ -37,16 +36,6 @@ const SECTIONS: Section[] = [
   { id: 'notifications', label: 'Notifications', icon: Bell, keywords: 'alerts messages orders offers marketing email push toggle' },
   { id: 'security', label: 'Security and login', icon: ShieldCheck, keywords: 'password change sign in login credentials' },
 ];
-
-const TONES: { value: Tone; label: string; blurb: string }[] = [
-  { value: 'professional', label: 'Professional', blurb: 'Precise and businesslike' },
-  { value: 'friendly', label: 'Friendly', blurb: 'Warm and conversational' },
-  { value: 'candid', label: 'Candid', blurb: 'Direct, no sugar-coating' },
-  { value: 'efficient', label: 'Efficient', blurb: 'Short, straight to the point' },
-  { value: 'encouraging', label: 'Encouraging', blurb: 'Positive and supportive' },
-];
-
-const TRAITS = ['Warm', 'Enthusiastic', 'Detailed', 'Concise', 'Playful', 'Formal', 'Uses emojis', 'Plain language'];
 
 const THEMES: { value: Theme; label: string; icon: LucideIcon }[] = [
   { value: 'system', label: 'System', icon: Monitor },
@@ -177,7 +166,7 @@ export function SettingsPage() {
   const { push } = useToast();
 
   const [search, setSearch] = useState('');
-  const [active, setActive] = useState<SectionId>('personalization');
+  const [active, setActive] = useState<SectionId>('account');
 
   const [mobileSection, setMobileSection] = useState<SectionId | null>(null);
   const [isMobile, setIsMobile] = useState(
@@ -252,11 +241,6 @@ export function SettingsPage() {
     } finally {
       setSavingPassword(false);
     }
-  }
-
-  function toggleTrait(trait: string) {
-    const has = preferences.traits.includes(trait);
-    update({ traits: has ? preferences.traits.filter((t) => t !== trait) : [...preferences.traits, trait] });
   }
 
   return (
@@ -350,56 +334,6 @@ export function SettingsPage() {
             <GlassCard padding="lg" hover={false}>
               <p className="text-sm text-brand-ink/50">No settings match "{search}".</p>
             </GlassCard>
-          )}
-
-          {shown.some((s) => s.id === 'personalization') && (
-            <SectionCard
-              title="Personalization"
-              description="How Duka talks to you across the app — in confirmations, notifications and empty states."
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Style and tone</p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                {TONES.map((t) => (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => update({ tone: t.value })}
-                    className={[
-                      'rounded-xl2 border p-3 text-left transition-all',
-                      preferences.tone === t.value
-                        ? 'border-brand-green-fresh bg-brand-green-mist'
-                        : 'border-brand-green/15 hover:bg-brand-green-mist/50',
-                    ].join(' ')}
-                  >
-                    <p className="text-sm font-semibold text-brand-green-deep">{t.label}</p>
-                    <p className="mt-0.5 text-xs text-brand-ink/50">{t.blurb}</p>
-                  </button>
-                ))}
-              </div>
-
-              <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-brand-ink/40">Traits</p>
-              <p className="mt-1 text-xs text-brand-ink/45">Pick any that fit. These shape wording, not what the app does.</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {TRAITS.map((trait) => {
-                  const on = preferences.traits.includes(trait);
-                  return (
-                    <button
-                      key={trait}
-                      type="button"
-                      onClick={() => toggleTrait(trait)}
-                      className={[
-                        'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all',
-                        on
-                          ? 'border-brand-green-fresh bg-brand-green-fresh text-white'
-                          : 'border-brand-green/20 text-brand-ink/60 hover:bg-brand-green-mist',
-                      ].join(' ')}
-                    >
-                      {trait}
-                    </button>
-                  );
-                })}
-              </div>
-            </SectionCard>
           )}
 
           {shown.some((s) => s.id === 'account') && (
