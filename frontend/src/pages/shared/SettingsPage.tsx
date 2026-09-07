@@ -296,7 +296,9 @@ export function SettingsPage() {
                         : 'text-brand-ink/60 hover:bg-brand-green-mist/60',
                     ].join(' ')}
                   >
-                    <Icon size={17} strokeWidth={1.75} className="shrink-0" />
+                    <span className="flex w-5 shrink-0 items-center justify-center">
+                      <Icon size={19} strokeWidth={1.75} className="text-brand-ink/45" />
+                    </span>
                     {sec.label}
                   </button>
                 );
@@ -315,7 +317,9 @@ export function SettingsPage() {
                         onClick={() => setMobileSection(sec.id)}
                         className="flex items-center gap-3 border-b border-brand-green/8 px-2 py-4 text-left transition-colors last:border-0 active:bg-brand-green-mist/60"
                       >
-                        <Icon size={19} strokeWidth={1.75} className="shrink-0 text-brand-ink/45" />
+                        <span className="flex w-5 shrink-0 items-center justify-center">
+                          <Icon size={19} strokeWidth={1.75} className="text-brand-ink/45" />
+                        </span>
                         <span className="flex-1 text-[15px] font-medium text-brand-ink">{sec.label}</span>
                         <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-brand-ink/30" />
                       </button>
