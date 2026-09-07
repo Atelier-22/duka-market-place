@@ -14,6 +14,10 @@ import { AboutPage } from './pages/public/AboutPage';
 import { FaqPage } from './pages/public/FaqPage';
 import { LoginPage } from './pages/public/LoginPage';
 import { RegisterPage } from './pages/public/RegisterPage';
+import { PrivacyPolicyPage } from './pages/public/PrivacyPolicyPage';
+import { TermsPage } from './pages/public/TermsPage';
+import { RefundPolicyPage } from './pages/public/RefundPolicyPage';
+import { CookiePolicyPage } from './pages/public/CookiePolicyPage';
 
 import { CustomerDashboardPage } from './pages/customer/CustomerDashboardPage';
 import { CreateRequestPage } from './pages/customer/CreateRequestPage';
@@ -65,6 +69,10 @@ export default function App() {
           <Route path="/become-a-shopper" element={<BecomeShopperPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/help" element={<FaqPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/refunds" element={<RefundPolicyPage />} />
+          <Route path="/cookies" element={<CookiePolicyPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
         </Route>
