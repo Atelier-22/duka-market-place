@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /$
+Allow: /how-it-works
+Allow: /become-a-shopper
+Allow: /about
+Allow: /help
+Allow: /privacy
+Allow: /terms
+Allow: /refunds
+Allow: /cookies
+
+# Everything behind a login. A crawler cannot sign in, so these only ever
+# resolve to the app shell, and an indexed shell is a dead result.
+Disallow: /app
+Disallow: /shopper
+Disallow: /admin
+Disallow: /login
+Disallow: /register
+
+Sitemap: https://www.dukashoppers.com/sitemap.xml

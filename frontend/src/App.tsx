@@ -5,6 +5,7 @@ import { CustomerLayout } from './components/layout/CustomerLayout';
 import { ShopperLayout } from './components/layout/ShopperLayout';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { Canonical } from './components/seo/Canonical';
 
 import { LandingPage } from './pages/public/LandingPage';
 import { HowItWorksPage } from './pages/public/HowItWorksPage';
@@ -55,6 +56,7 @@ import { AdminGodViewPage } from './pages/admin/AdminGodViewPage';
 export default function App() {
   return (
     <ToastProvider>
+      <Canonical />
       <Routes>
         {/* Public marketing site */}
         <Route element={<PublicLayout />}>
