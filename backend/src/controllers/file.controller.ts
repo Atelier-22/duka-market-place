@@ -4,10 +4,13 @@ import { ApiError } from '../middleware/errorHandler';
 
 const CACHE_SECONDS = 60 * 60 * 24 * 365;
 
-export async function serve(req: Request, res: Response) {
+const PRIVATE_FOLDERS = ['verification', 'identity', 'id', 'kyc'];
+const SAFE_KEY = /^[a-z0-9_-]+\/[a-z0-9-]+\.[a-z0-9]{1,5}$/i;
 
+export async function serve(req: Request, res: Response) {
   const key = req.params[0];
-  if (!key) throw new ApiError(404, 'File not found');
+  if (!key || !SAFE_KEY.test(key)) throw new ApiError(404, 'File not found');
+  if (PRIVATE_FOLDERS.includes(key.split('/')[0].toLowerCase())) throw new ApiError(404, 'File not found');
 
   const file = await storageService.read(key);
   if (!file) throw new ApiError(404, 'File not found');
@@ -17,6 +20,8 @@ export async function serve(req: Request, res: Response) {
   res.setHeader('Accept-Ranges', 'bytes');
 
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Disposition', 'inline');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
 
   const range = req.headers.range;
   if (range) {

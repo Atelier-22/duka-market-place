@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { BRAND } from '../../config/brand';
 import { Clause, LegalDoc, Pending, PROSE_LINK } from '../../components/layout/LegalDoc';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 export function TermsPage() {
+  usePageMeta({ title: 'Terms & Conditions', description: 'The terms that apply when you use Duka to request items or shop for other people.' });
   return (
     <LegalDoc
       title="Terms & Conditions"

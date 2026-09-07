@@ -1,7 +1,9 @@
 import { BRAND } from '../../config/brand';
 import { Clause, LegalDoc, Pending } from '../../components/layout/LegalDoc';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 export function RefundPolicyPage() {
+  usePageMeta({ title: 'Refund Policy', description: 'When and how Duka refunds an order that went wrong.' });
   return (
     <LegalDoc
       title="Refund Policy"

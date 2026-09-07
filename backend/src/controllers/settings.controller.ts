@@ -89,12 +89,12 @@ export async function updateProfile(req: Request, res: Response) {
          full_name  = COALESCE($2, full_name),
          email      = COALESCE($3, email),
          phone      = COALESCE($4, phone),
-         avatar_url = $5,
+         avatar_url = CASE WHEN $6::boolean THEN $5 ELSE avatar_url END,
          updated_at = now()
        WHERE id = $1 RETURNING *`,
       [
         req.user!.id, input.fullName, input.email, input.phone,
-        input.avatarUrl === undefined ? null : input.avatarUrl,
+        input.avatarUrl ?? null, input.avatarUrl !== undefined,
       ]
     );
     if (!updated) throw new ApiError(404, 'Staff account not found');

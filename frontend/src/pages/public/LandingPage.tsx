@@ -21,6 +21,8 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { HeroCarousel } from '../../components/domain/HeroCarousel';
 import { BRAND } from '../../config/brand';
+import { usePageMeta } from '../../hooks/usePageMeta';
+import { StructuredData } from '../../components/seo/StructuredData';
 
 const HOW_IT_WORKS = [
   { icon: MessageCircle, title: 'Tell us what you need', body: 'A product, a market, a shop, even a TikTok seller — describe it in your own words.' },
@@ -72,10 +74,45 @@ function SectionIntro({ eyebrow, title, body }: { eyebrow: string; title: string
   );
 }
 
+const ORGANIZATION = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: BRAND.name,
+  url: 'https://www.dukashoppers.com/',
+  logo: 'https://www.dukashoppers.com/duka-mark.png',
+  email: BRAND.supportEmail,
+  telephone: BRAND.supportPhone,
+  areaServed: { '@type': 'Country', name: BRAND.country },
+  contactPoint: [{
+    '@type': 'ContactPoint',
+    contactType: 'customer support',
+    telephone: BRAND.supportPhone,
+    email: BRAND.supportEmail,
+    availableLanguage: ['en', 'sw', 'lg'],
+  }],
+};
+
+const WEBSITE = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: BRAND.name,
+  url: 'https://www.dukashoppers.com/',
+  description: 'A verified local shopper finds what you need and delivers it to your door.',
+  inLanguage: 'en',
+};
+
 export function LandingPage() {
+  usePageMeta({
+    title: 'Duka — If you want it, we find it.',
+    description: 'Tell us what you need. A verified local shopper in Uganda finds it at the market, shop or seller you name and brings it to your door.',
+  });
   const navigate = useNavigate();
 
   return (
+    <>
+      <StructuredData id="organization" data={ORGANIZATION} />
+      <StructuredData id="website" data={WEBSITE} />
+
     <div>
       <section className="mx-auto max-w-6xl px-4 pt-12 sm:px-6 lg:pt-20">
         <div className="grid animate-fade-up items-center gap-10 lg:grid-cols-2 lg:gap-16">
@@ -272,5 +309,6 @@ export function LandingPage() {
         </div>
       </section>
     </div>
+      </>
   );
 }

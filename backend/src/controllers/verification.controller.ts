@@ -4,6 +4,7 @@ import { query, queryOne } from '../db/pool';
 import { ApiError } from '../middleware/errorHandler';
 import { hasOversight } from '../utils/roles';
 import { storageService } from '../services/storage.service';
+import { contentMatchesDeclaredType } from '../utils/fileSignature';
 import { ocrService } from '../services/ocr.service';
 import {
   runAutomatedChecks,
@@ -21,9 +22,13 @@ export async function submit(req: Request, res: Response) {
   const file = (req as any).file as Express.Multer.File | undefined;
   if (!file) throw new ApiError(400, 'No document uploaded');
 
-  const mime = (file.mimetype ?? '').split(';')[0].trim().toLowerCase();
-  if (!ACCEPTED_IMAGE.includes(mime)) {
+  const declared = (file.mimetype ?? '').split(';')[0].trim().toLowerCase();
+  if (!ACCEPTED_IMAGE.includes(declared)) {
     throw new ApiError(400, 'Send a photo of the document — JPEG, PNG, WEBP or HEIC');
+  }
+  const mime = contentMatchesDeclaredType(file.buffer, declared);
+  if (!mime || !ACCEPTED_IMAGE.includes(mime)) {
+    throw new ApiError(400, 'That file is not a readable photo — take a fresh picture of the document');
   }
 
   const userId = req.user!.id;

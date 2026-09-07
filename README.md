@@ -70,6 +70,73 @@ beyond what's already in `backend/.env.example`.
    database (`UPDATE users SET role = 'admin' WHERE phone = '...';`) to see
    the admin panel at `/admin`.
 
+## 5. Deploy to production
+
+The frontend is a static Vite build (Vercel, with `frontend/vercel.json` providing the
+SPA rewrite, security headers and cache rules). The backend is a long-running Node
+process that needs Postgres.
+
+### Backend environment
+
+Every value below is required in production. The server refuses to start if a
+secret is missing, shorter than 32 characters, or still a placeholder.
+
+| Variable | Value |
+| --- | --- |
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Neon connection string with `sslmode=require` |
+| `JWT_ACCESS_SECRET` | 32+ random characters |
+| `JWT_REFRESH_SECRET` | 32+ random characters, different from the access secret |
+| `ID_HASH_SECRET` | 32+ random characters |
+| `CORS_ORIGIN` | `https://www.dukashoppers.com,https://dukashoppers.com` |
+| `PUBLIC_URL` | The public https address of the API, no trailing slash |
+| `TRUST_PROXY` | `true` when behind a platform load balancer (the default in production) |
+
+Generate a secret with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
+
+Optional: `STORAGE_DRIVER=r2` with the `R2_*` values for object storage,
+`OCR_DRIVER=claude` with `ANTHROPIC_API_KEY` for automatic ID reading.
+
+Build and start:
+
+```bash
+cd backend
+npm ci
+npm run build
+npm run db:migrations
+npm start
+```
+
+Health check for the platform: `GET /health` returns `{"status":"ok"}`.
+
+### Frontend environment
+
+| Variable | Value |
+| --- | --- |
+| `VITE_API_URL` | `https://<api host>/api` |
+
+Build command `npm run build`, output directory `dist`.
+
+### Domain
+
+Point `www.dukashoppers.com` at the frontend and redirect the bare domain to
+`www`. The canonical URLs, sitemap and robots file all use the `www` host.
+
+### Removing automated-test data
+
+Scripts that exercise the API against the live database leave accounts behind.
+Remove them, and any alerts they caused, with:
+
+```bash
+cd backend
+node scripts/purge-test-data.cjs          # dry run
+node scripts/purge-test-data.cjs --apply
+```
+
 ## Notes
 
 - Payments are cash-on-delivery / manually confirmed in this MVP — see

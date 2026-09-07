@@ -5,6 +5,9 @@ import { AppTopBar } from './AppTopBar';
 import { LocationPrompt } from '../domain/LocationPrompt';
 import { UnreadReminder } from '../domain/UnreadReminder';
 import { MobileNav, NavItem } from './MobileNav';
+import { usePageMeta } from '../../hooks/usePageMeta';
+import { Suspense } from 'react';
+import { SkeletonHeading, SkeletonRegion, SkeletonRows } from '../ui/Skeleton';
 
 interface AppShellProps {
   items: NavItem[];
@@ -13,6 +16,7 @@ interface AppShellProps {
 }
 
 export function AppShell({ items, roleLabel, maxWidth = 'max-w-6xl' }: AppShellProps) {
+  usePageMeta({ title: `${roleLabel} · Duka`, noindex: true });
   const location = useLocation();
   const barRef = useRef<HTMLDivElement>(null);
   const [barHeight, setBarHeight] = useState(56);
@@ -33,6 +37,7 @@ export function AppShell({ items, roleLabel, maxWidth = 'max-w-6xl' }: AppShellP
 
   return (
     <div className="min-h-screen bg-page" style={{ ['--duka-topbar' as string]: `${Math.round(barHeight)}px` }}>
+      <a href="#main" className="skip-link">Skip to content</a>
       <div ref={barRef}>
         <AppTopBar roleLabel={roleLabel} />
       </div>
@@ -46,9 +51,18 @@ export function AppShell({ items, roleLabel, maxWidth = 'max-w-6xl' }: AppShellP
           <AppSidebar items={items} />
         </div>
 
-        <main className="app-main min-w-0 flex-1">
+        <main id="main" className="app-main min-w-0 flex-1">
           <div key={pageKey} className="page-enter">
-            <Outlet />
+            <Suspense
+              fallback={(
+                <SkeletonRegion label="Loading page">
+                  <SkeletonHeading />
+                  <div className="mt-6"><SkeletonRows count={4} /></div>
+                </SkeletonRegion>
+              )}
+            >
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>

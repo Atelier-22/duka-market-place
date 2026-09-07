@@ -38,7 +38,7 @@ function zodMessage(err: ZodError): string {
   return 'Validation failed';
 }
 
-export function errorHandler(err: unknown, req: Request, res: Response, next: NextFunction) {
+export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
   if (err instanceof ZodError) {
     return res.status(400).json({ error: zodMessage(err), details: err.flatten() });
   }

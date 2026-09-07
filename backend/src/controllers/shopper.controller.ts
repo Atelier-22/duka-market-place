@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { mediaUrl } from '../utils/validators';
 import { query, queryOne } from '../db/pool';
 import { MAX_ACTIVE_JOBS, listActiveJobsForShopper } from '../models/order.model';
 import { onlineExpr } from '../services/presence.service';
@@ -51,10 +50,10 @@ export async function getEarnings(req: Request, res: Response) {
 const updateProfileSchema = z.object({
   bio: z.string().max(1000).optional(),
   operatingArea: z.string().max(150).optional(),
-  operatingLat: z.number().optional(),
-  operatingLng: z.number().optional(),
-  operatingRadiusKm: z.number().positive().optional(),
-  specialties: z.array(z.string()).optional(),
+  operatingLat: z.number().min(-90).max(90).optional(),
+  operatingLng: z.number().min(-180).max(180).optional(),
+  operatingRadiusKm: z.number().positive().max(500).optional(),
+  specialties: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
   isOnline: z.boolean().optional(),
 });
 

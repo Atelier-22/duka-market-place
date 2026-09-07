@@ -186,11 +186,7 @@ export async function destroyDocument(recordId: string): Promise<void> {
   if (!record || record.document_deleted_at) return;
 
   if (record.storage_key) {
-    try {
-      await storageService.delete(record.storage_key);
-    } catch {
-
-    }
+    await storageService.delete(record.storage_key).catch(() => undefined);
   }
 
   await query(

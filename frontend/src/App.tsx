@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { ToastProvider } from './components/ui/Toast';
 import { PublicLayout } from './components/layout/PublicLayout';
@@ -8,53 +9,56 @@ import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { Canonical } from './components/seo/Canonical';
 import { ScrollRestoration } from './components/ui/ScrollRestoration';
 import { BrandTransitionProvider } from './components/ui/BrandTransition';
+import { SkeletonAppShell } from './components/ui/Skeleton';
 
 import { LandingPage } from './pages/public/LandingPage';
-import { HowItWorksPage } from './pages/public/HowItWorksPage';
-import { BecomeShopperPage } from './pages/public/BecomeShopperPage';
-import { AboutPage } from './pages/public/AboutPage';
-import { FaqPage } from './pages/public/FaqPage';
-import { AuthPage } from './pages/public/AuthPage';
-import { PrivacyPolicyPage } from './pages/public/PrivacyPolicyPage';
-import { TermsPage } from './pages/public/TermsPage';
-import { RefundPolicyPage } from './pages/public/RefundPolicyPage';
-import { CookiePolicyPage } from './pages/public/CookiePolicyPage';
+import { NotFoundPage } from './pages/public/NotFoundPage';
 
-import { CustomerDashboardPage } from './pages/customer/CustomerDashboardPage';
-import { CreateRequestPage } from './pages/customer/CreateRequestPage';
-import { RequestDetailsPage } from './pages/customer/RequestDetailsPage';
-import { ActiveOrderPage } from './pages/customer/ActiveOrderPage';
-import { OrdersListPage } from './pages/customer/OrderHistoryPage';
-import { PaymentsPage } from './pages/customer/PaymentsPage';
+const HowItWorksPage = lazy(() => import('./pages/public/HowItWorksPage').then((m) => ({ default: m.HowItWorksPage })));
+const BecomeShopperPage = lazy(() => import('./pages/public/BecomeShopperPage').then((m) => ({ default: m.BecomeShopperPage })));
+const AboutPage = lazy(() => import('./pages/public/AboutPage').then((m) => ({ default: m.AboutPage })));
+const FaqPage = lazy(() => import('./pages/public/FaqPage').then((m) => ({ default: m.FaqPage })));
+const AuthPage = lazy(() => import('./pages/public/AuthPage').then((m) => ({ default: m.AuthPage })));
+const PrivacyPolicyPage = lazy(() => import('./pages/public/PrivacyPolicyPage').then((m) => ({ default: m.PrivacyPolicyPage })));
+const TermsPage = lazy(() => import('./pages/public/TermsPage').then((m) => ({ default: m.TermsPage })));
+const RefundPolicyPage = lazy(() => import('./pages/public/RefundPolicyPage').then((m) => ({ default: m.RefundPolicyPage })));
+const CookiePolicyPage = lazy(() => import('./pages/public/CookiePolicyPage').then((m) => ({ default: m.CookiePolicyPage })));
 
-import { ShopperDashboardPage } from './pages/shopper/ShopperDashboardPage';
-import { AvailableRequestsPage } from './pages/shopper/AvailableRequestsPage';
-import { ShopperOrdersPage } from './pages/shopper/ShopperOrdersPage';
-import { ShoppingWorkflowPage } from './pages/shopper/ShoppingWorkflowPage';
-import { ShopperEarningsPage } from './pages/shopper/ShopperEarningsPage';
-import { ShopperVerificationPage } from './pages/shopper/ShopperVerificationPage';
-import { ShopperProfilePage } from './pages/shopper/ShopperProfilePage';
+const CustomerDashboardPage = lazy(() => import('./pages/customer/CustomerDashboardPage').then((m) => ({ default: m.CustomerDashboardPage })));
+const CreateRequestPage = lazy(() => import('./pages/customer/CreateRequestPage').then((m) => ({ default: m.CreateRequestPage })));
+const RequestDetailsPage = lazy(() => import('./pages/customer/RequestDetailsPage').then((m) => ({ default: m.RequestDetailsPage })));
+const ActiveOrderPage = lazy(() => import('./pages/customer/ActiveOrderPage').then((m) => ({ default: m.ActiveOrderPage })));
+const OrdersListPage = lazy(() => import('./pages/customer/OrderHistoryPage').then((m) => ({ default: m.OrdersListPage })));
+const PaymentsPage = lazy(() => import('./pages/customer/PaymentsPage').then((m) => ({ default: m.PaymentsPage })));
 
-import { OrderMessagesPage } from './pages/shared/OrderMessagesPage';
-import { SettingsPage } from './pages/shared/settings/SettingsPage';
-import { ChatListPage } from './pages/shared/ChatListPage';
+const ShopperDashboardPage = lazy(() => import('./pages/shopper/ShopperDashboardPage').then((m) => ({ default: m.ShopperDashboardPage })));
+const AvailableRequestsPage = lazy(() => import('./pages/shopper/AvailableRequestsPage').then((m) => ({ default: m.AvailableRequestsPage })));
+const ShopperOrdersPage = lazy(() => import('./pages/shopper/ShopperOrdersPage').then((m) => ({ default: m.ShopperOrdersPage })));
+const ShoppingWorkflowPage = lazy(() => import('./pages/shopper/ShoppingWorkflowPage').then((m) => ({ default: m.ShoppingWorkflowPage })));
+const ShopperEarningsPage = lazy(() => import('./pages/shopper/ShopperEarningsPage').then((m) => ({ default: m.ShopperEarningsPage })));
+const ShopperVerificationPage = lazy(() => import('./pages/shopper/ShopperVerificationPage').then((m) => ({ default: m.ShopperVerificationPage })));
+const ShopperProfilePage = lazy(() => import('./pages/shopper/ShopperProfilePage').then((m) => ({ default: m.ShopperProfilePage })));
 
-import { AdminOverviewPage } from './pages/admin/AdminOverviewPage';
-import { AdminCustomerDetailPage } from './pages/admin/AdminCustomerDetailPage';
-import { AdminShopperDetailPage } from './pages/admin/AdminShopperDetailPage';
-import { AdminOrderDetailPage } from './pages/admin/AdminOrderDetailPage';
-import { AdminCustomersPage } from './pages/admin/AdminCustomersPage';
-import { AdminShoppersPage } from './pages/admin/AdminShoppersPage';
-import { AdminVerificationsPage } from './pages/admin/AdminVerificationsPage';
-import { AdminRequestsPage } from './pages/admin/AdminRequestsPage';
-import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
-import { AdminDisputesPage } from './pages/admin/AdminDisputesPage';
-import { AdminFeesPage } from './pages/admin/AdminFeesPage';
-import { AdminAnalyticsPage } from './pages/admin/AdminAnalyticsPage';
-import { AdminFinancePage } from './pages/admin/AdminFinancePage';
-import { AdminOpsPage } from './pages/admin/AdminOpsPage';
-import { AdminStaffPage } from './pages/admin/AdminStaffPage';
-import { AdminGodViewPage } from './pages/admin/AdminGodViewPage';
+const OrderMessagesPage = lazy(() => import('./pages/shared/OrderMessagesPage').then((m) => ({ default: m.OrderMessagesPage })));
+const SettingsPage = lazy(() => import('./pages/shared/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const ChatListPage = lazy(() => import('./pages/shared/ChatListPage').then((m) => ({ default: m.ChatListPage })));
+
+const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage').then((m) => ({ default: m.AdminOverviewPage })));
+const AdminCustomerDetailPage = lazy(() => import('./pages/admin/AdminCustomerDetailPage').then((m) => ({ default: m.AdminCustomerDetailPage })));
+const AdminShopperDetailPage = lazy(() => import('./pages/admin/AdminShopperDetailPage').then((m) => ({ default: m.AdminShopperDetailPage })));
+const AdminOrderDetailPage = lazy(() => import('./pages/admin/AdminOrderDetailPage').then((m) => ({ default: m.AdminOrderDetailPage })));
+const AdminCustomersPage = lazy(() => import('./pages/admin/AdminCustomersPage').then((m) => ({ default: m.AdminCustomersPage })));
+const AdminShoppersPage = lazy(() => import('./pages/admin/AdminShoppersPage').then((m) => ({ default: m.AdminShoppersPage })));
+const AdminVerificationsPage = lazy(() => import('./pages/admin/AdminVerificationsPage').then((m) => ({ default: m.AdminVerificationsPage })));
+const AdminRequestsPage = lazy(() => import('./pages/admin/AdminRequestsPage').then((m) => ({ default: m.AdminRequestsPage })));
+const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage').then((m) => ({ default: m.AdminOrdersPage })));
+const AdminDisputesPage = lazy(() => import('./pages/admin/AdminDisputesPage').then((m) => ({ default: m.AdminDisputesPage })));
+const AdminFeesPage = lazy(() => import('./pages/admin/AdminFeesPage').then((m) => ({ default: m.AdminFeesPage })));
+const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage').then((m) => ({ default: m.AdminAnalyticsPage })));
+const AdminFinancePage = lazy(() => import('./pages/admin/AdminFinancePage').then((m) => ({ default: m.AdminFinancePage })));
+const AdminOpsPage = lazy(() => import('./pages/admin/AdminOpsPage').then((m) => ({ default: m.AdminOpsPage })));
+const AdminStaffPage = lazy(() => import('./pages/admin/AdminStaffPage').then((m) => ({ default: m.AdminStaffPage })));
+const AdminGodViewPage = lazy(() => import('./pages/admin/AdminGodViewPage').then((m) => ({ default: m.AdminGodViewPage })));
 
 export default function App() {
   return (
@@ -62,6 +66,7 @@ export default function App() {
       <BrandTransitionProvider>
       <ScrollRestoration />
       <Canonical />
+      <Suspense fallback={<SkeletonAppShell />}>
       <Routes>
 
         <Route element={<PublicLayout />}>
@@ -74,6 +79,7 @@ export default function App() {
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/refunds" element={<RefundPolicyPage />} />
           <Route path="/cookies" element={<CookiePolicyPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
 
         <Route path="/login" element={<AuthPage mode="login" />} />
@@ -126,17 +132,14 @@ export default function App() {
             <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
             <Route path="/admin/finance" element={<AdminFinancePage />} />
             <Route path="/admin/operations" element={<AdminOpsPage />} />
-
             <Route path="/admin/staff" element={<AdminStaffPage />} />
             <Route path="/admin/god-view" element={<AdminGodViewPage />} />
             <Route path="/admin/fees" element={<AdminFeesPage />} />
-
             <Route path="/admin/settings/:section?" element={<SettingsPage />} />
           </Route>
         </Route>
-
-        <Route path="*" element={<LandingPage />} />
       </Routes>
+      </Suspense>
       </BrandTransitionProvider>
     </ToastProvider>
   );

@@ -1,9 +1,11 @@
 import { BRAND } from '../../config/brand';
 import { Clause, LegalDoc, Pending, PROSE_LINK } from '../../components/layout/LegalDoc';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 const UPDATED = '7 September 2026';
 
 export function PrivacyPolicyPage() {
+  usePageMeta({ title: 'Privacy Policy', description: 'What Duka collects, why, how long it is kept, and who can see it.' });
   return (
     <LegalDoc
       title="Privacy Policy"

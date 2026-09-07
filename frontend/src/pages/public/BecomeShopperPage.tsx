@@ -3,6 +3,7 @@ import { ArrowRight, Bell, Check, Clock, Coins, MapPin, ShoppingBag, Star } from
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { PROSE_LINK } from '../../components/layout/LegalDoc';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 const BENEFITS = [
   { icon: Clock, title: 'Flexible work', body: 'Go online when you want, offline when you don’t. No shifts, no minimums.' },
@@ -26,6 +27,7 @@ const REQUIREMENTS = [
 ];
 
 export function BecomeShopperPage() {
+  usePageMeta({ title: 'Become a shopper', description: 'Earn money shopping for people nearby. Verify your ID, pick the jobs you want, and get paid per delivery.' });
   const navigate = useNavigate();
 
   return (

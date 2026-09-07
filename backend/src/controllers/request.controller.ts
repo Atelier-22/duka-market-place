@@ -73,7 +73,10 @@ export async function getById(req: Request, res: Response) {
   }
 
   const items = await getRequestItems(requestRow.id);
-  const offers = await listOffersForRequest(requestRow.id);
+  const allOffers = await listOffersForRequest(requestRow.id);
+  const offers = isOwner || hasOversight(req.user!.role)
+    ? allOffers
+    : allOffers.filter((o) => o.shopper_id === req.user!.id);
 
   // Once a shopper is chosen the pending offers are gone; hand back the order instead.
   const order = requestRow.status === 'assigned'

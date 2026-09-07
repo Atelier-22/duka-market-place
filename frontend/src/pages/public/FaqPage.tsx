@@ -3,6 +3,8 @@ import { Minus, Plus } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { PROSE_LINK } from '../../components/layout/LegalDoc';
 import { BRAND } from '../../config/brand';
+import { usePageMeta } from '../../hooks/usePageMeta';
+import { StructuredData } from '../../components/seo/StructuredData';
 
 export const FAQS = [
   { category: 'Shopping', q: 'What can I ask a shopper to buy?', a: 'Almost anything sold in a physical market, shop, supermarket, or by a seller you found on social media — as long as it\u2019s legal to buy and deliver.' },
@@ -20,11 +22,25 @@ function slug(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 }
 
+const FAQ_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQS.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
+
 export function FaqPage() {
+  usePageMeta({ title: 'Help & FAQ', description: 'Answers about shopping, payments, delivery, refunds and shopper verification on Duka.' });
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const categories = Array.from(new Set(FAQS.map((f) => f.category)));
 
   return (
+    <>
+      <StructuredData id="faq" data={FAQ_SCHEMA} />
+
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
       <header className="max-w-2xl">
         <p className="text-label font-semibold uppercase text-ink-3">Help</p>
@@ -84,5 +100,6 @@ export function FaqPage() {
         </p>
       </footer>
     </div>
+      </>
   );
 }

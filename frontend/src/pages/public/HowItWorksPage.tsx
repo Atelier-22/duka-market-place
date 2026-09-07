@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Camera, Receipt, Wallet } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 const STEPS = [
   { n: 1, title: 'Tell us what you need', body: 'Describe the item, quantity, and any details that matter — size, colour, brand, quality.' },
@@ -20,6 +21,7 @@ const GUARANTEES = [
 ];
 
 export function HowItWorksPage() {
+  usePageMeta({ title: 'How it works', description: 'Seven steps from posting what you need to a verified local shopper delivering it, with the price shown at every step.' });
   const navigate = useNavigate();
 
   return (

@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { BRAND } from '../../config/brand';
 import { Clause, LegalDoc, PROSE_LINK } from '../../components/layout/LegalDoc';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 export function CookiePolicyPage() {
+  usePageMeta({ title: 'Cookie Policy', description: 'The cookies and browser storage Duka uses and what each one is for.' });
   return (
     <LegalDoc
       title="Cookies & Storage"

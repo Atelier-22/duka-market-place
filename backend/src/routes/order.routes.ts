@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as orderController from '../controllers/order.controller';
 import * as trackingController from '../controllers/tracking.controller';
 import { requireAuth, requireRole } from '../middleware/auth';
+import { limits } from '../middleware/rateLimit';
 import { asyncHandler } from '../middleware/errorHandler';
 
 const router = Router();
@@ -20,7 +21,7 @@ router.post('/:id/cancel', asyncHandler(orderController.cancel));
 
 router.get('/:id/tracking', asyncHandler(trackingController.getTracking));
 
-router.post('/:id/location', asyncHandler(trackingController.postPosition));
+router.post('/:id/location', limits.location, asyncHandler(trackingController.postPosition));
 router.post('/:id/shopping-done', requireRole('shopper'), asyncHandler(trackingController.markShoppingDone));
 
 export default router;

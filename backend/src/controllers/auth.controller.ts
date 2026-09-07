@@ -178,8 +178,20 @@ export async function refresh(req: Request, res: Response) {
     throw new ApiError(401, 'Invalid or expired refresh token');
   }
 
-  const accessToken = signAccessToken(payload.sub, payload.role, payload.linked ?? []);
-  res.json({ accessToken });
+  if (payload.kind === 'staff') {
+    const staff = await findStaffById(payload.sub);
+    if (!staff || !staff.is_active) throw new ApiError(401, 'Session no longer valid');
+    return res.json({ accessToken: signAccessToken(staff.id, staff.role, [], 'staff') });
+  }
+
+  const user = await findUserById(payload.sub);
+  if (!user || !user.is_active) throw new ApiError(401, 'Session no longer valid');
+
+  const linked = (await Promise.all((payload.linked ?? []).map(findUserById)))
+    .filter((r): r is UserRow => r !== null && r.is_active)
+    .map((r) => r.id);
+
+  res.json({ accessToken: signAccessToken(user.id, user.role, linked) });
 }
 
 export async function me(req: Request, res: Response) {
@@ -191,6 +203,7 @@ export async function me(req: Request, res: Response) {
 
   const user = await findUserById(req.user!.id);
   if (!user) throw new ApiError(404, 'User not found');
+  if (!user.is_active) throw new ApiError(401, 'This account has been deactivated');
 
   const linkedRows = (await Promise.all(req.user!.linked.map(findUserById))).filter(
     (r): r is UserRow => r !== null && r.is_active

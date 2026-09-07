@@ -2,6 +2,7 @@ import path from 'path';
 import { Request, Response } from 'express';
 import { storageService } from '../services/storage.service';
 import { ApiError } from '../middleware/errorHandler';
+import { contentMatchesDeclaredType } from '../utils/fileSignature';
 
 const ALLOWED: Record<string, string> = {
   'image/jpeg': '.jpg',
@@ -29,11 +30,15 @@ export async function upload(req: Request, res: Response) {
   const file = (req as any).file as Express.Multer.File | undefined;
   if (!file) throw new ApiError(400, 'No file uploaded');
 
-  const mime = baseMime(file.mimetype ?? '');
-  const extension = ALLOWED[mime];
-  if (!extension) {
+  const declared = baseMime(file.mimetype ?? '');
+  if (!ALLOWED[declared]) {
     throw new ApiError(400, 'That file type is not supported — send a photo, a voice note, or a PDF');
   }
+  const mime = contentMatchesDeclaredType(file.buffer, declared);
+  if (!mime || !ALLOWED[mime]) {
+    throw new ApiError(400, 'That file does not look like the type it claims to be');
+  }
+  const extension = ALLOWED[mime];
 
   const stem = path.basename(file.originalname ?? 'upload', path.extname(file.originalname ?? ''));
   const key = await storageService.save(file.buffer, `${stem || 'upload'}${extension}`, folderOf(req), {

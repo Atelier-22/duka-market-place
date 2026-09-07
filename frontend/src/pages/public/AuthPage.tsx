@@ -15,6 +15,7 @@ import { BRAND } from '../../config/brand';
 import { UserRole } from '../../types';
 import { homeFor } from '../../utils/home';
 import '../../styles/auth.css';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 export type AuthMode = 'login' | 'signup';
 type Phase = 'idle' | 'out' | 'trough' | 'in';
@@ -45,9 +46,13 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
     if (user && !leaving.current) navigate(homeFor(user.role), { replace: true });
   }, [user, navigate]);
 
-  useEffect(() => {
-    document.title = shown === 'login' ? `Sign in · ${BRAND.name}` : `Create account · ${BRAND.name}`;
-  }, [shown]);
+  usePageMeta({
+    title: shown === 'login' ? 'Sign in' : 'Create account',
+    description: shown === 'login'
+      ? 'Sign in to Duka to follow your orders, message your shopper and post new requests.'
+      : 'Create a Duka account to get things bought and delivered, or to earn as a local shopper.',
+    noindex: true,
+  });
 
   const switchTo = useCallback((next: AuthMode) => {
     if (next === shown || phase !== 'idle') return;
@@ -353,7 +358,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                     checked={consented}
                     onChange={(v) => {
                       setConsented(v);
-                      if (v) setFieldErrors((s) => { const { consent, ...rest } = s; return rest; });
+                      if (v) setFieldErrors((s) => { const { consent: _consent, ...rest } = s; return rest; });
                     }}
                     error={fieldErrors.consent}
                   >

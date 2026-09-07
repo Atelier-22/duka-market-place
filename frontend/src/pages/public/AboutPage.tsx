@@ -3,6 +3,7 @@ import { Coins, Eye, Store } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { PROSE_LINK } from '../../components/layout/LegalDoc';
 import { BRAND } from '../../config/brand';
+import { usePageMeta } from '../../hooks/usePageMeta';
 
 const PRINCIPLES = [
   { icon: Eye, title: 'Nothing hidden', body: 'The real photo, the real price, and every fee on its own line before anything is bought.' },
@@ -11,6 +12,7 @@ const PRINCIPLES = [
 ];
 
 export function AboutPage() {
+  usePageMeta({ title: 'About Duka', description: 'Duka exists so anyone can get what they need from local markets, shops and social sellers without leaving home.' });
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
       <header className="max-w-2xl">

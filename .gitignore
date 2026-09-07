@@ -1,4 +1,30 @@
-.deep-copilot/logs/
+# environment
+.env
+.env.*
+!.env.example
+
+# build output and dependencies
 node_modules/
 dist/
-.env
+build/
+coverage/
+
+# uploads, logs and dumps
+backend/uploads/
+uploads/
+*.log
+logs/
+*.sql.gz
+*.dump
+*.bak
+*.tmp
+
+# editors and operating systems
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# tooling
+.deep-copilot/

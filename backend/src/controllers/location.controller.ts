@@ -3,10 +3,10 @@ import { query } from '../db/pool';
 
 export async function list(req: Request, res: Response) {
   const city = typeof req.query.city === 'string' && req.query.city.trim()
-    ? req.query.city.trim()
+    ? req.query.city.trim().slice(0, 80)
     : undefined;
   const q = typeof req.query.q === 'string' && req.query.q.trim()
-    ? req.query.q.trim()
+    ? req.query.q.trim().slice(0, 80)
     : undefined;
 
   const conditions = ['is_active = TRUE'];
