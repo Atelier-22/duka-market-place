@@ -3,16 +3,14 @@ import 'dotenv/config';
 const nodeEnv = process.env.NODE_ENV ?? 'development';
 const isProduction = nodeEnv === 'production';
 
-const PLACEHOLDER = /change_me|changeme|example|placeholder|secret$/i;
+const PLACEHOLDER = /change_me|changeme|example|placeholder/i;
+const PRODUCTION_ORIGINS = ['https://www.dukashoppers.com', 'https://dukashoppers.com'];
+
+const warnings: string[] = [];
 
 function required(name: string, devFallback: string): string {
   const value = process.env[name];
-  if (value && value.trim()) {
-    if (isProduction && PLACEHOLDER.test(value) && value.length < 32) {
-      throw new Error(`${name} still holds a placeholder value. Set a real one before running in production.`);
-    }
-    return value;
-  }
+  if (value && value.trim()) return value;
   if (isProduction) {
     throw new Error(`Missing required environment variable: ${name}`);
   }
@@ -21,8 +19,11 @@ function required(name: string, devFallback: string): string {
 
 function secret(name: string, devFallback: string): string {
   const value = required(name, devFallback);
+  if (isProduction && PLACEHOLDER.test(value)) {
+    throw new Error(`${name} still holds a placeholder value. Set a real one before running in production.`);
+  }
   if (isProduction && value.length < 32) {
-    throw new Error(`${name} must be at least 32 characters in production.`);
+    warnings.push(`${name} is only ${value.length} characters. Use at least 32 random characters.`);
   }
   return value;
 }
@@ -34,9 +35,25 @@ function origins(raw: string | undefined): string[] {
     .filter(Boolean);
   if (list.length > 0) return list;
   if (isProduction) {
-    throw new Error('CORS_ORIGIN must list the production frontend origin, for example https://www.dukashoppers.com');
+    warnings.push(`CORS_ORIGIN is not set. Allowing ${PRODUCTION_ORIGINS.join(' and ')}.`);
+    return PRODUCTION_ORIGINS;
   }
   return ['http://localhost:5173'];
+}
+
+function publicUrl(port: number): string {
+  const explicit = (process.env.PUBLIC_URL ?? '').trim().replace(/\/+$/, '');
+  if (explicit) return explicit;
+  const render = (process.env.RENDER_EXTERNAL_URL ?? '').trim().replace(/\/+$/, '');
+  if (isProduction && render) {
+    warnings.push(`PUBLIC_URL is not set. Using the platform address ${render}. Set PUBLIC_URL to https://api.dukashoppers.com so upload links use your domain.`);
+    return render;
+  }
+  if (isProduction) {
+    warnings.push('PUBLIC_URL is not set. Using https://api.dukashoppers.com.');
+    return 'https://api.dukashoppers.com';
+  }
+  return `http://localhost:${port}`;
 }
 
 const port = Number(process.env.PORT ?? 4000);
@@ -69,21 +86,35 @@ export const env = {
     region: process.env.R2_REGION ?? 'auto',
   },
 
-  publicUrl: (process.env.PUBLIC_URL ?? (isProduction ? '' : `http://localhost:${port}`)).replace(/\/+$/, ''),
+  publicUrl: publicUrl(port),
 
   paymentDriver: (process.env.PAYMENT_DRIVER as 'manual' | 'mtn_momo' | 'airtel_money') ?? 'manual',
 
   ocrDriver: (process.env.OCR_DRIVER as 'manual' | 'claude') ?? 'manual',
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
 
-  idHashSecret: secret('ID_HASH_SECRET', 'dev_id_hash_secret_change_me'),
+  idHashSecret: (() => {
+    const value = (process.env.ID_HASH_SECRET ?? '').trim();
+    if (value && !PLACEHOLDER.test(value)) {
+      if (isProduction && value.length < 32) warnings.push('ID_HASH_SECRET is shorter than 32 characters.');
+      return value;
+    }
+    if (isProduction) {
+      warnings.push('ID_HASH_SECRET is not set. Set a dedicated 32+ character value; existing identity hashes keep working until you do.');
+      return '';
+    }
+    return 'dev_id_hash_secret_change_me';
+  })(),
 
   platformFeePercentage: Number(process.env.PLATFORM_FEE_PERCENTAGE ?? 10),
   defaultDeliveryFeeUgx: Number(process.env.DEFAULT_DELIVERY_FEE_UGX ?? 5000),
 
   trustProxy: process.env.TRUST_PROXY === 'false' ? false : isProduction,
+
+  startupWarnings: warnings,
 };
 
-if (isProduction && !env.publicUrl) {
-  throw new Error('PUBLIC_URL must be the public https address of this API in production, for example https://api.dukashoppers.com');
+for (const warning of warnings) {
+  // eslint-disable-next-line no-console
+  console.warn(`[config] ${warning}`);
 }
