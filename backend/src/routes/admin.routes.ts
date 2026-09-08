@@ -65,6 +65,7 @@ router.get('/knowledge/explain', asyncHandler(knowledge.explain));
 router.get('/knowledge/products', asyncHandler(intelligence.products));
 router.post('/knowledge/products', asyncHandler(intelligence.createProduct));
 router.get('/knowledge/products/:id', asyncHandler(intelligence.product));
+router.patch('/knowledge/products/:id', asyncHandler(intelligence.updateProduct));
 router.put('/knowledge/products/:id/specs', asyncHandler(intelligence.upsertSpec));
 router.delete('/knowledge/products/:id/specs/:key', asyncHandler(intelligence.deleteSpec));
 router.post('/knowledge/products/:id/specs/:key/reject', asyncHandler(intelligence.rejectSpec));

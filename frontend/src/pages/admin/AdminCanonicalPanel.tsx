@@ -63,7 +63,7 @@ export function CanonicalProductsTab() {
             {rows.map((p) => (
               <Tr key={p.id} onClick={() => setOpen(p.id)} className="cursor-pointer">
                 <Td className="font-medium">{p.display_name}<span className="block text-caption font-normal text-ink-3">Added by {p.created_by} · {formatDate(p.created_at)}</span></Td>
-                <Td>{categoryLabel(p.category)}</Td><Td numeric>{p.verified_specs}</Td><Td numeric>{p.pending_specs}</Td>
+                <Td>{categoryLabel(p.category)}<span className="block text-caption text-ink-3">{p.lifecycle_override ?? p.lifecycle}{p.released_on ? ` · ${String(p.released_on).slice(0, 4)}` : ''}</span></Td><Td numeric>{p.verified_specs}</Td><Td numeric>{p.pending_specs}</Td>
                 <Td numeric>{p.conflict_specs > 0 ? <Pill tone="danger">{p.conflict_specs}</Pill> : 0}</Td>
                 <Td numeric>{p.pending_corrections > 0 ? <Pill tone="warning">{p.pending_corrections}</Pill> : 0}</Td>
                 <Td>{p.research_status ?? '—'}</Td><Td numeric>{p.listing_count}</Td>
@@ -89,6 +89,7 @@ export function CanonicalProductDialog({ id, onClose }: { id: string; onClose: (
   const { push } = useToast();
   const [data, setData] = useState<any>(null);
   const [edit, setEdit] = useState<{ key: string; label: string; value: string; unit: string } | null>(null);
+  const [life, setLife] = useState<{ family: string; releasedOn: string; override: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => { api.get(`/admin/knowledge/products/${id}`).then((r) => setData(r.data)).catch((err) => { push(apiErrorMessage(err), 'error'); onClose(); }); }, [id, push, onClose]);
@@ -106,7 +107,12 @@ export function CanonicalProductDialog({ id, onClose }: { id: string; onClose: (
       {!data ? <SkeletonRegion label="Loading"><SkeletonTable rows={4} cols={3} /></SkeletonRegion> : (
         <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1 text-sm">
           <div className="flex flex-wrap items-center gap-2 text-caption text-ink-3">
-            <span>{categoryLabel(data.product.category)}</span><span>·</span><span>{data.product.listing_count} listing{data.product.listing_count === 1 ? '' : 's'}</span><span>·</span>
+            <span>{categoryLabel(data.product.category)}</span><span>·</span>
+            <span>{data.product.family ? `${data.product.family} family` : 'No family'}</span><span>·</span>
+            <span>{data.product.released_on ? `Released ${String(data.product.released_on).slice(0, 10)}` : 'No release date'}</span><span>·</span>
+            <Pill tone={(data.product.lifecycle_override ?? data.product.lifecycle) === 'current' ? 'success' : (data.product.lifecycle_override ?? data.product.lifecycle) === 'discontinued' ? 'neutral' : 'warning'}>{data.product.lifecycle_override ?? data.product.lifecycle}{data.product.lifecycle_override ? ' (admin)' : ''}</Pill>
+            <Button size="sm" variant="tertiary" onClick={() => setLife({ family: data.product.family ?? '', releasedOn: data.product.released_on ? String(data.product.released_on).slice(0, 10) : '', override: data.product.lifecycle_override ?? '' })}>Edit lifecycle</Button>
+            <span>·</span><span>{data.product.listing_count} listing{data.product.listing_count === 1 ? '' : 's'}</span><span>·</span>
             <span>{data.product.researched_at ? `Researched ${formatDate(data.product.researched_at)}` : 'Not researched'}</span>
             <Button size="sm" variant="secondary" disabled={busy || !data.researchConfigured} onClick={() => run('Research queued', () => api.post(`/admin/knowledge/products/${id}/research`))}>Research now</Button>
             {!data.researchConfigured && <span>(research is off: no TAVILY_API_KEY)</span>}
@@ -156,6 +162,19 @@ export function CanonicalProductDialog({ id, onClose }: { id: string; onClose: (
               ))}
             </ul>
           </div>
+
+          {life && (
+            <Card padding="md">
+              <p className="font-semibold text-ink">Family and lifecycle</p>
+              <p className="mt-1 text-caption text-ink-3">Generations are release years within a family; the newest ones count as current, the rest as no longer made. An override wins over the rule.</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                <Input label="Family" placeholder="iPhone" value={life.family} onChange={(e) => setLife((x) => x && ({ ...x, family: e.target.value }))} />
+                <Input label="Released on" type="date" value={life.releasedOn} onChange={(e) => setLife((x) => x && ({ ...x, releasedOn: e.target.value }))} />
+                <Select label="Override" value={life.override} onChange={(e) => setLife((x) => x && ({ ...x, override: e.target.value }))}><option value="">Follow the rule</option><option value="current">Current</option><option value="discontinued">No longer made</option></Select>
+              </div>
+              <div className="mt-2 flex justify-end gap-2"><Button size="sm" variant="tertiary" onClick={() => setLife(null)}>Cancel</Button><Button size="sm" disabled={busy} onClick={() => run('Lifecycle saved', async () => { await api.patch(`/admin/knowledge/products/${id}`, { family: life.family.trim() || null, releasedOn: life.releasedOn || null, lifecycleOverride: life.override || null }); setLife(null); })}>Save</Button></div>
+            </Card>
+          )}
 
           {edit && (
             <Card padding="md">

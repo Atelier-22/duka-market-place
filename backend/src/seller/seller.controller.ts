@@ -23,6 +23,7 @@ import {
 import { RangeKey, sellerDashboard, storeAnalytics, storeForecast } from './analytics';
 import { notifyFollowersOfNewProduct, notifySellerVerification } from './notify';
 import { emitProductEvent } from './events';
+import { lifecycleFor } from '../knowledge/lifecycle';
 
 interface SellerContext {
   user: UserRow;
@@ -186,6 +187,15 @@ export async function getProduct(req: Request, res: Response) {
   res.json({ product: { ...product, available: availableQuantity(product) }, images: images[product.id] ?? [], variations: variations[product.id] ?? [], events });
 }
 
+async function applyLifecycleRule(input: { brand?: string | null; model?: string | null; condition?: string }, existing: { brand: string | null; model: string | null; condition: string } | null) {
+  const brand = input.brand !== undefined ? input.brand : existing?.brand;
+  const model = input.model !== undefined ? input.model : existing?.model;
+  const condition = input.condition ?? existing?.condition ?? 'new';
+  if (condition !== 'new') return;
+  const known = await lifecycleFor(brand, model);
+  if (known?.lifecycle === 'discontinued') input.condition = 'used';
+}
+
 function assertCleanDetails(specifications?: { label: string; value: string }[], variations?: { sku?: string | null }[]) {
   if (specifications && specifications.length) {
     const seen = new Set<string>();
@@ -236,6 +246,7 @@ export async function createNewProduct(req: Request, res: Response) {
   assertCombos(input.variations);
   const { user, store } = await context(req, { requireStore: true, write: true });
   assertCleanDetails(input.specifications, input.variations);
+  await applyLifecycleRule(input, null);
   const product = await createProduct(store!.id, user.id, input as ProductInput);
   await refreshStoreCounters(store!.id);
   emitProductEvent('product.created', { productId: product.id, ownerId: user.id, storeId: store!.id });
@@ -252,6 +263,7 @@ export async function editProduct(req: Request, res: Response) {
   const prepared = withOptionPrices(input, input.priceUgx ?? Number(existing.price_ugx));
   assertCombos(prepared.variations);
   assertCleanDetails(prepared.specifications, prepared.variations);
+  await applyLifecycleRule(prepared, existing);
   const product = await updateProduct(existing.id, user.id, prepared as Partial<ProductInput>);
   emitProductEvent('product.updated', { productId: product.id, ownerId: user.id, storeId: existing.store_id });
   res.json({ product });

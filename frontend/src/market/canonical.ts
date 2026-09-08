@@ -3,9 +3,29 @@ import { api } from '../services/api';
 
 export interface CanonicalSpec { key: string; label: string; value: string; unit: string | null; confidence: number; status: 'verified' | 'pending' | 'conflict'; sourceCount: number; bestTier: number | null }
 
+export type Lifecycle = 'current' | 'discontinued' | 'unknown';
+
+export interface SearchHit { id: string; brand: string; model: string; family: string | null; displayName: string; category: string; kind: string | null; releasedOn: string | null; lifecycle: Lifecycle; specCount: number; listingCount: number }
+export interface SearchGroup { category: string; label: string; products: SearchHit[] }
+
+const searchCache = new Map<string, SearchGroup[]>();
+
+export async function searchCanonical(q: string): Promise<SearchGroup[]> {
+  const key = q.trim().toLowerCase();
+  if (key.length < 2) return [];
+  const hit = searchCache.get(key);
+  if (hit) return hit;
+  const r = await api.get(`/knowledge/search?q=${encodeURIComponent(key)}&limit=40`);
+  const groups = (r.data.groups ?? []) as SearchGroup[];
+  searchCache.set(key, groups);
+  return groups;
+}
+
+export const DISCONTINUED_NOTE = 'This model is no longer manufactured, so it is listed as Used.';
+
 export interface CanonicalLookup {
   known: boolean;
-  product: { id: string; brand: string; model: string; displayName: string; category: string; listingCount: number; researchedAt: string | null; specs: CanonicalSpec[] } | null;
+  product: { id: string; brand: string; model: string; displayName: string; category: string; listingCount: number; researchedAt: string | null; family: string | null; releasedOn: string | null; lifecycle: Lifecycle; specs: CanonicalSpec[] } | null;
   research: { status: string; specsFound?: number; finishedAt?: string | null; error?: string | null } | null;
   researchConfigured: boolean;
 }
@@ -25,6 +45,7 @@ export function useCanonicalProduct(brand: string, model: string, category: stri
   useEffect(() => {
     if (!enabled || b.length < 2 || m.length < 2) { setLookup(null); setState('idle'); return; }
     const mine = ++ticket.current;
+    setLookup(null);
     setState('loading');
     let polls = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;

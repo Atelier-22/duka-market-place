@@ -15,7 +15,7 @@ import { SkeletonHeading, SkeletonRegion, SkeletonRows } from '../../components/
 import { useToast } from '../../components/ui/Toast';
 import { categoryEntry } from '../../market/categories';
 import { Swatch, useProductKnowledge } from '../../market/knowledge';
-import { useCanonicalProduct } from '../../market/canonical';
+import { DISCONTINUED_NOTE, SearchGroup, SearchHit, searchCanonical, useCanonicalProduct } from '../../market/canonical';
 import { CategoryOptions } from '../../components/market/CategoryOptions';
 import { formatUgx } from '../../market/format';
 
@@ -63,6 +63,10 @@ export function SellerProductFormPage() {
   const [colours, setColours] = useState<Colour[]>([]);
   const [stock, setStock] = useState<Record<string, string>>({});
   const [customColour, setCustomColour] = useState<Colour>({ name: '', hex: '#2563EB' });
+  const [nameMatches, setNameMatches] = useState<SearchGroup[]>([]);
+  const [nameOpen, setNameOpen] = useState(false);
+  const [picked, setPicked] = useState<SearchHit | null>(null);
+  const nameTyped = useRef(false);
   const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('draft');
   const [flagged, setFlagged] = useState<string | null>(null);
   const [loading, setLoading] = useState(editing);
@@ -148,6 +152,41 @@ export function SellerProductFormPage() {
 
   const suggestedDetails = resolved.attributes.map((a) => a.name);
   const { lookup: canonical, state: canonicalState } = useCanonicalProduct(form.brand, form.model, form.category, form.subcategory, !loading);
+  const pickedStillApplies = picked !== null && picked.brand.toLowerCase() === form.brand.trim().toLowerCase() && picked.model.toLowerCase() === form.model.trim().toLowerCase();
+  const conditionLocked = canonical?.product?.lifecycle === 'discontinued' || (pickedStillApplies && picked?.lifecycle === 'discontinued');
+
+  useEffect(() => {
+    if (conditionLocked && form.condition === 'new') setForm((f) => ({ ...f, condition: 'used' }));
+  }, [conditionLocked, form.condition]);
+
+  useEffect(() => {
+    if (!nameTyped.current) return;
+    const q = form.name.trim();
+    if (q.length < 2) { setNameMatches([]); return; }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      searchCanonical(q).then((groups) => { if (!cancelled) { setNameMatches(groups); setNameOpen(groups.length > 0); } }).catch(() => { if (!cancelled) setNameMatches([]); });
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [form.name]);
+
+  function pickProduct(hit: SearchHit) {
+    nameTyped.current = false;
+    setPicked(hit);
+    setNameOpen(false);
+    setNameMatches([]);
+    versionTypeTouched.current = false;
+    setForm((f) => ({
+      ...f,
+      name: f.name.trim().length > hit.displayName.length ? f.name : hit.displayName,
+      category: hit.category,
+      subcategory: hit.kind ?? f.subcategory,
+      brand: hit.brand,
+      model: hit.model,
+      condition: hit.lifecycle === 'discontinued' ? 'used' : f.condition,
+    }));
+    setErrors((e) => { const { name: _n, ...rest } = e; return rest; });
+  }
   const canonicalSpecs = canonical?.product?.specs.filter((s) => s.status !== 'conflict' || s.confidence >= 0.6) ?? [];
   const specValueFor = (label: string) => specs.find((x) => x.label.trim().toLowerCase() === label.trim().toLowerCase())?.value ?? '';
   const applyCanonicalSpec = (label: string, value: string) => {
@@ -310,7 +349,24 @@ export function SellerProductFormPage() {
           <Card padding="lg">
             <h2 className="font-display text-h3 font-medium text-brand-green-deep">Basics</h2>
             <div className="mt-4 flex flex-col gap-4">
-              <Input label="Product name" placeholder="iPhone 17" value={form.name} onChange={(e) => set('name', e.target.value)} error={errors.name} maxLength={200} />
+              <div className="relative">
+                <Input label="Product name" placeholder="Start typing: Samsung, iPhone, MacBook, trousers…" value={form.name} onChange={(e) => { nameTyped.current = true; set('name', e.target.value); }} onFocus={() => { if (nameMatches.length) setNameOpen(true); }} onBlur={() => setTimeout(() => setNameOpen(false), 150)} onKeyDown={(e) => { if (e.key === 'Escape') setNameOpen(false); if (e.key === 'Enter' && nameOpen && nameMatches[0]?.products[0]) { e.preventDefault(); pickProduct(nameMatches[0].products[0]); } }} error={errors.name} maxLength={200} autoComplete="off" role="combobox" aria-expanded={nameOpen} aria-controls="product-name-matches" hint={picked && pickedStillApplies ? `Using Duka's record for the ${picked.displayName}.` : 'Pick a match to fill in the category, brand and model, or keep typing your own.'} />
+                {nameOpen && nameMatches.length > 0 && (
+                  <div id="product-name-matches" role="listbox" aria-label="Matching products" data-testid="product-name-matches" className="absolute left-0 right-0 z-30 mt-1 max-h-80 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-raised">
+                    {nameMatches.map((group) => (
+                      <div key={group.category}>
+                        <p className="px-3 pb-1 pt-2 text-caption font-semibold uppercase text-ink-3">{group.label}</p>
+                        {group.products.map((hit) => (
+                          <button key={hit.id} type="button" role="option" aria-selected={picked?.id === hit.id} onMouseDown={(e) => e.preventDefault()} onClick={() => pickProduct(hit)} className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-surface-2">
+                            <span className="min-w-0"><span className="block truncate font-medium">{hit.displayName}</span><span className="block text-caption text-ink-3">{[hit.kind, hit.releasedOn ? hit.releasedOn.slice(0, 4) : null, hit.specCount ? `${hit.specCount} details` : null].filter(Boolean).join(' · ')}</span></span>
+                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${hit.lifecycle === 'current' ? 'bg-brand-green-mist text-brand-green-deep' : hit.lifecycle === 'discontinued' ? 'bg-surface-2 text-ink-3' : 'bg-surface-2 text-ink-3'}`}>{hit.lifecycle === 'current' ? 'Current' : hit.lifecycle === 'discontinued' ? 'No longer made' : 'Seller-listed'}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Textarea label="Description" placeholder="What it is, what is in the box, condition, warranty…" value={form.description} onChange={(e) => set('description', e.target.value)} rows={5} maxLength={5000} hint="At least 20 characters to publish." />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Select label="Category" value={form.category} onChange={(e) => changeCategory(e.target.value)} hint="Pick the closest one. Buyers browse by it.">
@@ -332,7 +388,7 @@ export function SellerProductFormPage() {
                   <datalist id={`brands-${entry.key}`}>{resolved.brands.map((b) => <option key={b} value={b} />)}</datalist>
                 </div>
                 <Input label="Model (optional)" placeholder="A3102" value={form.model} onChange={(e) => set('model', e.target.value)} maxLength={80} hint={form.brand.trim() && form.model.trim() ? undefined : 'Give the brand and model and Duka looks up what it knows.'} />
-                <Select label="Condition" value={form.condition} onChange={(e) => set('condition', e.target.value)}>
+                <Select label="Condition" value={form.condition} onChange={(e) => set('condition', e.target.value)} disabled={conditionLocked} hint={conditionLocked ? DISCONTINUED_NOTE : undefined} data-testid="condition-select">
                   <option value="new">Brand new</option><option value="used">Used</option><option value="refurbished">Refurbished</option>
                 </Select>
                 <Input label="SKU (optional)" placeholder="Your own code" value={form.sku} onChange={(e) => set('sku', e.target.value)} maxLength={64} />

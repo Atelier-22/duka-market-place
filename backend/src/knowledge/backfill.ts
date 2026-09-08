@@ -1,10 +1,13 @@
 import { pool, query } from '../db/pool';
 import { observeProduct } from './learn';
 import { seedKnowledge } from './seed';
+import { seedCanonicalCatalogue } from './lifecycle';
 
 async function main() {
   const counts = await seedKnowledge();
   console.log(`knowledge base: ${counts.kinds} kinds, ${counts.attributes} attributes, ${counts.options} options, ${counts.brands} brands`);
+  const catalogue = await seedCanonicalCatalogue();
+  console.log(`catalogue: ${catalogue} new canonical products`);
   const products = await query<{ id: string; name: string }>(`SELECT id, name FROM seller_products WHERE status = 'published' ORDER BY published_at`);
   let observations = 0;
   for (const p of products) {

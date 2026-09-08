@@ -6,6 +6,7 @@ import { seedKnowledgeIfEmpty } from './seed';
 import { applySellerSpecs, findOrCreateCanonical, linkListing, refreshListingCount } from './canonical';
 import { enqueueResearch, runResearch } from './research';
 import { findKind } from './knowledge.model';
+import { invalidateSearchIndex, seedCanonicalCatalogueIfEmpty } from './lifecycle';
 
 let queue: Promise<void> = Promise.resolve();
 
@@ -36,6 +37,7 @@ async function linkToCanonical(productId: string, requestedBy: string) {
   const canonical = await findOrCreateCanonical({ brand: listing.brand, model: listing.model, category: listing.category, kindId: kind?.id ?? null, createdBy: 'seller' });
   if (!canonical) return;
   await linkListing(productId, canonical.id);
+  invalidateSearchIndex();
   const job = await enqueueResearch(canonical, requestedBy);
   if (job.status === 'queued') scheduleResearch(job.id);
 }
@@ -52,5 +54,5 @@ export function registerKnowledge() {
     const row = await queryOne<{ canonical_product_id: string | null }>(`SELECT canonical_product_id FROM seller_products WHERE id = $1`, [productId]);
     if (row?.canonical_product_id) await refreshListingCount(row.canonical_product_id);
   }));
-  seedKnowledgeIfEmpty().catch((err) => console.error('[knowledge] seed failed', err));
+  seedKnowledgeIfEmpty().then(() => seedCanonicalCatalogueIfEmpty()).catch((err) => console.error('[knowledge] seed failed', err));
 }

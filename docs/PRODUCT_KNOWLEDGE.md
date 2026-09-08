@@ -85,6 +85,14 @@ Publishing never waits for any of this. The seller form asks `GET /api/knowledge
 
 Admins manage this under Product intelligence → Products and Corrections: provenance per spec with source links, conflicts with the competing values, approve or reject corrections, add or edit specs (which locks them), and re-run research. The overview shows the most corrected fields and categories as a data-quality signal.
 
+## Search-as-you-type and lifecycle
+
+Migration `023_canonical_lifecycle.sql` adds `family`, `released_on`, `lifecycle`, `lifecycle_override` and `aliases` to canonical products. `backend/src/knowledge/canonicalCatalogue.ts` seeds real product lines with release dates (iPhone 11 to 17, iPad, MacBook Air and Pro M1 to M4, Galaxy S20 to S25, A and Z series, Galaxy Tab and Book, Samsung Crystal UHD and QLED TVs, Pixel 6 to 10, Tecno, Infinix, Redmi, PlayStation, Xbox, Switch, and Toyota, Honda, Nissan and Subaru generations). The seed is idempotent and never overwrites admin edits.
+
+`GET /api/knowledge/search?q=` serves the Product name typeahead from an in-memory index (rebuilt at most once a minute and on every change). Every token must prefix-match a word of brand, family, model, kind or alias. Results rank exact words first, then current before discontinued, then newest release first, and come back grouped by category, so "Samsung" spans phones, laptops and TVs while "iPhone" lists every generation. Unknown text returns nothing and the form behaves exactly as before; the existing background research is still triggered by brand and model, never by keystrokes.
+
+Lifecycle is computed per brand, family and category: distinct release years are ranked newest first, the newest N count as current and the rest as discontinued. N is `CANONICAL_CURRENT_GENERATIONS` (default 2) with per-category rules in `CURRENT_GENERATIONS_BY_CATEGORY`: cars, motorcycles and bicycles keep one current generation because a vehicle generation lasts years; phones, computers, TVs, gaming, cameras and appliances keep two. Products without a release date are `unknown`, and an admin override always wins. When a listing's brand and model resolve to a discontinued product, the form sets Condition to Used with the note "This model is no longer manufactured, so it is listed as Used", disables the field, and the server coerces `new` to `used` on create and edit so the rule holds for API callers too. Refurbished stays allowed. Price is untouched.
+
 ## Limitations
 
 - Categories themselves are still a static list; new top-level categories are a code change. Kinds under them are fully data-driven.

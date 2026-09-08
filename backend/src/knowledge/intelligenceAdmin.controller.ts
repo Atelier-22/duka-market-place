@@ -7,6 +7,7 @@ import { alternativesFor, approveCorrections, findOrCreateCanonical, rejectCorre
 import { enqueueResearch, extractSpecs, researchConfigured } from './research';
 import { scheduleResearch } from './index';
 import { slugify } from './normalize';
+import { invalidateSearchIndex, recomputeFamily } from './lifecycle';
 
 const pageSchema = z.object({ limit: z.coerce.number().int().min(1).max(200).optional().default(50), offset: z.coerce.number().int().min(0).optional().default(0) });
 
@@ -138,4 +139,30 @@ export async function dataQuality(_req: Request, res: Response) {
 export async function extractPreview(req: Request, res: Response) {
   const { text, category } = z.object({ text: z.string().min(1).max(5000), category: z.enum(STORE_CATEGORIES) }).parse(req.query);
   res.json({ specs: extractSpecs(text, category) });
+}
+
+export async function updateProduct(req: Request, res: Response) {
+  const { id } = z.object({ id: z.string().uuid() }).parse(req.params);
+  const body = z.object({
+    family: z.string().trim().max(80).nullable().optional(),
+    releasedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+    lifecycleOverride: z.enum(['current', 'discontinued']).nullable().optional(),
+  }).parse(req.body ?? {});
+  const before = await queryOne<any>(`SELECT * FROM canonical_products WHERE id = $1`, [id]);
+  if (!before) throw new ApiError(404, 'Product not found');
+  await query(
+    `UPDATE canonical_products SET
+       family = CASE WHEN $2::boolean THEN $3 ELSE family END,
+       family_slug = CASE WHEN $2::boolean THEN $4 ELSE family_slug END,
+       released_on = CASE WHEN $5::boolean THEN $6::date ELSE released_on END,
+       lifecycle_override = CASE WHEN $7::boolean THEN $8 ELSE lifecycle_override END,
+       updated_at = now()
+     WHERE id = $1`,
+    [id, body.family !== undefined, body.family ?? null, body.family ? slugify(body.family) : null, body.releasedOn !== undefined, body.releasedOn ?? null, body.lifecycleOverride !== undefined, body.lifecycleOverride ?? null]
+  );
+  await recomputeFamily(before.brand_slug, before.family_slug);
+  const after = await queryOne<any>(`SELECT * FROM canonical_products WHERE id = $1`, [id]);
+  if (after.family_slug !== before.family_slug) await recomputeFamily(after.brand_slug, after.family_slug);
+  invalidateSearchIndex();
+  res.json({ product: await queryOne(`SELECT * FROM canonical_products WHERE id = $1`, [id]) });
 }
