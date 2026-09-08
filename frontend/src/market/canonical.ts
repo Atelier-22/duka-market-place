@@ -7,7 +7,9 @@ export type Lifecycle = 'current' | 'discontinued' | 'unknown';
 
 export interface SearchHit { id: string; brand: string; model: string; family: string | null; displayName: string; category: string; kind: string | null; releasedOn: string | null; lifecycle: Lifecycle; specCount: number; colourCount: number; listingCount: number }
 export interface CanonicalVariants { colours: { name: string; hex: string | null }[]; storage: string[]; sizes: string[] }
-export interface SearchGroup { category: string; label: string; products: SearchHit[] }
+export interface KindHit { type: 'kind'; id: string; name: string; category: string; versionType: string | null }
+export interface BrandHit { type: 'brand'; brand: string; category: string; kinds: string[] }
+export interface SearchGroup { category: string; label: string; products: SearchHit[]; kinds: KindHit[]; brands: BrandHit[] }
 
 const searchCache = new Map<string, SearchGroup[]>();
 

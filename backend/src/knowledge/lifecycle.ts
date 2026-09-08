@@ -1,6 +1,5 @@
 import { query, queryOne } from '../db/pool';
 import { CANONICAL_CATALOGUE, CURRENT_GENERATIONS_BY_CATEGORY, DEFAULT_CURRENT_GENERATIONS } from './canonicalCatalogue';
-import { findKind } from './knowledge.model';
 import { normalizeValue, slugify } from './normalize';
 import { CANONICAL_DETAILS } from './canonicalSpecs';
 
@@ -54,31 +53,39 @@ export async function recomputeAllLifecycles() {
 }
 
 export async function seedCanonicalCatalogue(): Promise<number> {
-  let inserted = 0;
-  const kindCache = new Map<string, string | null>();
+  const kindRows = await query<{ id: string; category: string; name: string }>(`SELECT id, category, name FROM product_kinds WHERE status = 'active' AND merged_into IS NULL`);
+  const kindIds = new Map(kindRows.map((k) => [`${k.category}|${k.name.toLowerCase()}`, k.id]));
+  const existing = new Set((await query<{ brand_slug: string; model_slug: string }>(`SELECT brand_slug, model_slug FROM canonical_products`)).map((r) => `${r.brand_slug}|${r.model_slug}`));
+  const rows: unknown[][] = [];
+  const seen = new Set<string>();
   for (const item of CANONICAL_CATALOGUE) {
-    const cacheKey = `${item.category}|${item.kind}`;
-    if (!kindCache.has(cacheKey)) kindCache.set(cacheKey, (await findKind(item.category, item.kind))?.id ?? null);
-    const kindId = kindCache.get(cacheKey) ?? null;
     const brandSlug = slugify(item.brand);
     const modelSlug = slugify(item.model);
-    if (!brandSlug || !modelSlug) continue;
-    const row = await queryOne<{ inserted: boolean }>(
-      `INSERT INTO canonical_products (brand, brand_slug, model, model_slug, category, kind_id, display_name, created_by, family, family_slug, released_on, aliases)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'system', $8, $9, $10, $11)
+    const key = `${brandSlug}|${modelSlug}`;
+    if (!brandSlug || !modelSlug || seen.has(key)) continue;
+    seen.add(key);
+    rows.push([item.brand, brandSlug, item.model, modelSlug, item.category, kindIds.get(`${item.category}|${item.kind.toLowerCase()}`) ?? null, `${item.brand} ${item.model}`.slice(0, 200), 'system', item.family, slugify(item.family), item.releasedOn, item.aliases ?? []]);
+  }
+  const inserted = rows.filter((r) => !existing.has(`${r[1]}|${r[3]}`)).length;
+  const columns = ['brand', 'brand_slug', 'model', 'model_slug', 'category', 'kind_id', 'display_name', 'created_by', 'family', 'family_slug', 'released_on', 'aliases'];
+  for (let i = 0; i < rows.length; i += 150) {
+    const slice = rows.slice(i, i + 150);
+    const params: unknown[] = [];
+    const values = slice.map((row) => `(${row.map((v) => { params.push(v); return `$${params.length}`; }).join(', ')})`).join(', ');
+    await query(
+      `INSERT INTO canonical_products (${columns.join(', ')}) VALUES ${values}
        ON CONFLICT (brand_slug, model_slug) DO UPDATE SET
          family = COALESCE(canonical_products.family, EXCLUDED.family),
          family_slug = COALESCE(canonical_products.family_slug, EXCLUDED.family_slug),
          released_on = COALESCE(canonical_products.released_on, EXCLUDED.released_on),
          kind_id = COALESCE(canonical_products.kind_id, EXCLUDED.kind_id),
          aliases = CASE WHEN cardinality(canonical_products.aliases) = 0 THEN EXCLUDED.aliases ELSE canonical_products.aliases END,
-         updated_at = now()
-       RETURNING (xmax = 0) AS inserted`,
-      [item.brand, brandSlug, item.model, modelSlug, item.category, kindId, `${item.brand} ${item.model}`.slice(0, 200), item.family, slugify(item.family), item.releasedOn, item.aliases ?? []]
+         updated_at = now()`,
+      params
     );
-    if (row?.inserted) inserted += 1;
   }
-  await recomputeAllLifecycles();
+  if (inserted > 0) await recomputeAllLifecycles();
+  invalidateSearchIndex();
   return inserted;
 }
 
@@ -114,17 +121,14 @@ export async function seedCatalogueDetails(): Promise<{ products: number; specs:
   };
   await bulk('canonical_spec_sources', ['product_id', 'attribute_key', 'value', 'value_norm', 'source_type', 'trust_tier', 'source_title'], sourceRows, 'ON CONFLICT DO NOTHING');
   await bulk('canonical_specs', ['product_id', 'attribute_key', 'label', 'value', 'value_norm', 'confidence', 'status', 'source_count', 'best_tier'], specRows, 'ON CONFLICT (product_id, attribute_key) DO NOTHING');
+  const shoes = await query<{ id: string; kind: string | null }>(`SELECT cp.id, k.name AS kind FROM canonical_products cp LEFT JOIN product_kinds k ON k.id = cp.kind_id WHERE cp.category = 'shoes' AND cp.status <> 'merged' AND NOT EXISTS (SELECT 1 FROM canonical_variants v WHERE v.product_id = cp.id AND v.dimension = 'size')`);
+  for (const shoe of shoes) {
+    const sizes = shoe.kind === 'Kids shoes' ? ['24', '26', '28', '30', '32', '34', '35'] : ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'];
+    sizes.forEach((size, i) => variantRows.push([shoe.id, 'size', size, size, null, i]));
+  }
   await bulk('canonical_variants', ['product_id', 'dimension', 'value', 'value_norm', 'display_hex', 'position'], variantRows, 'ON CONFLICT (product_id, dimension, value_norm) DO NOTHING');
   invalidateSearchIndex();
   return { products, specs: specRows.length, variants: variantRows.length };
-}
-
-export async function seedCatalogueDetailsIfMissing(): Promise<boolean> {
-  const row = await queryOne<{ n: number }>(`SELECT count(*)::int AS n FROM canonical_spec_sources WHERE source_type = 'catalogue'`).catch(() => null);
-  if (!row || row.n > 0) return false;
-  const counts = await seedCatalogueDetails();
-  console.log(`[knowledge] seeded details for ${counts.products} catalogue products: ${counts.specs} specs, ${counts.variants} variants`);
-  return true;
 }
 
 export async function seedCanonicalCatalogueIfEmpty(): Promise<boolean> {
@@ -137,7 +141,12 @@ export async function seedCanonicalCatalogueIfEmpty(): Promise<boolean> {
 
 export async function ensureCatalogue() {
   await seedCanonicalCatalogueIfEmpty();
-  await seedCatalogueDetailsIfMissing();
+  await warmSearchIndex();
+  const products = await seedCanonicalCatalogue();
+  if (products > 0) console.log(`[knowledge] ${products} catalogue products added`);
+  const details = await seedCatalogueDetails();
+  if (details.products > 0 || details.variants > 0) console.log(`[knowledge] catalogue details: ${details.products} products, ${details.specs} specs, ${details.variants} variants`);
+  if (products > 0 || details.products > 0 || details.variants > 0) await warmSearchIndex();
 }
 
 export interface SearchHit {
@@ -148,17 +157,35 @@ export interface SearchHit {
 interface IndexEntry extends SearchHit { words: string[]; text: string }
 
 let index: { loadedAt: number; entries: IndexEntry[] } | null = null;
-const INDEX_TTL = 60_000;
+// eslint-disable-next-line prefer-const
+let building: Promise<IndexEntry[]> | null = null;
+const INDEX_TTL = 10 * 60_000;
 
-export function invalidateSearchIndex() { index = null; }
+export function invalidateSearchIndex() {
+  index = null;
+  kindIndex = null;
+  setTimeout(() => { loadIndex().catch(() => undefined); loadKindIndex().catch(() => undefined); }, 0);
+}
+
+export async function warmSearchIndex() {
+  await Promise.all([loadIndex(), loadKindIndex()]);
+}
 
 async function loadIndex(): Promise<IndexEntry[]> {
   if (index && Date.now() - index.loadedAt < INDEX_TTL) return index.entries;
+  if (building) return building;
+  building = buildIndex().finally(() => { building = null; });
+  return building;
+}
+
+async function buildIndex(): Promise<IndexEntry[]> {
   const rows = await query<{ id: string; brand: string; model: string; family: string | null; display_name: string; category: string; kind: string | null; released_on: string | null; lifecycle: Lifecycle; lifecycle_override: Lifecycle | null; aliases: string[]; listing_count: number; spec_count: number; colour_count: number }>(
     `SELECT cp.id, cp.brand, cp.model, cp.family, cp.display_name, cp.category, k.name AS kind, cp.released_on::text, cp.lifecycle, cp.lifecycle_override, cp.aliases, cp.listing_count,
-            (SELECT count(*)::int FROM canonical_specs s WHERE s.product_id = cp.id AND s.status IN ('verified', 'pending')) AS spec_count,
-            (SELECT count(*)::int FROM canonical_variants v WHERE v.product_id = cp.id AND v.dimension = 'colour') AS colour_count
-       FROM canonical_products cp LEFT JOIN product_kinds k ON k.id = cp.kind_id
+            COALESCE(sc.n, 0) AS spec_count, COALESCE(vc.n, 0) AS colour_count
+       FROM canonical_products cp
+       LEFT JOIN product_kinds k ON k.id = cp.kind_id
+       LEFT JOIN (SELECT product_id, count(*)::int AS n FROM canonical_specs WHERE status IN ('verified', 'pending') GROUP BY product_id) sc ON sc.product_id = cp.id
+       LEFT JOIN (SELECT product_id, count(*)::int AS n FROM canonical_variants WHERE dimension = 'colour' GROUP BY product_id) vc ON vc.product_id = cp.id
       WHERE cp.status = 'active' ORDER BY cp.released_on DESC NULLS LAST, cp.display_name LIMIT 5000`
   );
   const entries: IndexEntry[] = rows.map((r) => {
@@ -205,4 +232,81 @@ export async function lifecycleFor(brand: string | null | undefined, model: stri
   );
   if (!row) return null;
   return { id: row.id, lifecycle: row.lifecycle_override ?? row.lifecycle, displayName: row.display_name };
+}
+
+export interface KindHit { type: 'kind'; id: string; name: string; category: string; versionType: string | null }
+export interface BrandHit { type: 'brand'; brand: string; category: string; kinds: string[] }
+
+interface KindIndex { loadedAt: number; kinds: { id: string; name: string; category: string; versionType: string | null; words: string[] }[]; brands: { brand: string; slug: string; categories: Map<string, string[]> }[] }
+
+let kindIndex: KindIndex | null = null;
+let buildingKinds: Promise<KindIndex> | null = null;
+
+async function loadKindIndex(): Promise<KindIndex> {
+  if (kindIndex && Date.now() - kindIndex.loadedAt < INDEX_TTL) return kindIndex;
+  if (buildingKinds) return buildingKinds;
+  buildingKinds = buildKindIndex().finally(() => { buildingKinds = null; });
+  return buildingKinds;
+}
+
+async function buildKindIndex(): Promise<KindIndex> {
+  const [kinds, synonyms, brandRows] = await Promise.all([
+    query<{ id: string; name: string; category: string; version_type: string | null }>(`SELECT id, name, category, version_type FROM product_kinds WHERE status = 'active' AND NOT is_default AND merged_into IS NULL ORDER BY category, position`),
+    query<{ entity_id: string; term_norm: string }>(`SELECT entity_id, term_norm FROM product_synonyms WHERE entity_type = 'kind' AND status = 'active'`),
+    query<{ brand: string; slug: string; category: string }>(`SELECT b.name AS brand, b.slug, bc.category FROM product_brand_categories bc JOIN product_brands b ON b.id = bc.brand_id WHERE b.status = 'active' AND b.merged_into IS NULL ORDER BY b.name, bc.observation_count DESC`),
+  ]);
+  const synonymsFor = new Map<string, string[]>();
+  for (const s of synonyms) synonymsFor.set(s.entity_id, [...(synonymsFor.get(s.entity_id) ?? []), s.term_norm]);
+  const kindsByCategory = new Map<string, string[]>();
+  for (const k of kinds) kindsByCategory.set(k.category, [...(kindsByCategory.get(k.category) ?? []), k.name]);
+  const brands = new Map<string, { brand: string; slug: string; categories: Map<string, string[]> }>();
+  for (const b of brandRows) {
+    const entry = brands.get(b.slug) ?? { brand: b.brand, slug: b.slug, categories: new Map<string, string[]>() };
+    entry.categories.set(b.category, kindsByCategory.get(b.category) ?? []);
+    brands.set(b.slug, entry);
+  }
+  kindIndex = {
+    loadedAt: Date.now(),
+    kinds: kinds.map((k) => ({ id: k.id, name: k.name, category: k.category, versionType: k.version_type, words: normalizeValue([k.name, ...(synonymsFor.get(k.id) ?? [])].join(' ')).split(/[\s/,&-]+/).filter(Boolean) })),
+    brands: [...brands.values()],
+  };
+  return kindIndex;
+}
+
+export function invalidateKindIndex() { kindIndex = null; setTimeout(() => { loadKindIndex().catch(() => undefined); }, 0); }
+
+function singular(word: string): string {
+  if (word.endsWith('ies')) return `${word.slice(0, -3)}y`;
+  if (word.endsWith('es') && word.length > 4) return word.slice(0, -2);
+  if (word.endsWith('s') && word.length > 3) return word.slice(0, -1);
+  return word;
+}
+
+export async function searchKindsAndBrands(q: string): Promise<{ kinds: KindHit[]; brands: BrandHit[] }> {
+  const tokens = normalizeValue(q).split(/[\s/,&-]+/).filter(Boolean);
+  if (tokens.length === 0) return { kinds: [], brands: [] };
+  const index = await loadKindIndex();
+  const kinds: (KindHit & { score: number })[] = [];
+  for (const k of index.kinds) {
+    let score = 0;
+    let ok = true;
+    for (const token of tokens) {
+      const t = singular(token);
+      const exact = k.words.some((w) => w === token || singular(w) === t);
+      const prefix = exact || k.words.some((w) => w.startsWith(token) || singular(w).startsWith(t));
+      if (!prefix) { ok = false; break; }
+      score += exact ? 3 : 1;
+    }
+    if (ok) kinds.push({ type: 'kind', id: k.id, name: k.name, category: k.category, versionType: k.versionType, score });
+  }
+  kinds.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  const brands: BrandHit[] = [];
+  const brandQuery = tokens.join(' ');
+  for (const b of index.brands) {
+    const norm = normalizeValue(b.brand);
+    if (norm === brandQuery || (brandQuery.length >= 3 && norm.startsWith(brandQuery))) {
+      for (const [category, kindNames] of b.categories) brands.push({ type: 'brand', brand: b.brand, category, kinds: kindNames.slice(0, 8) });
+    }
+  }
+  return { kinds: kinds.slice(0, 40).map(({ score: _s, ...rest }) => rest), brands: brands.slice(0, 20) };
 }

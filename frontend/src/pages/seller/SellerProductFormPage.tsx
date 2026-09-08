@@ -15,7 +15,7 @@ import { SkeletonHeading, SkeletonRegion, SkeletonRows } from '../../components/
 import { useToast } from '../../components/ui/Toast';
 import { categoryEntry } from '../../market/categories';
 import { Swatch, useProductKnowledge } from '../../market/knowledge';
-import { DISCONTINUED_NOTE, SearchGroup, SearchHit, searchCanonical, useCanonicalProduct } from '../../market/canonical';
+import { BrandHit, DISCONTINUED_NOTE, KindHit, SearchGroup, SearchHit, searchCanonical, useCanonicalProduct } from '../../market/canonical';
 import { CategoryOptions } from '../../components/market/CategoryOptions';
 import { formatUgx } from '../../market/format';
 
@@ -194,6 +194,51 @@ export function SellerProductFormPage() {
     return () => { cancelled = true; clearTimeout(timer); };
   }, [form.name]);
 
+  function pickKind(hit: KindHit) {
+    nameTyped.current = false;
+    setNameOpen(false);
+    setNameMatches([]);
+    versionTypeTouched.current = false;
+    setForm((f) => ({ ...f, category: hit.category, subcategory: hit.name }));
+  }
+
+  function pickBrand(hit: BrandHit) {
+    nameTyped.current = false;
+    setNameOpen(false);
+    setNameMatches([]);
+    versionTypeTouched.current = false;
+    setForm((f) => ({ ...f, category: hit.category, subcategory: '', brand: hit.brand }));
+  }
+
+  const [issues, setIssues] = useState<{ id: string; label: string }[]>([]);
+
+  function jumpTo(id: string) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const focusable = el.matches('input, textarea, select') ? el : el.querySelector<HTMLElement>('input, textarea, select, button');
+    setTimeout(() => focusable?.focus({ preventScroll: true }), 350);
+  }
+
+  function collectIssues(publishAfter: boolean): { id: string; label: string }[] {
+    const list: { id: string; label: string }[] = [];
+    if (form.name.trim().length < 2) list.push({ id: 'field-name', label: 'Give the product a name' });
+    if (publishAfter && form.description.trim().length < 20) list.push({ id: 'field-description', label: 'Write a short description (at least 20 characters)' });
+    if (publishAfter && images.length === 0) list.push({ id: 'field-photos', label: 'Add at least one photo' });
+    const price = Number(form.priceUgx);
+    if (!Number.isInteger(price) || price < 100) list.push({ id: 'field-price', label: 'Enter the price in whole shillings' });
+    if (form.salePriceUgx && (!Number.isInteger(Number(form.salePriceUgx)) || Number(form.salePriceUgx) >= price)) list.push({ id: 'field-sale-price', label: 'Fix the sale price' });
+    if (!hasOptions && (!Number.isInteger(Number(form.stockQuantity)) || Number(form.stockQuantity) < 0)) list.push({ id: 'field-stock', label: 'Enter how many you have in stock' });
+    if (publishAfter && hasOptions && totalStock === 0) list.push({ id: 'field-options', label: 'Enter stock for at least one version or colour' });
+    if (versions.some((v) => !v.value.trim())) list.push({ id: 'field-versions', label: `Name every ${(versionType.trim() || 'version').toLowerCase()}` });
+    if (publishAfter) {
+      for (const a of resolved.attributes.filter((x) => x.role === 'required' && !specs.some((s) => s.label.trim().toLowerCase() === x.name.toLowerCase() && s.value.trim()))) {
+        list.push({ id: 'field-details', label: `Fill in ${a.name}` });
+      }
+    }
+    return list;
+  }
+
   function pickProduct(hit: SearchHit) {
     nameTyped.current = false;
     setPicked(hit);
@@ -323,14 +368,15 @@ export function SellerProductFormPage() {
 
   async function save(e: FormEvent, publishAfter = false) {
     e.preventDefault();
-    if (!validate()) { push('Check the highlighted fields', 'error'); return; }
-    if (publishAfter && images.length === 0) { push('Add at least one photo before publishing', 'error'); return; }
-    if (publishAfter && form.description.trim().length < 20) { push('Write a short description before publishing', 'error'); return; }
-    if (publishAfter && hasOptions && totalStock === 0) { push('Every option is at 0. Enter how many you have before publishing.', 'error'); return; }
-    if (publishAfter) {
-      const missing = resolved.attributes.filter((a) => a.role === 'required' && !specs.some((x) => x.label.trim().toLowerCase() === a.name.toLowerCase() && x.value.trim()));
-      if (missing.length) { push(`Fill in ${missing.map((a) => a.name).join(', ')} before publishing`, 'error'); return; }
+    const valid = validate();
+    const found = collectIssues(publishAfter);
+    if (!valid || found.length) {
+      setIssues(found);
+      push(found.length === 1 ? found[0].label : `${found.length} things to fix. Tap one to go to it.`, 'error');
+      if (found[0]) jumpTo(found[0].id);
+      return;
     }
+    setIssues([]);
     setSaving(true);
     try {
       const res = editing ? await api.patch(`/seller/products/${id}`, payload()) : await api.post('/seller/products', payload());
@@ -367,6 +413,16 @@ export function SellerProductFormPage() {
       {flagged && (
         <Card tone="danger" padding="md" className="mb-4"><p className="text-sm text-brand-red"><span className="font-semibold">Flagged by Duka:</span> {flagged}. Fix the issue; it can be republished once the flag is cleared.</p></Card>
       )}
+      {issues.length > 0 && (
+        <Card tone="danger" padding="md" className="mb-4" data-testid="issues">
+          <p className="text-sm font-semibold text-brand-red">{issues.length === 1 ? 'One thing to fix' : `${issues.length} things to fix`}. Tap one and Duka takes you there.</p>
+          <ul className="mt-2 flex flex-col gap-1">
+            {issues.map((issue, i) => (
+              <li key={`${issue.id}-${i}`}><button type="button" onClick={() => jumpTo(issue.id)} className="flex min-h-[36px] w-full items-center justify-between gap-2 rounded-lg px-2 text-left text-sm text-ink hover:bg-surface-2"><span>{issue.label}</span><span aria-hidden className="text-brand-green">Go</span></button></li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <form onSubmit={(e) => save(e, false)} noValidate className="grid gap-4 md:grid-cols-[1fr_300px]">
         <div className="flex flex-col gap-4">
@@ -374,12 +430,24 @@ export function SellerProductFormPage() {
             <h2 className="font-display text-h3 font-medium text-brand-green-deep">Basics</h2>
             <div className="mt-4 flex flex-col gap-4">
               <div className="relative">
-                <Input label="Product name" placeholder="Start typing: Samsung, iPhone, MacBook, trousers…" value={form.name} onChange={(e) => { nameTyped.current = true; set('name', e.target.value); }} onFocus={() => { if (nameMatches.length) setNameOpen(true); }} onBlur={() => setTimeout(() => setNameOpen(false), 150)} onKeyDown={(e) => { if (e.key === 'Escape') setNameOpen(false); if (e.key === 'Enter' && nameOpen && nameMatches[0]?.products[0]) { e.preventDefault(); pickProduct(nameMatches[0].products[0]); } }} error={errors.name} maxLength={200} autoComplete="off" role="combobox" aria-expanded={nameOpen} aria-controls="product-name-matches" hint={picked && pickedStillApplies ? `Using Duka's record for the ${picked.displayName}.` : 'Pick a match to fill in the category, brand and model, or keep typing your own.'} />
+                <Input id="field-name" label="Product name" placeholder="Start typing: Samsung, iPhone, MacBook, trousers…" value={form.name} onChange={(e) => { nameTyped.current = true; set('name', e.target.value); }} onFocus={() => { if (nameMatches.length) setNameOpen(true); }} onBlur={() => setTimeout(() => setNameOpen(false), 150)} onKeyDown={(e) => { if (e.key === 'Escape') setNameOpen(false); if (e.key === 'Enter' && nameOpen && nameMatches[0]?.products[0]) { e.preventDefault(); pickProduct(nameMatches[0].products[0]); } }} error={errors.name} maxLength={200} autoComplete="off" role="combobox" aria-expanded={nameOpen} aria-controls="product-name-matches" hint={picked && pickedStillApplies ? `Using Duka's record for the ${picked.displayName}.` : 'Pick a match to fill in the category, brand and model, or keep typing your own.'} />
                 {nameOpen && nameMatches.length > 0 && (
                   <div id="product-name-matches" role="listbox" aria-label="Matching products" data-testid="product-name-matches" className="absolute left-0 right-0 z-30 mt-1 max-h-80 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-raised">
                     {nameMatches.map((group) => (
                       <div key={group.category}>
-                        <p className="flex items-center justify-between px-3 pb-1 pt-2 text-caption font-semibold uppercase text-ink-3"><span>{group.label} · {group.products.length}</span>{group.products.length > 6 && <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setExpandedGroups((g) => ({ ...g, [group.category]: !g[group.category] }))} className="normal-case text-brand-green">{expandedGroups[group.category] ? 'Show fewer' : `Show all ${group.products.length}`}</button>}</p>
+                        <p className="flex items-center justify-between px-3 pb-1 pt-2 text-caption font-semibold uppercase text-ink-3"><span>{group.label}{group.products.length ? ` · ${group.products.length}` : ''}</span>{group.products.length > 6 && <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setExpandedGroups((g) => ({ ...g, [group.category]: !g[group.category] }))} className="normal-case text-brand-green">{expandedGroups[group.category] ? 'Show fewer' : `Show all ${group.products.length}`}</button>}</p>
+                        {(group.brands ?? []).map((hit) => (
+                          <button key={`brand-${hit.category}`} type="button" role="option" aria-selected={false} onMouseDown={(e) => e.preventDefault()} onClick={() => pickBrand(hit)} className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-surface-2">
+                            <span className="min-w-0"><span className="block truncate font-medium">Any {hit.brand} {group.label.toLowerCase()}</span><span className="block text-caption text-ink-3">{hit.kinds.length ? hit.kinds.join(' · ') : 'Sets the brand and category'}</span></span>
+                            <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-semibold uppercase text-ink-3">Brand</span>
+                          </button>
+                        ))}
+                        {(group.kinds ?? []).slice(0, expandedGroups[group.category] ? 40 : 4).map((hit) => (
+                          <button key={`kind-${hit.id}`} type="button" role="option" aria-selected={form.subcategory === hit.name && form.category === hit.category} onMouseDown={(e) => e.preventDefault()} onClick={() => pickKind(hit)} className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-surface-2">
+                            <span className="min-w-0"><span className="block truncate font-medium">{hit.name}</span><span className="block text-caption text-ink-3">{hit.versionType ? `Sizes as ${hit.versionType.toLowerCase()} · ` : ''}Any brand. Sets the category and kind.</span></span>
+                            <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-semibold uppercase text-ink-3">Type</span>
+                          </button>
+                        ))}
                         {(expandedGroups[group.category] ? group.products : group.products.slice(0, 6)).map((hit) => (
                           <button key={hit.id} type="button" role="option" aria-selected={picked?.id === hit.id} onMouseDown={(e) => e.preventDefault()} onClick={() => pickProduct(hit)} className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-surface-2">
                             <span className="min-w-0"><span className="block truncate font-medium">{hit.displayName}</span><span className="block text-caption text-ink-3">{[hit.kind, hit.releasedOn ? hit.releasedOn.slice(0, 4) : null, hit.specCount ? `${hit.specCount} details` : null, hit.colourCount ? `${hit.colourCount} colours` : null].filter(Boolean).join(' · ')}</span></span>
@@ -391,7 +459,7 @@ export function SellerProductFormPage() {
                   </div>
                 )}
               </div>
-              <Textarea label="Description" placeholder="What it is, what is in the box, condition, warranty…" value={form.description} onChange={(e) => set('description', e.target.value)} rows={5} maxLength={5000} hint="At least 20 characters to publish." />
+              <Textarea id="field-description" label="Description" placeholder="What it is, what is in the box, condition, warranty…" value={form.description} onChange={(e) => set('description', e.target.value)} rows={5} maxLength={5000} hint="At least 20 characters to publish." />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Select label="Category" value={form.category} onChange={(e) => changeCategory(e.target.value)} hint="Pick the closest one. Buyers browse by it.">
                   <CategoryOptions />
@@ -455,7 +523,7 @@ export function SellerProductFormPage() {
             </Card>
           )}
 
-          <Card padding="lg">
+          <Card padding="lg" id="field-photos">
             <h2 className="font-display text-h3 font-medium text-brand-green-deep">Photos</h2>
             <p className="mt-1 text-small text-ink-3">Up to 8. The first one is the cover. Buyers swipe through them.</p>
             <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
@@ -471,7 +539,7 @@ export function SellerProductFormPage() {
             </div>
           </Card>
 
-          <Card padding="lg">
+          <Card padding="lg" id="field-versions">
             <h2 className="font-display text-h3 font-medium text-brand-green-deep">Versions</h2>
             <p className="mt-1 text-small text-ink-3">{versionHint(entry.key)}</p>
             {resolved.versions.length > 0 && (
@@ -533,7 +601,7 @@ export function SellerProductFormPage() {
           </Card>
 
           {hasOptions && (
-            <Card padding="lg">
+            <Card padding="lg" id="field-options">
               <h2 className="font-display text-h3 font-medium text-brand-green-deep">How many of each</h2>
               <p className="mt-1 text-small text-ink-3">{versions.length && colours.length ? 'Enter the stock for every version in every colour. A 0 shows as sold out.' : versions.length ? 'Enter the stock for each version.' : 'Enter the stock for each colour.'}</p>
               <div className="mt-3 overflow-x-auto">
@@ -578,7 +646,7 @@ export function SellerProductFormPage() {
             </Card>
           )}
 
-          <Card padding="lg">
+          <Card padding="lg" id="field-details">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-h3 font-medium text-brand-green-deep">Details</h2>
               <span className="flex items-center gap-2 text-caption text-ink-2" data-testid="listing-quality"><span className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-2"><span className="block h-full rounded-full bg-brand-green transition-[width]" style={{ width: `${Math.round((qualityDone / Math.max(1, qualityTotal)) * 100)}%` }} /></span>{qualityDone}/{qualityTotal} complete</span>
@@ -614,8 +682,8 @@ export function SellerProductFormPage() {
           <Card padding="lg">
             <h2 className="font-display text-h3 font-medium text-brand-green-deep">Price</h2>
             <div className="mt-3 flex flex-col gap-3">
-              <Input label="Price (UGX)" type="number" inputMode="numeric" min={100} value={form.priceUgx} onChange={(e) => set('priceUgx', e.target.value)} error={errors.priceUgx} hint={versions.length ? 'Used for any version without its own price.' : undefined} />
-              <Input label="Sale price (optional)" type="number" inputMode="numeric" min={100} value={form.salePriceUgx} onChange={(e) => set('salePriceUgx', e.target.value)} error={errors.salePriceUgx} hint={form.salePriceUgx && !errors.salePriceUgx && Number(form.priceUgx) > 0 ? `${Math.round(((Number(form.priceUgx) - Number(form.salePriceUgx)) / Number(form.priceUgx)) * 100)}% off, shows ${formatUgx(form.salePriceUgx)}` : undefined} />
+              <Input id="field-price" label="Price (UGX)" type="number" inputMode="numeric" min={100} value={form.priceUgx} onChange={(e) => set('priceUgx', e.target.value)} error={errors.priceUgx} hint={versions.length ? 'Used for any version without its own price.' : undefined} />
+              <Input id="field-sale-price" label="Sale price (optional)" type="number" inputMode="numeric" min={100} value={form.salePriceUgx} onChange={(e) => set('salePriceUgx', e.target.value)} error={errors.salePriceUgx} hint={form.salePriceUgx && !errors.salePriceUgx && Number(form.priceUgx) > 0 ? `${Math.round(((Number(form.priceUgx) - Number(form.salePriceUgx)) / Number(form.priceUgx)) * 100)}% off, shows ${formatUgx(form.salePriceUgx)}` : undefined} />
             </div>
           </Card>
           <Card padding="lg">
@@ -624,7 +692,7 @@ export function SellerProductFormPage() {
               {hasOptions ? (
                 <p className="rounded-xl bg-surface-2 p-3 text-sm text-ink-2">Counted per version and colour above. Total: <span className="font-semibold text-ink">{totalStock}</span></p>
               ) : (
-                <Input label="Quantity in stock" type="number" inputMode="numeric" min={0} value={form.stockQuantity} onChange={(e) => set('stockQuantity', e.target.value)} error={errors.stockQuantity} />
+                <Input id="field-stock" label="Quantity in stock" type="number" inputMode="numeric" min={0} value={form.stockQuantity} onChange={(e) => set('stockQuantity', e.target.value)} error={errors.stockQuantity} />
               )}
               <Input label="Low-stock warning at" type="number" inputMode="numeric" min={0} value={form.lowStockThreshold} onChange={(e) => set('lowStockThreshold', e.target.value)} error={errors.lowStockThreshold} hint="You get a notification at or below this number." />
             </div>

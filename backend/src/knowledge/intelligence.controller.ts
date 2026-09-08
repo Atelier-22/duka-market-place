@@ -6,7 +6,7 @@ import { findCanonical, findOrCreateCanonical, specsFor, variantsFor } from './c
 import { findKind } from './knowledge.model';
 import { enqueueResearch, latestJob, researchConfigured } from './research';
 import { CATEGORY_LABELS } from '../seller/categories';
-import { searchCanonical } from './lifecycle';
+import { searchCanonical, searchKindsAndBrands } from './lifecycle';
 import { scheduleResearch } from './index';
 
 const lookupSchema = z.object({
@@ -49,13 +49,19 @@ export async function research(req: Request, res: Response) {
 
 export async function search(req: Request, res: Response) {
   const { q, limit } = z.object({ q: z.string().trim().min(1).max(120), limit: z.coerce.number().int().min(1).max(100).optional() }).parse(req.query);
-  const result = await searchCanonical(q, limit ?? 60);
-  const groups = new Map<string, { category: string; label: string; products: typeof result.hits }>();
-  for (const hit of result.hits) {
-    const group = groups.get(hit.category) ?? { category: hit.category, label: CATEGORY_LABELS[hit.category as keyof typeof CATEGORY_LABELS] ?? hit.category, products: [] };
-    group.products.push(hit);
-    groups.set(hit.category, group);
-  }
+  const [result, extra] = await Promise.all([searchCanonical(q, limit ?? 60), searchKindsAndBrands(q)]);
+  type Group = { category: string; label: string; products: typeof result.hits; kinds: typeof extra.kinds; brands: typeof extra.brands };
+  const groups = new Map<string, Group>();
+  const groupFor = (category: string): Group => {
+    const existing = groups.get(category);
+    if (existing) return existing;
+    const created: Group = { category, label: CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category, products: [], kinds: [], brands: [] };
+    groups.set(category, created);
+    return created;
+  };
+  for (const hit of result.hits) groupFor(hit.category).products.push(hit);
+  for (const hit of extra.brands) groupFor(hit.category).brands.push(hit);
+  for (const hit of extra.kinds) groupFor(hit.category).kinds.push(hit);
   res.setHeader('Cache-Control', 'public, max-age=30');
-  res.json({ query: q, total: result.total, groups: [...groups.values()] });
+  res.json({ query: q, total: result.total + extra.kinds.length + extra.brands.length, products: result.total, kinds: extra.kinds.length, brands: extra.brands.length, groups: [...groups.values()] });
 }

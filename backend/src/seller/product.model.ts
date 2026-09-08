@@ -4,6 +4,7 @@ import { PUBLIC_STORE_COLUMNS, refreshStoreCounters } from './store.model';
 import { attributesForProducts } from '../knowledge/knowledge.model';
 import { verifiedSpecsForListings } from '../knowledge/canonical';
 import { effectivePrice, PromotionLike } from './pricing';
+import { PUBLIC_ACCOUNT_FILTER } from './publicFilter';
 
 export type ProductStatus = 'draft' | 'published' | 'archived';
 export type ProductCondition = 'new' | 'used' | 'refurbished';
@@ -420,7 +421,7 @@ const PUBLIC_PRODUCT_BASE = `
     FROM seller_products p
     JOIN seller_stores s ON s.id = p.store_id
     JOIN seller_profiles sp ON sp.user_id = s.owner_id
-    JOIN users u ON u.id = s.owner_id AND u.is_active
+    JOIN users u ON u.id = s.owner_id AND u.is_active${PUBLIC_ACCOUNT_FILTER}
    WHERE p.status = 'published' AND s.status = 'active' AND NOT sp.is_suspended AND p.flagged_at IS NULL`;
 
 export async function listPublicProducts(f: PublicProductFilters = {}) {
@@ -462,7 +463,7 @@ export async function listPublicProducts(f: PublicProductFilters = {}) {
   const offset = f.offset ?? 0;
   const rows = await query<any>(`${PUBLIC_PRODUCT_BASE}${where} ORDER BY ${order} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`, [...params, limit, offset]);
   const total = await queryOne<{ n: number }>(
-    `SELECT count(*)::int AS n FROM seller_products p JOIN seller_stores s ON s.id = p.store_id JOIN seller_profiles sp ON sp.user_id = s.owner_id JOIN users u ON u.id = s.owner_id AND u.is_active
+    `SELECT count(*)::int AS n FROM seller_products p JOIN seller_stores s ON s.id = p.store_id JOIN seller_profiles sp ON sp.user_id = s.owner_id JOIN users u ON u.id = s.owner_id AND u.is_active${PUBLIC_ACCOUNT_FILTER}
       WHERE p.status = 'published' AND s.status = 'active' AND NOT sp.is_suspended AND p.flagged_at IS NULL${where}`,
     params
   );
@@ -607,7 +608,7 @@ export async function listPublicStores(f: { q?: string; category?: string; city?
     `SELECT ${PUBLIC_STORE_COLUMNS}
        FROM seller_stores s
        JOIN seller_profiles sp ON sp.user_id = s.owner_id
-       JOIN users u ON u.id = s.owner_id AND u.is_active
+       JOIN users u ON u.id = s.owner_id AND u.is_active${PUBLIC_ACCOUNT_FILTER}
       WHERE s.status = 'active' AND NOT sp.is_suspended AND s.product_count > 0${where}
       ORDER BY ${order}
       LIMIT $${params.length}`,

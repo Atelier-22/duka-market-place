@@ -99,6 +99,14 @@ Lifecycle is computed per brand, family and category: distinct release years are
 
 When a seller picks a product from the name search, the form fills the official storage options as versions and the official colours as colour chips, so the seller only enters stock and prices. A "Use the official …" link re-applies them if the seller has already edited the lists, and both stay editable. Specs still arrive as chips the seller taps into detail rows. Price is never part of any of it.
 
+## Every sellable product, not only electronics
+
+The Product name search answers with three kinds of match, grouped by category: catalogue products (brand and model with release date), product types (the 430 kinds across all 53 categories, matched by name or synonym, singular or plural: trousers, underwear, sofas, fridges, cakes, land), and brands in each category they are known for (LG in appliances and TVs, Samsung in phones, laptops, TVs and appliances). Picking a type sets the category and kind and brings that kind's sizes, details and colours from the knowledge base; picking a brand sets brand and category; picking a product does everything at once.
+
+The catalogue covers used and new markets: iPhones back to the 6s, MacBooks back to 2016, Galaxy S, A, M, Note, Z, FE, Tab and Buds lines, Tecno, Infinix, Itel, Redmi, Poco, Huawei, Nokia, Oppo, Vivo, Realme, Motorola and OnePlus, Dell, HP, Lenovo, Asus, Acer and Surface laptops by generation, LG, Samsung, Hisense, TCL and Sony TVs by year, JBL, Sony, Bose and Anker audio, Canon, Nikon, Sony, GoPro and DJI cameras, Apple Watch, Galaxy Watch, Casio, Seiko and Garmin, PlayStation, Xbox and Switch, Nike, Adidas, Converse, Vans, New Balance, Puma, Crocs, Birkenstock, Dr. Martens, Timberland, Clarks and Bata shoes with sizes, and Toyota, Nissan, Honda, Mazda, Subaru, Mitsubishi, Suzuki, Isuzu, Mercedes, BMW, Audi, Volkswagen, Land Rover, Hyundai, Kia, Ford, Lexus, Peugeot and Volvo generations, plus Bajaj, TVS, Honda, Yamaha and Haojue boda models. Shoes, clothing, furniture, home, kitchen, bags, sports and boda models are perennial: they never count as discontinued.
+
+Fixing mistakes is guided: when publishing fails, the form lists every missing thing at the top, and tapping an item scrolls to and focuses that field. In production the public marketplace and store list never show accounts ending in `@example.test`, so automated test listings cannot appear to buyers even while a test is running.
+
 ## Limitations
 
 - Categories themselves are still a static list; new top-level categories are a code change. Kinds under them are fully data-driven.

@@ -1,4 +1,5 @@
 import { query, queryOne } from '../db/pool';
+import { PUBLIC_ACCOUNT_FILTER } from './publicFilter';
 
 export type SellerVerificationStatus = 'unverified' | 'pending' | 'verified' | 'rejected';
 export type StoreStatus = 'active' | 'hidden' | 'suspended';
@@ -118,7 +119,7 @@ export async function findPublicStoreBySlug(slug: string) {
     `SELECT ${PUBLIC_STORE_COLUMNS}
        FROM seller_stores s
        JOIN seller_profiles sp ON sp.user_id = s.owner_id
-       JOIN users u ON u.id = s.owner_id AND u.is_active
+       JOIN users u ON u.id = s.owner_id AND u.is_active${PUBLIC_ACCOUNT_FILTER}
       WHERE s.slug = $1 AND s.status = 'active' AND NOT sp.is_suspended`,
     [slug]
   );

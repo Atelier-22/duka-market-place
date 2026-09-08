@@ -6,7 +6,7 @@ import { seedKnowledgeIfEmpty } from './seed';
 import { applySellerSpecs, findOrCreateCanonical, linkListing, refreshListingCount } from './canonical';
 import { enqueueResearch, runResearch } from './research';
 import { findKind } from './knowledge.model';
-import { ensureCatalogue, invalidateSearchIndex } from './lifecycle';
+import { ensureCatalogue, invalidateKindIndex, invalidateSearchIndex } from './lifecycle';
 
 let queue: Promise<void> = Promise.resolve();
 
@@ -20,6 +20,7 @@ async function learnIfPublished(productId: string) {
   if (!row || row.status !== 'published') return;
   await observeProduct(productId);
   invalidateLexicon();
+  invalidateKindIndex();
   await applySellerSpecs(productId);
 }
 
