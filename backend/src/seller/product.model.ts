@@ -42,6 +42,7 @@ export interface ProductRow {
 export interface ImageRow { id: string; product_id: string; url: string; position: number }
 export interface VariationRow {
   id: string; product_id: string; name: string; value: string; price_delta_ugx: number; price_ugx: number | null;
+  color_name: string | null; color_hex: string | null;
   stock_quantity: number; reserved_quantity: number; sku: string | null; position: number;
 }
 export interface PromotionRow extends PromotionLike {
@@ -65,7 +66,7 @@ export interface ProductInput {
   deliveryInfo?: string | null;
   isFeatured?: boolean;
   images?: string[];
-  variations?: { name: string; value: string; priceUgx?: number | null; priceDeltaUgx?: number; stockQuantity?: number; sku?: string | null }[];
+  variations?: { name: string; value: string; priceUgx?: number | null; priceDeltaUgx?: number; colorName?: string | null; colorHex?: string | null; stockQuantity?: number; sku?: string | null }[];
 }
 
 export function availableQuantity(p: { stock_quantity: number; reserved_quantity: number }): number {
@@ -125,9 +126,9 @@ async function syncVariations(tx: Tx, productId: string, variations: NonNullable
   for (const v of variations) {
     await txQuery(
       tx,
-      `INSERT INTO seller_product_variations (product_id, name, value, price_ugx, stock_quantity, sku, position)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [productId, v.name.trim(), v.value.trim(), v.priceUgx ?? null, v.stockQuantity ?? 0, v.sku?.trim() || null, position++]
+      `INSERT INTO seller_product_variations (product_id, name, value, price_ugx, color_name, color_hex, stock_quantity, sku, position)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [productId, v.name.trim(), v.value.trim(), v.priceUgx ?? null, v.colorName?.trim() || null, v.colorHex?.trim() || null, v.stockQuantity ?? 0, v.sku?.trim() || null, position++]
     );
   }
   if (variations.length > 0) {
@@ -279,7 +280,7 @@ export async function duplicateProduct(productId: string, ownerId: string): Prom
     specifications: source.specifications,
     deliveryInfo: source.delivery_info,
     images: images.map((i) => i.url),
-    variations: variations.map((v) => ({ name: v.name, value: v.value, priceUgx: v.price_ugx ? Number(v.price_ugx) : null, stockQuantity: 0, sku: null })),
+    variations: variations.map((v) => ({ name: v.name, value: v.value, priceUgx: v.price_ugx ? Number(v.price_ugx) : null, colorName: v.color_name, colorHex: v.color_hex, stockQuantity: 0, sku: null })),
   });
 }
 
@@ -453,6 +454,13 @@ export async function listPublicProducts(f: PublicProductFilters = {}) {
   return { total: total?.n ?? rows.length, products: rows.map((p) => toPublicProduct(p, promos[p.id] ?? [])) };
 }
 
+export function variationLabel(v: { name?: string | null; value?: string | null; color_name?: string | null }): string {
+  const parts = [];
+  if (v.value && v.value.trim()) parts.push(v.value.trim());
+  if (v.color_name && v.color_name.trim()) parts.push(v.color_name.trim());
+  return parts.join(' · ');
+}
+
 export function optionPrice(product: { price_ugx: number | string; sale_price_ugx: number | string | null }, option: { price_ugx: number | string | null }, promotions: PromotionLike[] = []): number {
   if (option.price_ugx == null || Number(option.price_ugx) === Number(product.price_ugx)) return effectivePrice(product, promotions).price;
   return effectivePrice({ price_ugx: Number(option.price_ugx), sale_price_ugx: null }, promotions).price;
@@ -526,6 +534,9 @@ export async function getPublicProduct(id: string) {
       id: v.id,
       name: v.name,
       value: v.value,
+      colorName: v.color_name,
+      colorHex: v.color_hex,
+      label: variationLabel(v),
       priceUgx: optionPrice(row, v, promos[id] ?? []),
       available: availableQuantity(v),
     })),

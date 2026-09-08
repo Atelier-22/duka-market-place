@@ -2,7 +2,7 @@ import { query, queryOne } from '../db/pool';
 import { ApiError } from '../middleware/errorHandler';
 import { Tx, txOne, txQuery, withTransaction } from './db';
 import { effectivePrice } from './pricing';
-import { availableQuantity, livePromotionsFor, optionPrice, refreshProductRating } from './product.model';
+import { availableQuantity, livePromotionsFor, optionPrice, refreshProductRating, variationLabel } from './product.model';
 import { refreshStoreCounters } from './store.model';
 import {
   notifyCustomerOrderStatus, notifySellerLowStock, notifySellerNewOrder, notifySellerOrderCancelled, notifySellerReview,
@@ -107,7 +107,7 @@ async function priceLines(tx: Tx, lines: CartLine[]): Promise<PricedLine[]> {
       );
       if (!v) throw new ApiError(409, `That option of ${p.name} is not available`);
       unit = optionPrice(p, v, promos[p.id] ?? []);
-      label = `${v.name}: ${v.value}`;
+      label = variationLabel(v) || `${v.name}: ${v.value}`;
       available = availableQuantity(v);
     }
     if (line.quantity > available) {

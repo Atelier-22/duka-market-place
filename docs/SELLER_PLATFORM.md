@@ -15,7 +15,7 @@ Sellers are the third Duka category, alongside customers (who request things) an
 | `seller_profiles` | Verification status, suspension |
 | `seller_stores` | One store per seller: identity, contact, delivery fee, counters |
 | `seller_products` | Products with price, sale price, stock, reserved stock, status, flags, full-text `search_text` |
-| `seller_product_images`, `seller_product_variations` | Media and options (each option has its own stock) |
+| `seller_product_images`, `seller_product_variations` | Media and sellable combinations: a version (`value`, carries `price_ugx`) times a colour (`color_name`, `color_hex`), each row with its own stock |
 | `seller_inventory_events` | Every stock movement with a reason |
 | `seller_orders`, `seller_order_items`, `seller_order_events` | Marketplace orders, one per store per checkout, with price snapshots |
 | `seller_followers` | Store follows |
@@ -29,7 +29,7 @@ Sellers are the third Duka category, alongside customers (who request things) an
 
 ## Stock
 
-Checkout reserves stock inside a transaction (`stock - reserved >= quantity`, row-locked). Confirming does nothing to stock; completing commits it (`stock -= quantity`, `sales_count += quantity`); cancelling releases it. Variation products track stock per option and keep the product total in sync. Low-stock notifications fire when available stock crosses the product's threshold, at most once every twelve hours per product.
+Checkout reserves stock inside a transaction (`stock - reserved >= quantity`, row-locked). Confirming does nothing to stock; completing commits it (`stock -= quantity`, `sales_count += quantity`); cancelling releases it. Variation products track stock per version-and-colour combination and keep the product total in sync. The seller form collects versions with prices, colours with swatches, and a stock grid of versions times colours; a combination needs at least a version or a colour, duplicates are rejected, and the buyer picks the version first and then a colour, seeing how many of that colour are left. Low-stock notifications fire when available stock crosses the product's threshold, at most once every twelve hours per product.
 
 ## Pricing
 

@@ -126,7 +126,9 @@ export async function dashboard(req: Request, res: Response) {
 const specificationSchema = z.object({ label: z.string().trim().min(1).max(60), value: z.string().trim().min(1).max(200) });
 const variationSchema = z.object({
   name: z.string().trim().min(1).max(60),
-  value: z.string().trim().min(1).max(80),
+  value: z.string().trim().max(80).default(''),
+  colorName: z.string().trim().max(40).nullable().optional(),
+  colorHex: z.string().trim().regex(/^#[0-9A-Fa-f]{6}$/, 'Colour must be a hex value like #1F4FD8').nullable().optional(),
   priceUgx: z.number().int().min(100).max(1_000_000_000).nullable().optional(),
   priceDeltaUgx: z.number().int().min(-50_000_000).max(50_000_000).optional(),
   stockQuantity: z.number().int().min(0).max(1_000_000).optional(),
@@ -183,6 +185,19 @@ export async function getProduct(req: Request, res: Response) {
   res.json({ product: { ...product, available: availableQuantity(product) }, images: images[product.id] ?? [], variations: variations[product.id] ?? [], events });
 }
 
+function assertCombos(variations?: { value: string; colorName?: string | null }[]) {
+  if (!variations || variations.length === 0) return;
+  const seen = new Set<string>();
+  for (const v of variations) {
+    if (!v.value.trim() && !(v.colorName && v.colorName.trim())) {
+      throw new ApiError(400, 'Every option needs a version, a colour, or both');
+    }
+    const key = `${v.value.trim().toLowerCase()}|${(v.colorName ?? '').trim().toLowerCase()}`;
+    if (seen.has(key)) throw new ApiError(400, `The option ${v.value || v.colorName} is listed twice`);
+    seen.add(key);
+  }
+}
+
 function withOptionPrices<T extends { priceUgx?: number; variations?: { priceUgx?: number | null; priceDeltaUgx?: number }[] }>(input: T, basePrice: number): T {
   if (!input.variations) return input;
   return {
@@ -195,7 +210,9 @@ function withOptionPrices<T extends { priceUgx?: number; variations?: { priceUgx
 }
 
 export async function createNewProduct(req: Request, res: Response) {
-  const input = withOptionPrices(productSchema.parse(req.body), productSchema.parse(req.body).priceUgx);
+  const parsed = productSchema.parse(req.body);
+  const input = withOptionPrices(parsed, parsed.priceUgx);
+  assertCombos(input.variations);
   const { user, store } = await context(req, { requireStore: true, write: true });
   const product = await createProduct(store!.id, user.id, input as ProductInput);
   await refreshStoreCounters(store!.id);
@@ -209,7 +226,9 @@ export async function editProduct(req: Request, res: Response) {
   if (input.salePriceUgx != null && input.salePriceUgx >= (input.priceUgx ?? Number(existing.price_ugx))) {
     throw new ApiError(400, 'Sale price must be lower than the regular price');
   }
-  const product = await updateProduct(existing.id, user.id, withOptionPrices(input, input.priceUgx ?? Number(existing.price_ugx)) as Partial<ProductInput>);
+  const prepared = withOptionPrices(input, input.priceUgx ?? Number(existing.price_ugx));
+  assertCombos(prepared.variations);
+  const product = await updateProduct(existing.id, user.id, prepared as Partial<ProductInput>);
   res.json({ product });
 }
 
@@ -268,6 +287,7 @@ export async function inventory(req: Request, res: Response) {
             COALESCE(p.sale_price_ugx, p.price_ugx) AS unit_price_ugx,
             (SELECT url FROM seller_product_images i WHERE i.product_id = p.id ORDER BY position LIMIT 1) AS image_url,
             (SELECT json_agg(json_build_object('id', v.id, 'name', v.name, 'value', v.value, 'sku', v.sku,
+                    'color_name', v.color_name, 'color_hex', v.color_hex,
                     'stock_quantity', v.stock_quantity, 'reserved_quantity', v.reserved_quantity) ORDER BY v.position)
                FROM seller_product_variations v WHERE v.product_id = p.id) AS variations
        FROM seller_products p

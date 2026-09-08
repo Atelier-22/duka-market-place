@@ -15,7 +15,7 @@ import { DashboardStat } from '../../components/domain/DashboardStat';
 import { useToast } from '../../components/ui/Toast';
 import { compactUgx, timeAgo } from '../../market/format';
 
-interface Variation { id: string; name: string; value: string; sku: string | null; stock_quantity: number; reserved_quantity: number }
+interface Variation { id: string; name: string; value: string; sku: string | null; color_name: string | null; color_hex: string | null; stock_quantity: number; reserved_quantity: number }
 interface Item {
   id: string; name: string; sku: string | null; status: string; stock_quantity: number; reserved_quantity: number;
   low_stock_threshold: number; unit_price_ugx: number; image_url: string | null; variations: Variation[]; available: number;
@@ -116,7 +116,7 @@ export function SellerInventoryPage() {
                           const av = Math.max(0, Number(v.stock_quantity) - Number(v.reserved_quantity));
                           return (
                             <li key={v.id} className="flex items-center justify-between gap-3 text-sm">
-                              <span className="min-w-0 truncate text-ink-2">{v.name}: {v.value}{v.sku ? <span className="text-ink-3"> · {v.sku}</span> : null}</span>
+                              <span className="flex min-w-0 items-center gap-2 truncate text-ink-2">{v.color_hex && <span className="h-4 w-4 shrink-0 rounded-full border border-black/10" style={{ background: v.color_hex }} aria-hidden />}{[v.value, v.color_name].filter(Boolean).join(' · ') || v.name}{v.sku ? <span className="text-ink-3"> · {v.sku}</span> : null}</span>
                               <span className="flex items-center gap-3"><span className={`tabular-nums ${av === 0 ? 'font-semibold text-brand-red' : 'text-ink'}`}>{av} avail.</span><Button size="sm" variant="secondary" onClick={() => setAdjust({ item: i, variation: v })}>Adjust</Button></span>
                             </li>
                           );
@@ -131,7 +131,7 @@ export function SellerInventoryPage() {
         )}
       </div>
 
-      <Modal open={!!adjust} onClose={() => setAdjust(null)} title={adjust ? `Adjust ${adjust.item.name}${adjust.variation ? ` (${adjust.variation.value})` : ''}` : ''}>
+      <Modal open={!!adjust} onClose={() => setAdjust(null)} title={adjust ? `Adjust ${adjust.item.name}${adjust.variation ? ` (${[adjust.variation.value, adjust.variation.color_name].filter(Boolean).join(' · ')})` : ''}` : ''}>
         <form onSubmit={submitAdjust} className="flex flex-col gap-3">
           <Input label="Change" type="number" inputMode="numeric" placeholder="10 to add, -2 to remove" value={delta} onChange={(e) => setDelta(e.target.value)} autoFocus />
           <Select label="Reason" value={reason} onChange={(e) => setReason(e.target.value as typeof reason)}><option value="restock">Restock</option><option value="correction">Count correction</option><option value="manual">Other</option></Select>

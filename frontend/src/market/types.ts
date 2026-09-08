@@ -49,6 +49,9 @@ export interface PublicVariation {
   id: string;
   name: string;
   value: string;
+  colorName: string | null;
+  colorHex: string | null;
+  label: string;
   priceUgx: number;
   available: number;
 }

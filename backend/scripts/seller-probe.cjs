@@ -92,11 +92,18 @@ const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000
       name: 'Samsung Galaxy S24', category: 'phones', brand: 'Samsung', priceUgx: 3200000, salePriceUgx: 2990000,
       stockQuantity: 5, lowStockThreshold: 3, description: 'Brand new, sealed, one year warranty from the store.',
       images: [img.body.url], specifications: [{ label: 'Storage', value: '256GB' }],
-      variations: [{ name: 'Colour', value: 'Black', stockQuantity: 3 }, { name: 'Colour', value: 'Violet', stockQuantity: 2, priceUgx: 3040000 }],
+      variations: [{ name: 'Model', value: 'Standard', colorName: 'Black', colorHex: '#111111', stockQuantity: 3 }, { name: 'Model', value: 'Plus', colorName: 'Violet', colorHex: '#7C3AED', stockQuantity: 2, priceUgx: 3040000 }],
     },
   });
   check('product with images, specs and variations is created as a draft', productA.status === 201 && productA.body.product.status === 'draft' && Number(productA.body.product.stock_quantity) === 5, JSON.stringify(productA.body).slice(0, 80));
   const pid = productA.body.product.id;
+
+  const blankCombo = await call('POST', '/seller/products', { token: sellerA.accessToken, body: { name: 'Blank option', category: 'phones', priceUgx: 100000, variations: [{ name: 'Model', value: '', stockQuantity: 1 }] } });
+  check('an option with neither a version nor a colour is rejected', blankCombo.status === 400);
+  const dupCombo = await call('POST', '/seller/products', { token: sellerA.accessToken, body: { name: 'Twice', category: 'phones', priceUgx: 100000, variations: [{ name: 'Model', value: 'Pro', colorName: 'Blue', stockQuantity: 1 }, { name: 'Model', value: 'pro', colorName: 'blue', stockQuantity: 1 }] } });
+  check('the same version and colour listed twice is rejected', dupCombo.status === 400);
+  const badHex = await call('POST', '/seller/products', { token: sellerA.accessToken, body: { name: 'Bad hex', category: 'phones', priceUgx: 100000, variations: [{ name: 'Colour', value: '', colorName: 'Blue', colorHex: 'blue', stockQuantity: 1 }] } });
+  check('a colour swatch must be a hex value', badHex.status === 400);
 
   const hiddenDraft = await call('GET', `/marketplace/products/${pid}`);
   check('drafts are not visible on the marketplace', hiddenDraft.status === 404);
@@ -118,6 +125,7 @@ const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000
   check('published product is public with seller attached', pub.status === 200 && pub.body.product.store.slug === storeA.body.store.slug && pub.body.product.store.name === `TechHub ${S}`);
   check('public product shows the sale price and discount', pub.body.product.priceUgx === 2990000 && pub.body.product.discountPercent > 0);
   check('an option shows exactly the price the seller typed', pub.body.product.variations.length === 2 && pub.body.product.variations[1].priceUgx === 3040000 && pub.body.product.variations[0].priceUgx === 2990000);
+  check('each option carries its colour, swatch and a readable label', pub.body.product.variations[1].colorName === 'Violet' && pub.body.product.variations[1].colorHex === '#7C3AED' && pub.body.product.variations[1].label === 'Plus · Violet' && pub.body.product.variations[1].available === 2);
   check('public product does not expose private seller fields', !JSON.stringify(pub.body).includes('reserved_quantity') && !JSON.stringify(pub.body).includes(SELLER_A.phone));
 
   const list = await call('GET', `/marketplace/products?q=samsung`);
@@ -150,7 +158,7 @@ const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000
   const wrongAddr = await call('POST', '/marketplace/orders', { token: shopper.accessToken, body: { items: [{ productId: pid, quantity: 1 }], addressId: addr.body.address.id } });
   check('checkout refuses an address that belongs to someone else', wrongAddr.status === 400);
 
-  const violet = pub.body.product.variations.find((v) => v.value === 'Violet');
+  const violet = pub.body.product.variations.find((v) => v.colorName === 'Violet');
   const order = await call('POST', '/marketplace/orders', {
     token: customer.accessToken,
     body: { items: [{ productId: pid, variationId: violet.id, quantity: 2 }, { productId: product2.body.product.id, quantity: 3 }], addressId: addr.body.address.id, notes: 'Call when you arrive' },
@@ -159,7 +167,7 @@ const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000
   const orderId = order.body.orders[0].id;
 
   const afterReserve = await call('GET', `/marketplace/products/${pid}`);
-  check('stock is reserved after checkout', afterReserve.body.product.available === 3 && afterReserve.body.product.variations.find((v) => v.value === 'Violet').available === 0);
+  check('stock is reserved after checkout', afterReserve.body.product.available === 3 && afterReserve.body.product.variations.find((v) => v.colorName === 'Violet').available === 0);
 
   const sellerNotifs = await call('GET', '/notifications', { token: sellerA.accessToken });
   check('the seller was notified of the new order', sellerNotifs.body.notifications.some((n) => n.link === `/seller/orders/${orderId}`));

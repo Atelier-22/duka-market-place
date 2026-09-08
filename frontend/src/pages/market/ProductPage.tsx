@@ -30,6 +30,8 @@ export function ProductPage() {
   const [data, setData] = useState<{ product: PublicProductDetail; following: boolean; related: PublicProduct[] } | null>(null);
   const [missing, setMissing] = useState(false);
   const [variationId, setVariationId] = useState<string | null>(null);
+  const [version, setVersion] = useState<string | null>(null);
+  const [colour, setColour] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [added, setAdded] = useState(false);
@@ -44,11 +46,47 @@ export function ProductPage() {
 
   const product = data?.product;
 
+  const versions = useMemo(() => {
+    const out: { value: string; priceUgx: number; available: number }[] = [];
+    for (const v of product?.variations ?? []) {
+      if (!v.value) continue;
+      const found = out.find((o) => o.value === v.value);
+      if (found) found.available += v.available;
+      else out.push({ value: v.value, priceUgx: v.priceUgx, available: v.available });
+    }
+    return out;
+  }, [product]);
+
+  const colours = useMemo(() => {
+    const out: { name: string; hex: string | null }[] = [];
+    for (const v of product?.variations ?? []) {
+      if (!v.colorName || out.some((o) => o.name === v.colorName)) continue;
+      out.push({ name: v.colorName, hex: v.colorHex });
+    }
+    return out;
+  }, [product]);
+
+  const stockFor = (ver: string | null, col: string | null) =>
+    (product?.variations ?? []).filter((v) => (ver === null || v.value === ver) && (col === null || v.colorName === col)).reduce((s, v) => s + v.available, 0);
+
   useEffect(() => {
-    if (!product || product.variations.length === 0 || variationId) return;
-    const first = product.variations.find((v) => v.available > 0) ?? product.variations[0];
-    setVariationId(first.id);
-  }, [product, variationId]);
+    if (!product || product.variations.length === 0) return;
+    if (versions.length > 0 && version === null) {
+      const first = versions.find((v) => v.available > 0) ?? versions[0];
+      setVersion(first.value);
+      return;
+    }
+    if (colours.length > 0 && colour === null) {
+      const first = colours.find((c) => stockFor(version, c.name) > 0) ?? colours[0];
+      setColour(first.name);
+    }
+  }, [product, versions, colours, version, colour]);
+
+  useEffect(() => {
+    if (!product || product.variations.length === 0) return;
+    const match = product.variations.find((v) => (versions.length === 0 || v.value === version) && (colours.length === 0 || v.colorName === colour));
+    setVariationId(match?.id ?? null);
+  }, [product, versions.length, colours.length, version, colour]);
 
   const variation = useMemo(() => product?.variations.find((v) => v.id === variationId) ?? null, [product, variationId]);
   const price = variation ? variation.priceUgx : product?.priceUgx ?? 0;
@@ -93,7 +131,7 @@ export function ProductPage() {
       productId: product.id,
       variationId: variation?.id ?? null,
       name: product.name,
-      variationLabel: variation ? `${variation.name}: ${variation.value}` : null,
+      variationLabel: variation ? variation.label : null,
       unitPriceUgx: price,
       imageUrl: product.images[0] ?? null,
       storeId: store.id,
@@ -191,29 +229,44 @@ export function ProductPage() {
             {available > 0 ? (product.lowStock || available <= 5 ? `Only ${available} left` : 'In stock') : 'Out of stock'} · {conditionLabel(product.condition)}
           </p>
 
-          {product.variations.length > 0 && (
+          {versions.length > 0 && (
             <fieldset className="mt-5 rounded-2xl border border-line bg-surface p-3">
-              <legend className="px-1 text-sm font-semibold text-ink">Choose {product.variations[0].name.length <= 24 ? product.variations[0].name.toLowerCase() : 'an option'}</legend>
+              <legend className="px-1 text-sm font-semibold text-ink">Choose {product.variations[0].name.length <= 24 ? product.variations[0].name.toLowerCase() : 'a version'}</legend>
               <div className="mt-1 flex flex-wrap gap-2">
-                {product.variations.map((v) => {
-                  const selected = variationId === v.id;
+                {versions.map((v) => {
+                  const selected = version === v.value;
                   const out = v.available <= 0;
                   return (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => { if (!out) { setVariationId(v.id); setQty(1); } }}
-                      aria-pressed={selected}
-                      aria-disabled={out}
-                      className={`flex min-h-[48px] flex-col items-start rounded-xl border px-4 py-1.5 text-left text-sm font-medium transition-colors ${selected ? 'border-brand-green bg-brand-green-mist text-brand-green-deep ring-2 ring-brand-green/30' : out ? 'border-dashed border-line text-ink-3' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}
-                    >
+                    <button key={v.value} type="button" onClick={() => { if (!out) { setVersion(v.value); setColour(null); setQty(1); } }} aria-pressed={selected} aria-disabled={out}
+                      className={`flex min-h-[48px] flex-col items-start rounded-xl border px-4 py-1.5 text-left text-sm font-medium transition-colors ${selected ? 'border-brand-green bg-brand-green-mist text-brand-green-deep ring-2 ring-brand-green/30' : out ? 'border-dashed border-line text-ink-3' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>
                       <span className="flex items-center gap-1.5">{selected && <Check size={14} strokeWidth={2.5} />}{v.value}</span>
-                      <span className="text-caption font-normal">{out ? 'Sold out' : v.priceUgx !== product.priceUgx ? formatUgx(v.priceUgx) : `${v.available} available`}</span>
+                      <span className="text-caption font-normal">{out ? 'Sold out' : formatUgx(v.priceUgx)}</span>
                     </button>
                   );
                 })}
               </div>
-              {variation && <p className="mt-2 px-1 text-caption text-ink-3">Selected: {variation.value} · {formatUgx(variation.priceUgx)}</p>}
+            </fieldset>
+          )}
+
+          {colours.length > 0 && (
+            <fieldset className="mt-4 rounded-2xl border border-line bg-surface p-3">
+              <legend className="px-1 text-sm font-semibold text-ink">Choose a colour{colour ? <span className="font-normal text-ink-2">: {colour}</span> : ''}</legend>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {colours.map((c) => {
+                  const left = stockFor(versions.length ? version : null, c.name);
+                  const selected = colour === c.name;
+                  const out = left <= 0;
+                  return (
+                    <button key={c.name} type="button" onClick={() => { if (!out) { setColour(c.name); setQty(1); } }} aria-pressed={selected} aria-disabled={out} aria-label={`${c.name}, ${out ? 'sold out' : `${left} in stock`}`}
+                      className={`flex min-h-[48px] items-center gap-2.5 rounded-xl border px-3 py-1.5 text-sm font-medium transition-colors ${selected ? 'border-brand-green bg-brand-green-mist text-brand-green-deep ring-2 ring-brand-green/30' : out ? 'border-dashed border-line text-ink-3' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>
+                      <span className={`relative h-7 w-7 shrink-0 rounded-full border border-black/10 ${out ? 'opacity-40' : ''}`} style={{ background: c.hex ?? '#9CA3AF' }} aria-hidden>
+                        {selected && <Check size={14} strokeWidth={3} className="absolute inset-0 m-auto text-white drop-shadow" />}
+                      </span>
+                      <span className="flex flex-col items-start leading-tight"><span>{c.name}</span><span className="text-caption font-normal">{out ? 'Sold out' : `${left} in stock`}</span></span>
+                    </button>
+                  );
+                })}
+              </div>
             </fieldset>
           )}
 
