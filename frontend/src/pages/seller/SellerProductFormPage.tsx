@@ -543,7 +543,7 @@ export function SellerProductFormPage() {
                       <th className="py-2 pr-3 font-semibold">{versions.length ? typeLabel : ''}</th>
                       {colsFor.map((c) => {
                         const colour = colours.find((x) => x.name === c);
-                        return <th key={c} className="px-1 py-2 text-center font-semibold"><span className="flex flex-col items-center gap-1">{colour && <span className="h-5 w-5 rounded-full border border-black/10" style={{ background: colour.hex }} aria-hidden />}{c === NONE ? 'Stock' : c}</span></th>;
+                        return <th key={c} className="whitespace-nowrap px-2 py-2 text-center font-semibold"><span className="flex flex-col items-center gap-1">{colour && <span className="h-5 w-5 rounded-full border border-black/10" style={{ background: colour.hex }} aria-hidden />}{c === NONE ? 'Stock' : c}</span></th>;
                       })}
                       <th className="py-2 pl-2 text-right font-semibold">Total</th>
                     </tr>
@@ -551,7 +551,7 @@ export function SellerProductFormPage() {
                   <tbody>
                     {rowsFor.map((v, vi) => (
                       <tr key={`${v}-${vi}`} className="border-t border-line">
-                        <td className="py-2 pr-3 font-medium text-ink">{v === NONE ? (colours.length ? 'All' : '') : v || <span className="text-ink-3">unnamed</span>}</td>
+                        <td className="whitespace-nowrap py-2 pr-3 font-medium text-ink">{v === NONE ? (colours.length ? 'All' : '') : v || <span className="text-ink-3">unnamed</span>}</td>
                         {colsFor.map((c) => (
                           <td key={c} className="px-1 py-1.5 text-center">
                             <input type="number" inputMode="numeric" min={0} value={stock[key(v, c)] ?? ''} onChange={(e) => setStock((s) => ({ ...s, [key(v, c)]: e.target.value }))} placeholder="0" aria-label={`Stock for ${v === NONE ? '' : v} ${c === NONE ? '' : c}`.trim()} className="h-10 w-16 rounded-lg border border-line bg-surface text-center text-sm outline-none focus:border-brand-green focus:shadow-focus" />
