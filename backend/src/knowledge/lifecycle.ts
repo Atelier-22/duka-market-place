@@ -2,6 +2,7 @@ import { query, queryOne } from '../db/pool';
 import { CANONICAL_CATALOGUE, CURRENT_GENERATIONS_BY_CATEGORY, DEFAULT_CURRENT_GENERATIONS } from './canonicalCatalogue';
 import { normalizeValue, slugify } from './normalize';
 import { CANONICAL_DETAILS } from './canonicalSpecs';
+import { GROUPED_BY } from './collections';
 
 
 export type Lifecycle = 'current' | 'discontinued' | 'unknown';
@@ -236,8 +237,9 @@ export async function lifecycleFor(brand: string | null | undefined, model: stri
 
 export interface KindHit { type: 'kind'; id: string; name: string; category: string; versionType: string | null }
 export interface BrandHit { type: 'brand'; brand: string; category: string; kinds: string[] }
+export interface OptionHit { type: 'option'; attributeKey: string; attributeName: string; value: string; group: string | null; groupKey: string | null; kind: string; kindId: string; category: string }
 
-interface KindIndex { loadedAt: number; kinds: { id: string; name: string; category: string; versionType: string | null; words: string[] }[]; brands: { brand: string; slug: string; categories: Map<string, string[]> }[] }
+interface KindIndex { loadedAt: number; kinds: { id: string; name: string; category: string; versionType: string | null; words: string[] }[]; brands: { brand: string; slug: string; categories: Map<string, string[]> }[]; options: { attributeKey: string; attributeName: string; value: string; group: string | null; kind: string; kindId: string; category: string; words: string[] }[] }
 
 let kindIndex: KindIndex | null = null;
 let buildingKinds: Promise<KindIndex> | null = null;
@@ -250,10 +252,15 @@ async function loadKindIndex(): Promise<KindIndex> {
 }
 
 async function buildKindIndex(): Promise<KindIndex> {
-  const [kinds, synonyms, brandRows] = await Promise.all([
+  const [kinds, synonyms, brandRows, groupedRows] = await Promise.all([
     query<{ id: string; name: string; category: string; version_type: string | null }>(`SELECT id, name, category, version_type FROM product_kinds WHERE status = 'active' AND NOT is_default AND merged_into IS NULL ORDER BY category, position`),
     query<{ entity_id: string; term_norm: string }>(`SELECT entity_id, term_norm FROM product_synonyms WHERE entity_type = 'kind' AND status = 'active'`),
     query<{ brand: string; slug: string; category: string }>(`SELECT b.name AS brand, b.slug, bc.category FROM product_brand_categories bc JOIN product_brands b ON b.id = bc.brand_id WHERE b.status = 'active' AND b.merged_into IS NULL ORDER BY b.name, bc.observation_count DESC`),
+    query<{ attribute_key: string; attribute_name: string; value: string; group_label: string | null; kind: string; kind_id: string; category: string }>(
+      `SELECT a.key AS attribute_key, a.name AS attribute_name, o.value, o.group_label, k.name AS kind, k.id AS kind_id, k.category
+         FROM product_attribute_options o JOIN product_attributes a ON a.id = o.attribute_id JOIN product_kinds k ON k.id = o.kind_id
+        WHERE o.status = 'active' AND o.group_label IS NOT NULL AND k.status = 'active'`
+    ),
   ]);
   const synonymsFor = new Map<string, string[]>();
   for (const s of synonyms) synonymsFor.set(s.entity_id, [...(synonymsFor.get(s.entity_id) ?? []), s.term_norm]);
@@ -269,6 +276,7 @@ async function buildKindIndex(): Promise<KindIndex> {
     loadedAt: Date.now(),
     kinds: kinds.map((k) => ({ id: k.id, name: k.name, category: k.category, versionType: k.version_type, words: normalizeValue([k.name, ...(synonymsFor.get(k.id) ?? [])].join(' ')).split(/[\s/,&-]+/).filter(Boolean) })),
     brands: [...brands.values()],
+    options: groupedRows.map((o) => ({ attributeKey: o.attribute_key, attributeName: o.attribute_name, value: o.value, group: o.group_label, kind: o.kind, kindId: o.kind_id, category: o.category, words: normalizeValue(`${o.value} ${o.group_label ?? ''}`).split(/[\s/,&.-]+/).filter(Boolean) })),
   };
   return kindIndex;
 }
@@ -282,9 +290,9 @@ function singular(word: string): string {
   return word;
 }
 
-export async function searchKindsAndBrands(q: string): Promise<{ kinds: KindHit[]; brands: BrandHit[] }> {
+export async function searchKindsAndBrands(q: string): Promise<{ kinds: KindHit[]; brands: BrandHit[]; options: OptionHit[] }> {
   const tokens = normalizeValue(q).split(/[\s/,&-]+/).filter(Boolean);
-  if (tokens.length === 0) return { kinds: [], brands: [] };
+  if (tokens.length === 0) return { kinds: [], brands: [], options: [] };
   const index = await loadKindIndex();
   const kinds: (KindHit & { score: number })[] = [];
   for (const k of index.kinds) {
@@ -308,5 +316,18 @@ export async function searchKindsAndBrands(q: string): Promise<{ kinds: KindHit[
       for (const [category, kindNames] of b.categories) brands.push({ type: 'brand', brand: b.brand, category, kinds: kindNames.slice(0, 8) });
     }
   }
-  return { kinds: kinds.slice(0, 40).map(({ score: _s, ...rest }) => rest), brands: brands.slice(0, 20) };
+  const options: (OptionHit & { score: number })[] = [];
+  for (const o of index.options) {
+    let score = 0;
+    let ok = true;
+    for (const token of tokens) {
+      const exact = o.words.includes(token);
+      const prefix = exact || o.words.some((w) => w.startsWith(token));
+      if (!prefix) { ok = false; break; }
+      score += exact ? 3 : 1;
+    }
+    if (ok) options.push({ type: 'option', attributeKey: o.attributeKey, attributeName: o.attributeName, value: o.value, group: o.group, groupKey: GROUPED_BY[o.attributeKey] ?? null, kind: o.kind, kindId: o.kindId, category: o.category, score });
+  }
+  options.sort((a, b) => b.score - a.score || a.value.localeCompare(b.value));
+  return { kinds: kinds.slice(0, 40).map(({ score: _s, ...rest }) => rest), brands: brands.slice(0, 20), options: options.slice(0, 30).map(({ score: _s, ...rest }) => rest) };
 }

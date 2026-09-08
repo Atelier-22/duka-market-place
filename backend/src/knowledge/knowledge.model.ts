@@ -1,6 +1,7 @@
 import { query, queryOne } from '../db/pool';
 import { CATEGORY_LABELS, STORE_CATEGORIES } from '../seller/categories';
 import { normalizeValue, slugify } from './normalize';
+import { GROUPED_BY } from './collections';
 
 export interface KindRow {
   id: string; category: string; name: string; slug: string; version_type: string | null; is_default: boolean;
@@ -17,7 +18,9 @@ export interface OptionRow {
   display_hex: string | null; position: number; status: string; source: string; confidence: number; observation_count: number; seller_count: number; merged_into: string | null; last_observed_at: string | null;
 }
 
-export interface FormAttribute { key: string; name: string; type: string; unit: string | null; role: 'required' | 'optional'; options: string[] }
+export interface FormAttribute { key: string; name: string; type: string; unit: string | null; role: 'required' | 'optional'; options: string[]; groups?: { label: string; values: string[] }[]; groupKey?: string }
+
+export interface FormTraits { colours: boolean; brand: boolean; model: boolean }
 
 export interface FormKnowledge {
   category: string;
@@ -31,6 +34,7 @@ export interface FormKnowledge {
   colours: { name: string; hex: string | null }[];
   colourTitle: string;
   palette: { name: string; hex: string | null }[];
+  traits: FormTraits;
 }
 
 async function followMerge<T extends { id: string; merged_into: string | null }>(table: string, row: T | null, depth = 0): Promise<T | null> {
@@ -190,8 +194,17 @@ export async function resolveForm(category: string, kindName: string, brandName:
       [kind.id]
     );
     for (const link of links) {
-      const opts = ['select', 'multi_select', 'year'].includes(link.type) ? dedupeValues(await optionsFor(link.id, { kindId: kind.id, category, global: true }, 40)) : [];
-      attributes.push({ key: link.key, name: link.name, type: link.type, unit: link.unit, role: link.role === 'required' ? 'required' : 'optional', options: opts });
+      const rows = ['select', 'multi_select', 'year'].includes(link.type) ? await optionsFor(link.id, { kindId: kind.id, category, global: true }, 400) : [];
+      const grouped = rows.filter((r) => (r as OptionRow & { group_label?: string | null }).group_label);
+      const entry: FormAttribute = { key: link.key, name: link.name, type: link.type, unit: link.unit, role: link.role === 'required' ? 'required' : 'optional', options: dedupeValues(rows).slice(0, 60) };
+      if (grouped.length) {
+        const byGroup = new Map<string, string[]>();
+        for (const r of grouped) { const g = (r as OptionRow & { group_label?: string | null }).group_label as string; byGroup.set(g, [...(byGroup.get(g) ?? []), r.value]); }
+        entry.groups = [...byGroup.entries()].map(([label, values]) => ({ label, values }));
+        entry.groupKey = GROUPED_BY[link.key];
+        entry.options = [];
+      }
+      attributes.push(entry);
     }
   }
 
@@ -216,6 +229,7 @@ export async function resolveForm(category: string, kindName: string, brandName:
     }
   }
   const palette = colourAttr ? await optionsFor(colourAttr.id, { global: true }) : [];
+  const modelled = await categoriesWithModels();
   const seenColours = new Set<string>();
   const colourList = colours.filter((c) => { if (seenColours.has(c.value_norm)) return false; seenColours.add(c.value_norm); return true; });
 
@@ -231,7 +245,21 @@ export async function resolveForm(category: string, kindName: string, brandName:
     colours: colourList.map((c) => ({ name: c.value, hex: c.display_hex })),
     colourTitle,
     palette: palette.filter((p) => !seenColours.has(p.value_norm)).map((c) => ({ name: c.value, hex: c.display_hex })),
+    traits: {
+      colours: colourList.length > 0,
+      brand: brandRows.length > 0,
+      model: modelled.has(category) || attributes.some((a) => a.key === 'model' || a.key === 'fits'),
+    },
   };
+}
+
+let modelledCache: { loadedAt: number; categories: Set<string> } | null = null;
+
+async function categoriesWithModels(): Promise<Set<string>> {
+  if (modelledCache && Date.now() - modelledCache.loadedAt < 10 * 60_000) return modelledCache.categories;
+  const rows = await query<{ category: string }>(`SELECT DISTINCT category FROM canonical_products WHERE status = 'active'`).catch(() => [] as { category: string }[]);
+  modelledCache = { loadedAt: Date.now(), categories: new Set(rows.map((r) => r.category)) };
+  return modelledCache.categories;
 }
 
 export async function categoryOverview() {

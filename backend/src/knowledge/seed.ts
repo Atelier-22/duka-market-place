@@ -2,12 +2,13 @@ import { query, queryOne } from '../db/pool';
 import { Tx, txQuery, withTransaction } from '../seller/db';
 import { ANDROID_COLOURS, APPLE_COLOURS, CATEGORY_ENTRIES, CategoryEntry, SAMSUNG_COLOURS, SubEntry, Swatch } from './catalogue';
 import { ATTRIBUTE_META, BRAND_SYNONYMS, GENERIC_PALETTE, KIND_SYNONYMS, REQUIRED_DETAILS } from './bootstrap';
+import { EVERYDAY_KINDS, GROUPED_SETS } from './collections';
 import { inferAttributeType, normalizeValue, slugify } from './normalize';
 
 interface AttrDef { key: string; name: string; type: string; unit: string | null }
 interface KindDef { category: string; name: string; slug: string; versionType: string | null; isDefault: boolean; position: number }
 interface LinkDef { kindSlug: string; category: string; attrKey: string; role: 'variant' | 'required' | 'optional'; position: number }
-interface OptionDef { attrKey: string; kindSlug?: string; category?: string; brandSlug?: string; value: string; hex: string | null; position: number }
+interface OptionDef { attrKey: string; kindSlug?: string; category?: string; brandSlug?: string; value: string; hex: string | null; position: number; group?: string }
 interface BrandDef { name: string; slug: string; categories: Set<string> }
 interface SynonymDef { term: string; entityType: 'kind' | 'brand'; category?: string; kindSlug?: string; brandSlug?: string }
 
@@ -71,6 +72,23 @@ function planKind(plan: Plan, entry: CategoryEntry, sub: SubEntry | null, positi
 
 function buildPlan(): Plan {
   const plan = new Plan();
+  for (const set of GROUPED_SETS) {
+    const kindSlug = slugify(set.kind);
+    const groupAttr = plan.attribute(set.groupAttribute, set.groups[0]?.label ?? '');
+    const valueAttr = plan.attribute(set.attribute, set.groups[0]?.values[0] ?? '');
+    plan.link(set.category, kindSlug, groupAttr, 'required', 2);
+    plan.link(set.category, kindSlug, valueAttr, 'required', 3);
+    set.groups.forEach((g, gi) => {
+      plan.option({ attrKey: groupAttr, kindSlug, category: set.category, value: g.label, hex: null, position: gi });
+      g.values.forEach((v, vi) => plan.option({ attrKey: valueAttr, kindSlug, category: set.category, value: v, hex: null, position: gi * 100 + vi, group: g.label }));
+    });
+    set.extras.forEach((extra, ei) => {
+      const attr = plan.attribute(extra.attribute, extra.values[0] ?? '');
+      plan.link(set.category, kindSlug, attr, extra.required ? 'required' : 'optional', 4 + ei);
+      extra.values.forEach((v, i) => plan.option({ attrKey: attr, kindSlug, category: set.category, value: v, hex: null, position: i }));
+    });
+    for (const term of set.synonyms) plan.synonyms.push({ term, entityType: 'kind', category: set.category, kindSlug });
+  }
   plan.attribute('Colour');
   plan.attribute('Brand');
   plan.attribute('Model');
@@ -89,6 +107,17 @@ function buildPlan(): Plan {
   for (const syn of BRAND_SYNONYMS) {
     plan.brand(syn.brand, null);
     for (const term of syn.terms) plan.synonyms.push({ term, entityType: 'brand', brandSlug: slugify(syn.brand) });
+  }
+  for (const k of EVERYDAY_KINDS) {
+    const slug = plan.kind(k.category, k.name, k.versionType ?? null, false, 900);
+    if (k.versionType) {
+      const variant = plan.attribute(k.versionType, k.versions?.[0] ?? '');
+      plan.link(k.category, slug, variant, 'variant', 0);
+      (k.versions ?? []).forEach((v, i) => plan.option({ attrKey: variant, kindSlug: slug, category: k.category, value: v, hex: null, position: i }));
+    }
+    plan.link(k.category, slug, 'colour', 'variant', 1);
+    (k.specs ?? []).forEach((label, i) => plan.link(k.category, slug, plan.attribute(label), 'optional', 10 + i));
+    for (const term of k.synonyms ?? []) plan.synonyms.push({ term, entityType: 'kind', category: k.category, kindSlug: slug });
   }
   return plan;
 }
@@ -117,8 +146,8 @@ export async function seedKnowledge(): Promise<{ kinds: number; attributes: numb
       [...plan.links.values()].map((l) => [kindIds.get(`${l.category}|${l.kindSlug}`), attrIds.get(l.attrKey), l.role, l.position, 'active', 'bootstrap', 1]).filter((r) => r[0] && r[1]),
       'ON CONFLICT (kind_id, attribute_id) DO NOTHING');
 
-    await bulkInsert(tx, 'product_attribute_options', ['attribute_id', 'kind_id', 'category', 'brand_slug', 'value', 'value_norm', 'display_hex', 'position', 'status', 'source', 'confidence'],
-      [...plan.options.values()].map((o) => [attrIds.get(o.attrKey), o.kindSlug ? kindIds.get(`${o.category}|${o.kindSlug}`) ?? null : null, o.kindSlug ? null : o.category ?? null, o.brandSlug ?? null, o.value.slice(0, 80), normalizeValue(o.value).slice(0, 80), o.hex, o.position, 'active', 'bootstrap', 1]).filter((r) => r[0]),
+    await bulkInsert(tx, 'product_attribute_options', ['attribute_id', 'kind_id', 'category', 'brand_slug', 'value', 'value_norm', 'display_hex', 'position', 'status', 'source', 'confidence', 'group_label'],
+      [...plan.options.values()].map((o) => [attrIds.get(o.attrKey), o.kindSlug ? kindIds.get(`${o.category}|${o.kindSlug}`) ?? null : null, o.kindSlug ? null : o.category ?? null, o.brandSlug ?? null, o.value.slice(0, 80), normalizeValue(o.value).slice(0, 80), o.hex, o.position, 'active', 'bootstrap', 1, o.group ?? null]).filter((r) => r[0]),
       'ON CONFLICT DO NOTHING');
 
     await bulkInsert(tx, 'product_brands', ['name', 'slug', 'status', 'source', 'confidence'],
@@ -141,10 +170,11 @@ export async function seedKnowledge(): Promise<{ kinds: number; attributes: numb
 }
 
 export async function seedKnowledgeIfEmpty(): Promise<boolean> {
-  const existing = await query<{ n: number }>(`SELECT count(*)::int AS n FROM product_attributes`).catch(() => null);
+  const existing = await query<{ n: number }>(`SELECT (SELECT count(*) FROM product_kinds WHERE source = 'bootstrap')::int + (SELECT count(*) FROM product_attribute_options WHERE source = 'bootstrap')::int AS n`).catch(() => null);
   if (!existing) return false;
-  if (existing[0].n > 0) return false;
+  const plan = buildPlan();
+  if (existing[0].n >= plan.kinds.size + plan.options.size) return false;
   const counts = await seedKnowledge();
-  console.log(`[knowledge] seeded ${counts.kinds} kinds, ${counts.attributes} attributes, ${counts.options} options, ${counts.brands} brands`);
+  console.log(`[knowledge] seeded knowledge: ${counts.kinds} kinds, ${counts.attributes} attributes, ${counts.options} options, ${counts.brands} brands`);
   return true;
 }

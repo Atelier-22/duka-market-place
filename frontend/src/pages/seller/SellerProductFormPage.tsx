@@ -15,7 +15,8 @@ import { SkeletonHeading, SkeletonRegion, SkeletonRows } from '../../components/
 import { useToast } from '../../components/ui/Toast';
 import { categoryEntry } from '../../market/categories';
 import { Swatch, useProductKnowledge } from '../../market/knowledge';
-import { BrandHit, DISCONTINUED_NOTE, KindHit, SearchGroup, SearchHit, searchCanonical, useCanonicalProduct } from '../../market/canonical';
+import { BrandHit, DISCONTINUED_NOTE, KindHit, OptionHit, SearchGroup, SearchHit, searchCanonical, useCanonicalProduct } from '../../market/canonical';
+import { Search, RotateCcw } from 'lucide-react';
 import { CategoryOptions } from '../../components/market/CategoryOptions';
 import { formatUgx } from '../../market/format';
 
@@ -69,6 +70,43 @@ export function SellerProductFormPage() {
   const nameTyped = useRef(false);
   const variantsAppliedFor = useRef<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [examples, setExamples] = useState<string[]>(['Samsung', 'iPhone 13', 'fridge', 'cooking oil', 'Manchester United jersey', 'sofa', 'trousers']);
+  const [exampleIndex, setExampleIndex] = useState(0);
+  const [showIdentity, setShowIdentity] = useState(false);
+  const [showColours, setShowColours] = useState(false);
+
+  useEffect(() => {
+    api.get('/knowledge/examples').then((r) => { if (Array.isArray(r.data.examples) && r.data.examples.length) setExamples(r.data.examples); }).catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    const timer = setInterval(() => setExampleIndex((i) => i + 1), 3000);
+    return () => clearInterval(timer);
+  }, []);
+  const namePlaceholder = `Type in something like ${examples[exampleIndex % examples.length]}`;
+
+  async function searchNow() {
+    const q = form.name.trim();
+    if (q.length < 2) return;
+    nameTyped.current = false;
+    try {
+      const groups = await searchCanonical(q);
+      setNameMatches(groups);
+      setNameOpen(groups.length > 0);
+      if (groups.length === 0) push('Nothing matched that yet. Keep going and Duka learns it from you.', 'error');
+    } catch { setNameMatches([]); }
+  }
+
+  function startOver() {
+    setPicked(null);
+    variantsAppliedFor.current = null;
+    versionTypeTouched.current = false;
+    setNameMatches([]);
+    setNameOpen(false);
+    setForm((f) => ({ ...f, subcategory: '', brand: '', model: '', condition: 'new' }));
+    setVersions([]);
+    setColours([]);
+    setStock({});
+  }
   const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('draft');
   const [flagged, setFlagged] = useState<string | null>(null);
   const [loading, setLoading] = useState(editing);
@@ -193,6 +231,20 @@ export function SellerProductFormPage() {
     }, 300);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [form.name]);
+
+  function pickOption(hit: OptionHit) {
+    nameTyped.current = false;
+    setNameOpen(false);
+    setNameMatches([]);
+    versionTypeTouched.current = false;
+    setForm((f) => ({ ...f, category: hit.category, subcategory: hit.kind, name: f.name.trim().length >= hit.value.length + 4 ? f.name : `${hit.value} ${hit.kind.replace(/s$/, '').toLowerCase()}` }));
+    setSpecs((sp) => {
+      const next = sp.filter((s) => s.label.toLowerCase() !== hit.attributeName.toLowerCase() && (!hit.groupKey || s.label.toLowerCase() !== hit.groupKey.toLowerCase()));
+      if (hit.groupKey && hit.group) next.push({ label: hit.groupKey.charAt(0).toUpperCase() + hit.groupKey.slice(1), value: hit.group });
+      next.push({ label: hit.attributeName, value: hit.value });
+      return next;
+    });
+  }
 
   function pickKind(hit: KindHit) {
     nameTyped.current = false;
@@ -430,7 +482,10 @@ export function SellerProductFormPage() {
             <h2 className="font-display text-h3 font-medium text-brand-green-deep">Basics</h2>
             <div className="mt-4 flex flex-col gap-4">
               <div className="relative">
-                <Input id="field-name" label="Product name" placeholder="Start typing: Samsung, iPhone, MacBook, trousers…" value={form.name} onChange={(e) => { nameTyped.current = true; set('name', e.target.value); }} onFocus={() => { if (nameMatches.length) setNameOpen(true); }} onBlur={() => setTimeout(() => setNameOpen(false), 150)} onKeyDown={(e) => { if (e.key === 'Escape') setNameOpen(false); if (e.key === 'Enter' && nameOpen && nameMatches[0]?.products[0]) { e.preventDefault(); pickProduct(nameMatches[0].products[0]); } }} error={errors.name} maxLength={200} autoComplete="off" role="combobox" aria-expanded={nameOpen} aria-controls="product-name-matches" hint={picked && pickedStillApplies ? `Using Duka's record for the ${picked.displayName}.` : 'Pick a match to fill in the category, brand and model, or keep typing your own.'} />
+                <Input id="field-name" label="Product name" placeholder={namePlaceholder} value={form.name} onChange={(e) => { nameTyped.current = true; set('name', e.target.value); }} onFocus={() => { if (nameMatches.length) setNameOpen(true); }} onBlur={() => setTimeout(() => setNameOpen(false), 150)} onKeyDown={(e) => { if (e.key === 'Escape') setNameOpen(false); if (e.key === 'Enter' && nameOpen && nameMatches[0]?.products[0]) { e.preventDefault(); pickProduct(nameMatches[0].products[0]); } }} error={errors.name} maxLength={200} autoComplete="off" role="combobox" aria-expanded={nameOpen} aria-controls="product-name-matches" hint={picked && pickedStillApplies ? `Using Duka's record for the ${picked.displayName}.` : 'Pick a match and Duka fills in what it knows, or keep typing your own.'} trailing={<button type="button" onMouseDown={(e) => e.preventDefault()} onClick={searchNow} aria-label="Search Duka's catalogue" className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-3 hover:bg-surface-2 hover:text-brand-green"><Search size={18} /></button>} />
+                {(picked || form.subcategory || form.brand) && (
+                  <button type="button" onClick={startOver} className="mt-1.5 inline-flex items-center gap-1 text-caption font-medium text-ink-3 hover:text-brand-red"><RotateCcw size={12} /> Start over with a different product</button>
+                )}
                 {nameOpen && nameMatches.length > 0 && (
                   <div id="product-name-matches" role="listbox" aria-label="Matching products" data-testid="product-name-matches" className="absolute left-0 right-0 z-30 mt-1 max-h-80 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-raised">
                     {nameMatches.map((group) => (
@@ -440,6 +495,12 @@ export function SellerProductFormPage() {
                           <button key={`brand-${hit.category}`} type="button" role="option" aria-selected={false} onMouseDown={(e) => e.preventDefault()} onClick={() => pickBrand(hit)} className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-surface-2">
                             <span className="min-w-0"><span className="block truncate font-medium">Any {hit.brand} {group.label.toLowerCase()}</span><span className="block text-caption text-ink-3">{hit.kinds.length ? hit.kinds.join(' · ') : 'Sets the brand and category'}</span></span>
                             <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-semibold uppercase text-ink-3">Brand</span>
+                          </button>
+                        ))}
+                        {(group.options ?? []).slice(0, expandedGroups[group.category] ? 30 : 5).map((hit) => (
+                          <button key={`option-${hit.attributeKey}-${hit.value}`} type="button" role="option" aria-selected={false} onMouseDown={(e) => e.preventDefault()} onClick={() => pickOption(hit)} className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-surface-2">
+                            <span className="min-w-0"><span className="block truncate font-medium">{hit.value}{hit.group ? <span className="font-normal text-ink-3"> · {hit.group}</span> : null}</span><span className="block text-caption text-ink-3">{hit.kind} · sets the {hit.attributeName.toLowerCase()}{hit.groupKey ? ` and ${hit.groupKey}` : ''}</span></span>
+                            <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-semibold uppercase text-ink-3">{hit.attributeName}</span>
                           </button>
                         ))}
                         {(group.kinds ?? []).slice(0, expandedGroups[group.category] ? 40 : 4).map((hit) => (
@@ -475,11 +536,18 @@ export function SellerProductFormPage() {
                     </div>
                   )}
                 </div>
-                <div>
-                  <Input label="Brand (optional)" placeholder={resolved.brands[0] ?? 'Brand'} value={form.brand} onChange={(e) => set('brand', e.target.value)} maxLength={80} list={`brands-${entry.key}`} />
-                  <datalist id={`brands-${entry.key}`}>{resolved.brands.map((b) => <option key={b} value={b} />)}</datalist>
-                </div>
-                <Input label="Model (optional)" placeholder="A3102" value={form.model} onChange={(e) => set('model', e.target.value)} maxLength={80} hint={form.brand.trim() && form.model.trim() ? undefined : 'Give the brand and model and Duka looks up what it knows.'} />
+                {(resolved.traits.brand || showIdentity || form.brand) && (
+                  <div>
+                    <Input label="Brand" placeholder="Who makes it" value={form.brand} onChange={(e) => set('brand', e.target.value)} maxLength={80} list={`brands-${entry.key}`} />
+                    <datalist id={`brands-${entry.key}`}>{resolved.brands.map((b) => <option key={b} value={b} />)}</datalist>
+                  </div>
+                )}
+                {(resolved.traits.model || showIdentity || form.model) && (
+                  <Input label="Model" placeholder="Only if it has one" value={form.model} onChange={(e) => set('model', e.target.value)} maxLength={80} hint={form.brand.trim() && form.model.trim() ? undefined : 'With a brand and model Duka looks up what it knows.'} />
+                )}
+                {!resolved.traits.brand && !resolved.traits.model && !showIdentity && !form.brand && !form.model && (
+                  <button type="button" onClick={() => setShowIdentity(true)} className="min-h-[44px] self-end text-left text-sm font-medium text-brand-green" data-testid="add-identity">+ Add a brand or model anyway</button>
+                )}
                 <Select label="Condition" value={form.condition} onChange={(e) => set('condition', e.target.value)} disabled={conditionLocked} hint={conditionLocked ? DISCONTINUED_NOTE : undefined} data-testid="condition-select">
                   <option value="new">Brand new</option><option value="used">Used</option><option value="refurbished">Refurbished</option>
                 </Select>
@@ -569,7 +637,11 @@ export function SellerProductFormPage() {
             <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={() => addVersion()}><Plus size={15} /> Add a version</Button>
           </Card>
 
-          <Card padding="lg">
+          {!resolved.traits.colours && !showColours && colours.length === 0 && (
+            <button type="button" onClick={() => setShowColours(true)} className="surface flex min-h-[48px] items-center gap-2 rounded-2xl px-4 text-left text-sm font-medium text-brand-green shadow-card" data-testid="add-colours"><Palette size={16} /> This does not usually come in colours. Add colours anyway</button>
+          )}
+          {(resolved.traits.colours || showColours || colours.length > 0) && (
+          <Card padding="lg" data-testid="colours-card">
             <h2 className="flex items-center gap-2 font-display text-h3 font-medium text-brand-green-deep"><Palette size={18} /> Colours</h2>
             <p className="mt-1 text-small text-ink-3">If it comes in colours, tap them. Buyers pick one and see how many of that colour you have. Skip this for things without a colour.</p>
             {resolved.colours.length > 0 && (
@@ -587,6 +659,7 @@ export function SellerProductFormPage() {
               <Input label="Name it" placeholder="Desert titanium" value={customColour.name} onChange={(e) => setCustomColour((c) => ({ ...c, name: e.target.value }))} maxLength={40} />
               <Button type="button" size="sm" variant="secondary" className="mb-1" onClick={() => { addColour(customColour); setCustomColour({ name: '', hex: customColour.hex }); }}><Plus size={14} /> Add</Button>
             </div>
+            {!resolved.traits.colours && colours.length === 0 && <p className="mt-2 text-caption text-ink-3">Leave this empty if the product has no colour to choose.</p>}
             {colours.length > 0 && (
               <ul className="mt-3 flex flex-wrap gap-2">
                 {colours.map((c) => (
@@ -599,12 +672,32 @@ export function SellerProductFormPage() {
               </ul>
             )}
           </Card>
+          )}
 
           {hasOptions && (
             <Card padding="lg" id="field-options">
               <h2 className="font-display text-h3 font-medium text-brand-green-deep">How many of each</h2>
               <p className="mt-1 text-small text-ink-3">{versions.length && colours.length ? 'Enter the stock for every version in every colour. A 0 shows as sold out.' : versions.length ? 'Enter the stock for each version.' : 'Enter the stock for each colour.'}</p>
-              <div className="mt-3 overflow-x-auto">
+              <div className="mt-3 flex flex-col gap-3 sm:hidden" data-testid="stock-stack">
+                {rowsFor.map((v, vi) => (
+                  <div key={`${v}-${vi}`} className="rounded-xl border border-line p-3">
+                    <p className="text-sm font-semibold text-ink">{v === NONE ? (colours.length ? 'All' : 'Stock') : v || <span className="text-ink-3">unnamed</span>}</p>
+                    <ul className="mt-2 flex flex-col gap-2">
+                      {colsFor.map((c) => {
+                        const colour = colours.find((x) => x.name === c);
+                        return (
+                          <li key={c} className="flex items-center justify-between gap-3">
+                            <span className="flex min-w-0 items-center gap-2 text-sm text-ink-2">{colour && <span className="h-4 w-4 shrink-0 rounded-full border border-black/10" style={{ background: colour.hex }} aria-hidden />}<span className="truncate">{c === NONE ? 'In stock' : c}</span></span>
+                            <input type="number" inputMode="numeric" min={0} value={stock[key(v, c)] ?? ''} onChange={(e) => setStock((s) => ({ ...s, [key(v, c)]: e.target.value }))} placeholder="0" aria-label={`Stock for ${v === NONE ? '' : v} ${c === NONE ? '' : c} on phone`.trim()} className="h-10 w-20 rounded-lg border border-line bg-surface text-center text-sm outline-none focus:border-brand-green focus:shadow-focus" />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+                <p className="text-sm font-semibold text-ink">Total: {totalStock}</p>
+              </div>
+              <div className="mt-3 hidden overflow-x-auto sm:block">
                 <table className="w-full min-w-[320px] text-sm">
                   <thead>
                     <tr className="text-left text-label uppercase text-ink-3">
@@ -652,6 +745,28 @@ export function SellerProductFormPage() {
               <span className="flex items-center gap-2 text-caption text-ink-2" data-testid="listing-quality"><span className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-2"><span className="block h-full rounded-full bg-brand-green transition-[width]" style={{ width: `${Math.round((qualityDone / Math.max(1, qualityTotal)) * 100)}%` }} /></span>{qualityDone}/{qualityTotal} complete</span>
             </div>
             <p className="mt-1 text-small text-ink-3">The facts buyers look for on {(subEntry?.name ?? entry.label).toLowerCase()}. Tap one to fill it in. Photos, a description and a price count too.</p>
+            {resolved.attributes.filter((a) => a.groups && a.groups.length).map((a) => {
+              const groupLabel = a.groupKey ? a.groupKey.charAt(0).toUpperCase() + a.groupKey.slice(1) : 'Group';
+              const chosenGroup = specValueFor(groupLabel);
+              const chosenValue = specValueFor(a.name);
+              const activeGroup = a.groups!.find((g) => g.label.toLowerCase() === chosenGroup.trim().toLowerCase()) ?? null;
+              const chooseGroup = (label: string) => setSpecs((sp) => [...sp.filter((x) => x.label.toLowerCase() !== groupLabel.toLowerCase() && x.label.toLowerCase() !== a.name.toLowerCase()), { label: groupLabel, value: label }]);
+              const chooseValue = (value: string) => setSpecs((sp) => [...sp.filter((x) => x.label.toLowerCase() !== a.name.toLowerCase()), { label: a.name, value }]);
+              return (
+                <div key={a.key} className="mt-3 rounded-xl border border-line p-3" data-testid={`grouped-${a.key}`}>
+                  <p className="text-sm font-semibold text-ink">{groupLabel} then {a.name.toLowerCase()}</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {a.groups!.map((g) => <button key={g.label} type="button" onClick={() => chooseGroup(g.label)} aria-pressed={activeGroup?.label === g.label} className={`min-h-[36px] rounded-full border px-3 text-sm transition-colors ${activeGroup?.label === g.label ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>{g.label}</button>)}
+                  </div>
+                  {activeGroup && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {activeGroup.values.map((v) => <button key={v} type="button" onClick={() => chooseValue(v)} aria-pressed={chosenValue === v} className={`min-h-[36px] rounded-full border px-3 text-sm transition-colors ${chosenValue === v ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>{v}</button>)}
+                    </div>
+                  )}
+                  <p className="mt-2 text-caption text-ink-3">Not listed? Type it in the details below. Duka learns it.</p>
+                </div>
+              );
+            })}
             {suggestedDetails.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 {resolved.attributes.map((a) => {

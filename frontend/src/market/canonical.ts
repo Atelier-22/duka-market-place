@@ -9,7 +9,8 @@ export interface SearchHit { id: string; brand: string; model: string; family: s
 export interface CanonicalVariants { colours: { name: string; hex: string | null }[]; storage: string[]; sizes: string[] }
 export interface KindHit { type: 'kind'; id: string; name: string; category: string; versionType: string | null }
 export interface BrandHit { type: 'brand'; brand: string; category: string; kinds: string[] }
-export interface SearchGroup { category: string; label: string; products: SearchHit[]; kinds: KindHit[]; brands: BrandHit[] }
+export interface OptionHit { type: 'option'; attributeKey: string; attributeName: string; value: string; group: string | null; groupKey: string | null; kind: string; kindId: string; category: string }
+export interface SearchGroup { category: string; label: string; products: SearchHit[]; kinds: KindHit[]; brands: BrandHit[]; options: OptionHit[] }
 
 const searchCache = new Map<string, SearchGroup[]>();
 

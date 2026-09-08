@@ -3,7 +3,9 @@ import { api } from '../services/api';
 
 export interface Swatch { name: string; hex: string | null }
 
-export interface FormAttribute { key: string; name: string; type: string; unit: string | null; role: 'required' | 'optional'; options: string[] }
+export interface FormAttribute { key: string; name: string; type: string; unit: string | null; role: 'required' | 'optional'; options: string[]; groups?: { label: string; values: string[] }[]; groupKey?: string }
+
+export interface FormTraits { colours: boolean; brand: boolean; model: boolean }
 
 export interface FormKnowledge {
   category: string;
@@ -17,6 +19,7 @@ export interface FormKnowledge {
   colours: Swatch[];
   colourTitle: string;
   palette: Swatch[];
+  traits: FormTraits;
 }
 
 export interface FilterFacet { key: string; name: string; type: string; unit: string | null; values: { value: string; count: number; hex: string | null }[] }
@@ -41,7 +44,7 @@ export const FALLBACK_PALETTE: Swatch[] = [
 ];
 
 export function emptyKnowledge(category: string): FormKnowledge {
-  return { category, kinds: [], kind: null, versionType: 'Option', versionKey: null, versions: [], attributes: [], brands: [], colours: [], colourTitle: '', palette: FALLBACK_PALETTE };
+  return { category, kinds: [], kind: null, versionType: 'Option', versionKey: null, versions: [], attributes: [], brands: [], colours: [], colourTitle: '', palette: FALLBACK_PALETTE, traits: { colours: true, brand: true, model: true } };
 }
 
 const cache = new Map<string, FormKnowledge>();
@@ -56,6 +59,7 @@ export async function fetchKnowledge(category: string, kind: string, brand: stri
   const res = await api.get(`/knowledge/form?${params.toString()}`);
   const data = res.data as FormKnowledge;
   if (data.palette.length === 0) data.palette = FALLBACK_PALETTE;
+  if (!data.traits) data.traits = { colours: true, brand: true, model: true };
   cache.set(key, data);
   return data;
 }

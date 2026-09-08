@@ -7,6 +7,7 @@ import { findKind } from './knowledge.model';
 import { enqueueResearch, latestJob, researchConfigured } from './research';
 import { CATEGORY_LABELS } from '../seller/categories';
 import { searchCanonical, searchKindsAndBrands } from './lifecycle';
+import { NAME_EXAMPLES } from './collections';
 import { scheduleResearch } from './index';
 
 const lookupSchema = z.object({
@@ -50,18 +51,24 @@ export async function research(req: Request, res: Response) {
 export async function search(req: Request, res: Response) {
   const { q, limit } = z.object({ q: z.string().trim().min(1).max(120), limit: z.coerce.number().int().min(1).max(100).optional() }).parse(req.query);
   const [result, extra] = await Promise.all([searchCanonical(q, limit ?? 60), searchKindsAndBrands(q)]);
-  type Group = { category: string; label: string; products: typeof result.hits; kinds: typeof extra.kinds; brands: typeof extra.brands };
+  type Group = { category: string; label: string; products: typeof result.hits; kinds: typeof extra.kinds; brands: typeof extra.brands; options: typeof extra.options };
   const groups = new Map<string, Group>();
   const groupFor = (category: string): Group => {
     const existing = groups.get(category);
     if (existing) return existing;
-    const created: Group = { category, label: CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category, products: [], kinds: [], brands: [] };
+    const created: Group = { category, label: CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category, products: [], kinds: [], brands: [], options: [] };
     groups.set(category, created);
     return created;
   };
   for (const hit of result.hits) groupFor(hit.category).products.push(hit);
   for (const hit of extra.brands) groupFor(hit.category).brands.push(hit);
   for (const hit of extra.kinds) groupFor(hit.category).kinds.push(hit);
+  for (const hit of extra.options) groupFor(hit.category).options.push(hit);
   res.setHeader('Cache-Control', 'public, max-age=30');
-  res.json({ query: q, total: result.total + extra.kinds.length + extra.brands.length, products: result.total, kinds: extra.kinds.length, brands: extra.brands.length, groups: [...groups.values()] });
+  res.json({ query: q, total: result.total + extra.kinds.length + extra.brands.length + extra.options.length, products: result.total, kinds: extra.kinds.length, brands: extra.brands.length, options: extra.options.length, groups: [...groups.values()] });
+}
+
+export async function examples(_req: Request, res: Response) {
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.json({ examples: NAME_EXAMPLES });
 }

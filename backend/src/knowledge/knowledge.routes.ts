@@ -13,6 +13,7 @@ router.get('/filters', asyncHandler(knowledge.filters));
 router.get('/interpret', asyncHandler(knowledge.interpret));
 router.get('/product', asyncHandler(intelligence.lookup));
 router.get('/search', asyncHandler(intelligence.search));
+router.get('/examples', asyncHandler(intelligence.examples));
 router.post('/research', requireAuth, limits.write, asyncHandler(intelligence.research));
 
 export default router;

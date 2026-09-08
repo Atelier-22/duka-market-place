@@ -107,6 +107,14 @@ The catalogue covers used and new markets: iPhones back to the 6s, MacBooks back
 
 Fixing mistakes is guided: when publishing fails, the form lists every missing thing at the top, and tapping an item scrolls to and focuses that field. In production the public marketplace and store list never show accounts ending in `@example.test`, so automated test listings cannot appear to buyers even while a test is running.
 
+## The form adapts to what is being sold
+
+`GET /api/knowledge/form` returns `traits` per product kind: `colours` (any colour range is known for the kind, category or brand), `brand` (brands are known in the category) and `model` (the category has catalogue products or a model-like detail). The form hides the Colours card and the Model field when a trait is false, with an "add anyway" link, so cooking oil asks for litres, towels for size and material, knives for type, and a phone for everything. `backend/src/knowledge/collections.ts` adds everyday kinds (towels, knives, utensils, pens, printer ink, handkerchiefs, soap, detergents, cooking oil, sugar, flour, milk, pots and pans, baskets, shelves, socks, caps, phone accessories, eggs) with their sizes, details and synonyms, and the knowledge seed now runs incrementally at boot whenever the bootstrap has more kinds than the database.
+
+Options can carry a `group_label` (migration 025). Jerseys use it: League is the group, Club the value, with Premier League, La Liga, Serie A, Bundesliga, Ligue 1, the Uganda Premier League, Saudi Pro League, MLS, other European and African clubs and national teams, plus Kit and Season. The form shows league chips then the clubs of the chosen league, and the name search offers club names directly ("Manchester United" resolves to a Premier League jersey). A `GROUPED_BY` map names the grouping attribute per value attribute.
+
+The name field prompts with rotating examples from `GET /api/knowledge/examples`, has a search button to reopen matches, and a "Start over" link that clears the picked product, kind, brand, model, options and colours without leaving the page. On phones the versions × colours stock grid stacks one version per block instead of widening the page.
+
 ## Limitations
 
 - Categories themselves are still a static list; new top-level categories are a code change. Kinds under them are fully data-driven.
