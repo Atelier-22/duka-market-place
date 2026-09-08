@@ -43,6 +43,13 @@ export function ProductPage() {
   }, [id]);
 
   const product = data?.product;
+
+  useEffect(() => {
+    if (!product || product.variations.length === 0 || variationId) return;
+    const first = product.variations.find((v) => v.available > 0) ?? product.variations[0];
+    setVariationId(first.id);
+  }, [product, variationId]);
+
   const variation = useMemo(() => product?.variations.find((v) => v.id === variationId) ?? null, [product, variationId]);
   const price = variation ? variation.priceUgx : product?.priceUgx ?? 0;
   const available = variation ? variation.available : product?.available ?? 0;
@@ -79,7 +86,7 @@ export function ProductPage() {
 
   function addToCart(): boolean {
     if (!product) return false;
-    if (needsVariation) { push(`Choose a ${product.variations[0].name.toLowerCase()} first`, 'error'); return false; }
+    if (needsVariation) { push('Choose one of the options first', 'error'); return false; }
     if (available <= 0) return false;
     if (sellerOnly) { push('Switch to your customer account to buy', 'error'); return false; }
     cart.add({
@@ -185,22 +192,28 @@ export function ProductPage() {
           </p>
 
           {product.variations.length > 0 && (
-            <fieldset className="mt-5">
-              <legend className="text-sm font-medium text-ink">{product.variations[0].name}</legend>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {product.variations.map((v) => (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => { setVariationId(v.id); setQty(1); }}
-                    disabled={v.available <= 0}
-                    aria-pressed={variationId === v.id}
-                    className={`min-h-[44px] rounded-xl border px-4 text-sm font-medium transition-colors disabled:opacity-40 ${variationId === v.id ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}
-                  >
-                    {v.value}{v.priceUgx !== product.priceUgx ? ` · ${formatUgx(v.priceUgx)}` : ''}
-                  </button>
-                ))}
+            <fieldset className="mt-5 rounded-2xl border border-line bg-surface p-3">
+              <legend className="px-1 text-sm font-semibold text-ink">Choose {product.variations[0].name.length <= 24 ? product.variations[0].name.toLowerCase() : 'an option'}</legend>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {product.variations.map((v) => {
+                  const selected = variationId === v.id;
+                  const out = v.available <= 0;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => { if (!out) { setVariationId(v.id); setQty(1); } }}
+                      aria-pressed={selected}
+                      aria-disabled={out}
+                      className={`flex min-h-[48px] flex-col items-start rounded-xl border px-4 py-1.5 text-left text-sm font-medium transition-colors ${selected ? 'border-brand-green bg-brand-green-mist text-brand-green-deep ring-2 ring-brand-green/30' : out ? 'border-dashed border-line text-ink-3' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}
+                    >
+                      <span className="flex items-center gap-1.5">{selected && <Check size={14} strokeWidth={2.5} />}{v.value}</span>
+                      <span className="text-caption font-normal">{out ? 'Sold out' : v.priceUgx !== product.priceUgx ? formatUgx(v.priceUgx) : `${v.available} available`}</span>
+                    </button>
+                  );
+                })}
               </div>
+              {variation && <p className="mt-2 px-1 text-caption text-ink-3">Selected: {variation.value} · {formatUgx(variation.priceUgx)}</p>}
             </fieldset>
           )}
 

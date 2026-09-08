@@ -16,7 +16,7 @@ import { useToast } from '../../components/ui/Toast';
 import { STORE_CATEGORIES } from '../../market/types';
 import { categoryLabel, formatUgx } from '../../market/format';
 
-interface Variation { name: string; value: string; priceDeltaUgx: string; stockQuantity: string; sku: string }
+interface Variation { name: string; value: string; priceUgx: string; stockQuantity: string; sku: string }
 interface Spec { label: string; value: string }
 
 const EMPTY = {
@@ -35,6 +35,7 @@ export function SellerProductFormPage() {
   const [specs, setSpecs] = useState<Spec[]>([]);
   const [variations, setVariations] = useState<Variation[]>([]);
   const [variationName, setVariationName] = useState('Colour');
+  const [quickAdd, setQuickAdd] = useState('');
   const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('draft');
   const [flagged, setFlagged] = useState<string | null>(null);
   const [loading, setLoading] = useState(editing);
@@ -52,8 +53,8 @@ export function SellerProductFormPage() {
       });
       setImages(r.data.images.map((i: { url: string }) => i.url));
       setSpecs(p.specifications ?? []);
-      const vars = r.data.variations as { name: string; value: string; price_delta_ugx: number; stock_quantity: number; sku: string | null }[];
-      setVariations(vars.map((v) => ({ name: v.name, value: v.value, priceDeltaUgx: String(v.price_delta_ugx), stockQuantity: String(v.stock_quantity), sku: v.sku ?? '' })));
+      const vars = r.data.variations as { name: string; value: string; price_ugx: number | null; stock_quantity: number; sku: string | null }[];
+      setVariations(vars.map((v) => ({ name: v.name, value: v.value, priceUgx: v.price_ugx ? String(v.price_ugx) : '', stockQuantity: String(v.stock_quantity), sku: v.sku ?? '' })));
       if (vars[0]) setVariationName(vars[0].name);
       setStatus(p.status);
       setFlagged(p.flagged_reason);
@@ -80,6 +81,7 @@ export function SellerProductFormPage() {
     for (const v of variations) {
       if (!v.value.trim()) next.variations = 'Every option needs a value, for example Black or Large.';
       if (!Number.isInteger(Number(v.stockQuantity)) || Number(v.stockQuantity) < 0) next.variations = 'Option stock cannot be negative.';
+      if (v.priceUgx.trim() && (!Number.isInteger(Number(v.priceUgx)) || Number(v.priceUgx) < 100)) next.variations = 'Enter each option price in whole shillings, or leave it empty to use the product price.';
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -103,7 +105,7 @@ export function SellerProductFormPage() {
       deliveryInfo: form.deliveryInfo.trim() || null,
       isFeatured: form.isFeatured,
       images,
-      variations: variations.map((v) => ({ name: variationName.trim() || 'Option', value: v.value.trim(), priceDeltaUgx: Number(v.priceDeltaUgx || 0), stockQuantity: Number(v.stockQuantity || 0), sku: v.sku.trim() || null })),
+      variations: variations.map((v) => ({ name: variationName.trim() || 'Option', value: v.value.trim(), priceUgx: v.priceUgx.trim() ? Number(v.priceUgx) : null, stockQuantity: Number(v.stockQuantity || 0), sku: v.sku.trim() || null })),
     };
   }
 
@@ -188,25 +190,48 @@ export function SellerProductFormPage() {
 
           <Card padding="lg">
             <h2 className="font-display text-h3 font-medium text-brand-green-deep">Options</h2>
-            <p className="mt-1 text-small text-ink-3">Sizes, colours, models. Each option keeps its own stock and can adjust the price.</p>
+            <p className="mt-1 text-small text-ink-3">Only if buyers must pick one thing: a colour, a size, a model. Give the type once, then one row per choice. Each choice keeps its own stock.</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1.4fr]">
+              <Input label="What buyers choose between" value={variationName} onChange={(e) => setVariationName(e.target.value)} placeholder="Colour" maxLength={60} hint="One word like Colour, Size or Model. Not the colours themselves." />
+              <div>
+                <Input label="Add several choices at once" value={quickAdd} onChange={(e) => setQuickAdd(e.target.value)} placeholder="Navy blue, Orange, White" hint="Separate with commas. Each becomes its own row below." onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return;
+                  e.preventDefault();
+                  const parts = quickAdd.split(',').map((s) => s.trim()).filter(Boolean);
+                  if (parts.length === 0) return;
+                  setVariations((vs) => [...vs, ...parts.map((value, i) => ({ name: variationName, value, priceUgx: '', stockQuantity: vs.length === 0 && i === 0 ? form.stockQuantity : '0', sku: '' }))]);
+                  setQuickAdd('');
+                }} />
+                <Button type="button" size="sm" variant="secondary" className="mt-1" onClick={() => {
+                  const parts = quickAdd.split(',').map((s) => s.trim()).filter(Boolean);
+                  if (parts.length === 0) return;
+                  setVariations((vs) => [...vs, ...parts.map((value, i) => ({ name: variationName, value, priceUgx: '', stockQuantity: vs.length === 0 && i === 0 ? form.stockQuantity : '0', sku: '' }))]);
+                  setQuickAdd('');
+                }}><Plus size={14} /> Add these</Button>
+              </div>
+            </div>
             {variations.length > 0 && (
               <div className="mt-3">
-                <Input label="Option type" value={variationName} onChange={(e) => setVariationName(e.target.value)} placeholder="Colour" maxLength={60} />
                 <ul className="mt-3 flex flex-col gap-2">
                   {variations.map((v, i) => (
                     <li key={i} className="grid grid-cols-[1fr_auto] items-end gap-2 rounded-xl border border-line p-2 sm:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
-                      <Input label="Value" placeholder="Black" value={v.value} onChange={(e) => setVariations((vs) => vs.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} />
-                      <Input label="Price +/- (UGX)" type="number" inputMode="numeric" value={v.priceDeltaUgx} onChange={(e) => setVariations((vs) => vs.map((x, j) => (j === i ? { ...x, priceDeltaUgx: e.target.value } : x)))} />
-                      <Input label="Stock" type="number" inputMode="numeric" min={0} value={v.stockQuantity} onChange={(e) => setVariations((vs) => vs.map((x, j) => (j === i ? { ...x, stockQuantity: e.target.value } : x)))} />
+                      <Input label={`${variationName.trim() || 'Option'} name`} placeholder="Navy blue" value={v.value} onChange={(e) => setVariations((vs) => vs.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} />
+                      <Input label="Price for this one (UGX)" type="number" inputMode="numeric" min={100} placeholder={form.priceUgx || 'Same as product'} value={v.priceUgx} onChange={(e) => setVariations((vs) => vs.map((x, j) => (j === i ? { ...x, priceUgx: e.target.value } : x)))} hint={v.priceUgx.trim() ? `Buyer pays ${formatUgx(Number(v.priceUgx))}` : 'Empty = the product price'} />
+                      <Input label="Stock for this one" type="number" inputMode="numeric" min={0} value={v.stockQuantity} onChange={(e) => setVariations((vs) => vs.map((x, j) => (j === i ? { ...x, stockQuantity: e.target.value } : x)))} />
                       <Input label="SKU" value={v.sku} onChange={(e) => setVariations((vs) => vs.map((x, j) => (j === i ? { ...x, sku: e.target.value } : x)))} />
                       <button type="button" onClick={() => setVariations((vs) => vs.filter((_, j) => j !== i))} className="mb-1 flex h-10 w-10 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-red" aria-label="Remove option"><Trash2 size={16} /></button>
                     </li>
                   ))}
                 </ul>
                 {errors.variations && <p className="mt-2 text-small text-brand-red">{errors.variations}</p>}
+                <div className="mt-3 rounded-xl bg-surface-2 p-3 text-sm">
+                  <p className="text-caption font-semibold uppercase text-ink-3">Buyers will see</p>
+                  <p className="mt-1 text-ink">Choose {(variationName.trim() || 'option').toLowerCase()}: {variations.filter((v) => v.value.trim()).map((v) => `${v.value.trim()} (${formatUgx(v.priceUgx.trim() ? Number(v.priceUgx) : (Number(form.salePriceUgx) || Number(form.priceUgx) || 0))}${Number(v.stockQuantity) > 0 ? '' : ', sold out'})`).join(' · ') || 'nothing yet, add a choice above'}</p>
+                  {variations.some((v) => Number(v.stockQuantity) <= 0) && <p className="mt-1 text-caption text-brand-red">A choice with 0 stock shows as sold out and cannot be bought.</p>}
+                </div>
               </div>
             )}
-            <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={() => setVariations((vs) => [...vs, { name: variationName, value: '', priceDeltaUgx: '0', stockQuantity: '0', sku: '' }])}><Plus size={15} /> Add an option</Button>
+            <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={() => setVariations((vs) => [...vs, { name: variationName, value: '', priceUgx: '', stockQuantity: vs.length === 0 ? form.stockQuantity : '0', sku: '' }])}><Plus size={15} /> Add one choice</Button>
           </Card>
 
           <Card padding="lg">

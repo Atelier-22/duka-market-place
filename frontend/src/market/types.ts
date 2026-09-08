@@ -41,6 +41,7 @@ export interface PublicProduct {
   salesCount: number;
   publishedAt: string | null;
   imageUrl: string | null;
+  images?: string[];
   store?: PublicStoreSummary;
 }
 

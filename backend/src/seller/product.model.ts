@@ -41,7 +41,7 @@ export interface ProductRow {
 
 export interface ImageRow { id: string; product_id: string; url: string; position: number }
 export interface VariationRow {
-  id: string; product_id: string; name: string; value: string; price_delta_ugx: number;
+  id: string; product_id: string; name: string; value: string; price_delta_ugx: number; price_ugx: number | null;
   stock_quantity: number; reserved_quantity: number; sku: string | null; position: number;
 }
 export interface PromotionRow extends PromotionLike {
@@ -65,7 +65,7 @@ export interface ProductInput {
   deliveryInfo?: string | null;
   isFeatured?: boolean;
   images?: string[];
-  variations?: { name: string; value: string; priceDeltaUgx?: number; stockQuantity?: number; sku?: string | null }[];
+  variations?: { name: string; value: string; priceUgx?: number | null; priceDeltaUgx?: number; stockQuantity?: number; sku?: string | null }[];
 }
 
 export function availableQuantity(p: { stock_quantity: number; reserved_quantity: number }): number {
@@ -125,9 +125,9 @@ async function syncVariations(tx: Tx, productId: string, variations: NonNullable
   for (const v of variations) {
     await txQuery(
       tx,
-      `INSERT INTO seller_product_variations (product_id, name, value, price_delta_ugx, stock_quantity, sku, position)
+      `INSERT INTO seller_product_variations (product_id, name, value, price_ugx, stock_quantity, sku, position)
        VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [productId, v.name.trim(), v.value.trim(), v.priceDeltaUgx ?? 0, v.stockQuantity ?? 0, v.sku?.trim() || null, position++]
+      [productId, v.name.trim(), v.value.trim(), v.priceUgx ?? null, v.stockQuantity ?? 0, v.sku?.trim() || null, position++]
     );
   }
   if (variations.length > 0) {
@@ -279,7 +279,7 @@ export async function duplicateProduct(productId: string, ownerId: string): Prom
     specifications: source.specifications,
     deliveryInfo: source.delivery_info,
     images: images.map((i) => i.url),
-    variations: variations.map((v) => ({ name: v.name, value: v.value, priceDeltaUgx: Number(v.price_delta_ugx), stockQuantity: 0, sku: null })),
+    variations: variations.map((v) => ({ name: v.name, value: v.value, priceUgx: v.price_ugx ? Number(v.price_ugx) : null, stockQuantity: 0, sku: null })),
   });
 }
 
@@ -409,7 +409,8 @@ const PUBLIC_PRODUCT_BASE = `
          s.whatsapp AS store_whatsapp, s.contact_email AS store_email, s.delivery_fee_ugx AS store_delivery_fee,
          s.follower_count AS store_followers,
          (sp.verification_status = 'verified') AS store_verified,
-         (SELECT url FROM seller_product_images i WHERE i.product_id = p.id ORDER BY position, created_at LIMIT 1) AS image_url
+         (SELECT url FROM seller_product_images i WHERE i.product_id = p.id ORDER BY position, created_at LIMIT 1) AS image_url,
+         (SELECT COALESCE(array_agg(url ORDER BY position, created_at), '{}') FROM seller_product_images i WHERE i.product_id = p.id) AS image_urls
     FROM seller_products p
     JOIN seller_stores s ON s.id = p.store_id
     JOIN seller_profiles sp ON sp.user_id = s.owner_id
@@ -452,6 +453,11 @@ export async function listPublicProducts(f: PublicProductFilters = {}) {
   return { total: total?.n ?? rows.length, products: rows.map((p) => toPublicProduct(p, promos[p.id] ?? [])) };
 }
 
+export function optionPrice(product: { price_ugx: number | string; sale_price_ugx: number | string | null }, option: { price_ugx: number | string | null }, promotions: PromotionLike[] = []): number {
+  if (option.price_ugx == null || Number(option.price_ugx) === Number(product.price_ugx)) return effectivePrice(product, promotions).price;
+  return effectivePrice({ price_ugx: Number(option.price_ugx), sale_price_ugx: null }, promotions).price;
+}
+
 export function toPublicProduct(p: any, promotions: PromotionLike[] = []) {
   const pricing = effectivePrice(p, promotions);
   return {
@@ -479,6 +485,7 @@ export function toPublicProduct(p: any, promotions: PromotionLike[] = []) {
     salesCount: Number(p.sales_count ?? 0),
     publishedAt: p.published_at,
     imageUrl: p.image_url ?? null,
+    images: Array.isArray(p.image_urls) ? p.image_urls : (p.image_url ? [p.image_url] : []),
     store: p.store_name
       ? {
           id: p.store_id,
@@ -512,7 +519,6 @@ export async function getPublicProduct(id: string) {
     ),
   ]);
   const product = toPublicProduct(row, promos[id] ?? []);
-  const pricing = product.priceUgx;
   return {
     ...product,
     images: (images[id] ?? []).map((i) => i.url),
@@ -520,7 +526,7 @@ export async function getPublicProduct(id: string) {
       id: v.id,
       name: v.name,
       value: v.value,
-      priceUgx: Math.max(1, pricing + Number(v.price_delta_ugx)),
+      priceUgx: optionPrice(row, v, promos[id] ?? []),
       available: availableQuantity(v),
     })),
     reviews,

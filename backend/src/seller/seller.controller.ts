@@ -127,6 +127,7 @@ const specificationSchema = z.object({ label: z.string().trim().min(1).max(60), 
 const variationSchema = z.object({
   name: z.string().trim().min(1).max(60),
   value: z.string().trim().min(1).max(80),
+  priceUgx: z.number().int().min(100).max(1_000_000_000).nullable().optional(),
   priceDeltaUgx: z.number().int().min(-50_000_000).max(50_000_000).optional(),
   stockQuantity: z.number().int().min(0).max(1_000_000).optional(),
   sku: z.string().trim().max(64).nullable().optional(),
@@ -182,8 +183,19 @@ export async function getProduct(req: Request, res: Response) {
   res.json({ product: { ...product, available: availableQuantity(product) }, images: images[product.id] ?? [], variations: variations[product.id] ?? [], events });
 }
 
+function withOptionPrices<T extends { priceUgx?: number; variations?: { priceUgx?: number | null; priceDeltaUgx?: number }[] }>(input: T, basePrice: number): T {
+  if (!input.variations) return input;
+  return {
+    ...input,
+    variations: input.variations.map((v) => ({
+      ...v,
+      priceUgx: v.priceUgx ?? (v.priceDeltaUgx ? Math.max(100, basePrice + v.priceDeltaUgx) : null),
+    })),
+  };
+}
+
 export async function createNewProduct(req: Request, res: Response) {
-  const input = productSchema.parse(req.body);
+  const input = withOptionPrices(productSchema.parse(req.body), productSchema.parse(req.body).priceUgx);
   const { user, store } = await context(req, { requireStore: true, write: true });
   const product = await createProduct(store!.id, user.id, input as ProductInput);
   await refreshStoreCounters(store!.id);
@@ -197,7 +209,7 @@ export async function editProduct(req: Request, res: Response) {
   if (input.salePriceUgx != null && input.salePriceUgx >= (input.priceUgx ?? Number(existing.price_ugx))) {
     throw new ApiError(400, 'Sale price must be lower than the regular price');
   }
-  const product = await updateProduct(existing.id, user.id, input as Partial<ProductInput>);
+  const product = await updateProduct(existing.id, user.id, withOptionPrices(input, input.priceUgx ?? Number(existing.price_ugx)) as Partial<ProductInput>);
   res.json({ product });
 }
 

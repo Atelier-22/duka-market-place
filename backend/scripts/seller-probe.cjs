@@ -92,7 +92,7 @@ const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000
       name: 'Samsung Galaxy S24', category: 'phones', brand: 'Samsung', priceUgx: 3200000, salePriceUgx: 2990000,
       stockQuantity: 5, lowStockThreshold: 3, description: 'Brand new, sealed, one year warranty from the store.',
       images: [img.body.url], specifications: [{ label: 'Storage', value: '256GB' }],
-      variations: [{ name: 'Colour', value: 'Black', stockQuantity: 3 }, { name: 'Colour', value: 'Violet', stockQuantity: 2, priceDeltaUgx: 50000 }],
+      variations: [{ name: 'Colour', value: 'Black', stockQuantity: 3 }, { name: 'Colour', value: 'Violet', stockQuantity: 2, priceUgx: 3040000 }],
     },
   });
   check('product with images, specs and variations is created as a draft', productA.status === 201 && productA.body.product.status === 'draft' && Number(productA.body.product.stock_quantity) === 5, JSON.stringify(productA.body).slice(0, 80));
@@ -117,7 +117,7 @@ const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000
   const pub = await call('GET', `/marketplace/products/${pid}`);
   check('published product is public with seller attached', pub.status === 200 && pub.body.product.store.slug === storeA.body.store.slug && pub.body.product.store.name === `TechHub ${S}`);
   check('public product shows the sale price and discount', pub.body.product.priceUgx === 2990000 && pub.body.product.discountPercent > 0);
-  check('public product carries variations with their own prices', pub.body.product.variations.length === 2 && pub.body.product.variations[1].priceUgx === 3040000);
+  check('an option shows exactly the price the seller typed', pub.body.product.variations.length === 2 && pub.body.product.variations[1].priceUgx === 3040000 && pub.body.product.variations[0].priceUgx === 2990000);
   check('public product does not expose private seller fields', !JSON.stringify(pub.body).includes('reserved_quantity') && !JSON.stringify(pub.body).includes(SELLER_A.phone));
 
   const list = await call('GET', `/marketplace/products?q=samsung`);
