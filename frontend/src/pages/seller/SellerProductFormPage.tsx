@@ -13,7 +13,7 @@ import { ImageUpload } from '../../components/ui/ImageUpload';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { SkeletonHeading, SkeletonRegion, SkeletonRows } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
-import { categoryEntry } from '../../market/categories';
+import { Swatch, categoryEntry, resolveOptions } from '../../market/categories';
 import { CategoryOptions } from '../../components/market/CategoryOptions';
 import { formatUgx } from '../../market/format';
 
@@ -125,11 +125,42 @@ export function SellerProductFormPage() {
   const totalStock = rowsFor.reduce((s, v) => s + colsFor.reduce((t, c) => t + stockAt(v, c), 0), 0);
 
   const entry = categoryEntry(form.category);
+  const resolved = useMemo(() => resolveOptions(form.category, form.subcategory, form.brand), [form.category, form.subcategory, form.brand]);
+  const subEntry = entry.subcategories.find((x) => x.name.toLowerCase() === form.subcategory.trim().toLowerCase());
+
+  function followVersionType(before: string, after: string) {
+    if (versionType.trim() === before || !versionType.trim()) setVersionType(after);
+  }
 
   function changeCategory(next: string) {
-    const previous = categoryEntry(form.category);
-    set('category', next);
-    if (versionType.trim() === previous.versionType || !versionType.trim()) setVersionType(categoryEntry(next).versionType);
+    const after = resolveOptions(next, '', form.brand).versionType;
+    setForm((f) => ({ ...f, category: next, subcategory: '' }));
+    followVersionType(resolved.versionType, after);
+  }
+
+  function changeSubcategory(next: string) {
+    const after = resolveOptions(form.category, next, form.brand).versionType;
+    set('subcategory', next);
+    followVersionType(resolved.versionType, after);
+  }
+
+  function addSpecs(labels: string[]) {
+    setSpecs((sp) => {
+      const have = new Set(sp.map((x) => x.label.trim().toLowerCase()));
+      return [...sp, ...labels.filter((l) => !have.has(l.toLowerCase())).map((label) => ({ label, value: '' }))];
+    });
+  }
+
+  function colourChips(list: Swatch[]) {
+    return list.map((c) => {
+      const chosen = colours.some((x) => x.name.toLowerCase() === c.name.toLowerCase());
+      return (
+        <button key={c.name} type="button" onClick={() => (chosen ? setColours((cs) => cs.filter((x) => x.name.toLowerCase() !== c.name.toLowerCase())) : addColour(c))} aria-pressed={chosen} className={`flex min-h-[40px] items-center gap-2 rounded-full border px-3 text-sm transition-colors ${chosen ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>
+          <span className="h-5 w-5 rounded-full border border-black/10" style={{ background: c.hex }} aria-hidden />
+          {c.name}
+        </button>
+      );
+    });
   }
 
   function addVersion(value = '') { setVersions((vs) => [...vs, { value, priceUgx: '' }]); }
@@ -265,17 +296,20 @@ export function SellerProductFormPage() {
                   <CategoryOptions />
                 </Select>
                 <div>
-                  <Input label="Subcategory (optional)" placeholder={entry.subcategories[0] ?? 'Smartphones'} value={form.subcategory} onChange={(e) => set('subcategory', e.target.value)} maxLength={80} list={`subcategories-${entry.key}`} />
-                  <datalist id={`subcategories-${entry.key}`}>{entry.subcategories.map((s) => <option key={s} value={s} />)}</datalist>
+                  <Input label="What kind?" placeholder={entry.subcategories[0]?.name ?? 'Type it in'} value={form.subcategory} onChange={(e) => changeSubcategory(e.target.value)} maxLength={80} list={`subcategories-${entry.key}`} hint="Sizes, details and colours below follow this." />
+                  <datalist id={`subcategories-${entry.key}`}>{entry.subcategories.map((x) => <option key={x.name} value={x.name} />)}</datalist>
                   {entry.subcategories.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      {entry.subcategories.slice(0, 8).map((s) => (
-                        <button key={s} type="button" onClick={() => set('subcategory', s)} aria-pressed={form.subcategory === s} className={`min-h-[32px] rounded-full border px-2.5 text-caption font-medium transition-colors ${form.subcategory === s ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>{s}</button>
+                      {entry.subcategories.map((x) => (
+                        <button key={x.name} type="button" onClick={() => changeSubcategory(form.subcategory === x.name ? '' : x.name)} aria-pressed={form.subcategory === x.name} className={`min-h-[32px] rounded-full border px-2.5 text-caption font-medium transition-colors ${form.subcategory === x.name ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>{x.name}</button>
                       ))}
                     </div>
                   )}
                 </div>
-                <Input label="Brand (optional)" placeholder="Apple" value={form.brand} onChange={(e) => set('brand', e.target.value)} maxLength={80} />
+                <div>
+                  <Input label="Brand (optional)" placeholder={resolved.brands[0] ?? 'Brand'} value={form.brand} onChange={(e) => set('brand', e.target.value)} maxLength={80} list={`brands-${entry.key}`} />
+                  <datalist id={`brands-${entry.key}`}>{resolved.brands.map((b) => <option key={b} value={b} />)}</datalist>
+                </div>
                 <Input label="Model (optional)" placeholder="A3102" value={form.model} onChange={(e) => set('model', e.target.value)} maxLength={80} />
                 <Select label="Condition" value={form.condition} onChange={(e) => set('condition', e.target.value)}>
                   <option value="new">Brand new</option><option value="used">Used</option><option value="refurbished">Refurbished</option>
@@ -304,19 +338,19 @@ export function SellerProductFormPage() {
           <Card padding="lg">
             <h2 className="font-display text-h3 font-medium text-brand-green-deep">Versions</h2>
             <p className="mt-1 text-small text-ink-3">{versionHint(entry.key)}</p>
-            {entry.versions.length > 0 && (
+            {resolved.versions.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                <span className="text-caption text-ink-3">Quick add {entry.versionType.toLowerCase()}:</span>
-                {entry.versions.map((v) => {
+                <span className="text-caption text-ink-3">{subEntry ? `${subEntry.name} ${resolved.versionType.toLowerCase()}` : `Quick add ${resolved.versionType.toLowerCase()}`}:</span>
+                {resolved.versions.map((v) => {
                   const have = versions.some((x) => x.value.trim().toLowerCase() === v.toLowerCase());
                   return <button key={v} type="button" disabled={have} onClick={() => addSuggestedVersions([v])} className={`min-h-[32px] rounded-full border px-2.5 text-caption font-medium transition-colors ${have ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>{v}</button>;
                 })}
-                <button type="button" onClick={() => addSuggestedVersions(entry.versions)} className="min-h-[32px] rounded-full px-2.5 text-caption font-semibold text-brand-green hover:bg-brand-green-mist">Add all</button>
+                <button type="button" onClick={() => addSuggestedVersions(resolved.versions)} className="min-h-[32px] rounded-full px-2.5 text-caption font-semibold text-brand-green hover:bg-brand-green-mist">Add all</button>
               </div>
             )}
             {versions.length > 0 && (
               <div className="mt-3">
-                <Input label="What do you call the versions?" value={versionType} onChange={(e) => setVersionType(e.target.value)} placeholder={entry.versionType} maxLength={60} hint="Size, Storage, Model, Trim, Pack size, Package…" />
+                <Input label="What do you call the versions?" value={versionType} onChange={(e) => setVersionType(e.target.value)} placeholder={resolved.versionType} maxLength={60} hint="Size, Waist, Storage, Model, Trim, Pack size, Package…" />
                 <ul className="mt-3 flex flex-col gap-2">
                   {versions.map((v, i) => (
                     <li key={i} className="grid grid-cols-[1fr_auto] items-end gap-2 rounded-xl border border-line p-2 sm:grid-cols-[1.2fr_1fr_auto]">
@@ -334,17 +368,14 @@ export function SellerProductFormPage() {
           <Card padding="lg">
             <h2 className="flex items-center gap-2 font-display text-h3 font-medium text-brand-green-deep"><Palette size={18} /> Colours</h2>
             <p className="mt-1 text-small text-ink-3">If it comes in colours, tap them. Buyers pick one and see how many of that colour you have. Skip this for things without a colour.</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {PALETTE.map((c) => {
-                const chosen = colours.some((x) => x.name.toLowerCase() === c.name.toLowerCase());
-                return (
-                  <button key={c.name} type="button" onClick={() => (chosen ? setColours((cs) => cs.filter((x) => x.name.toLowerCase() !== c.name.toLowerCase())) : addColour(c))} aria-pressed={chosen} className={`flex min-h-[40px] items-center gap-2 rounded-full border px-3 text-sm transition-colors ${chosen ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>
-                    <span className="h-5 w-5 rounded-full border border-black/10" style={{ background: c.hex }} aria-hidden />
-                    {c.name}
-                  </button>
-                );
-              })}
-            </div>
+            {resolved.colours.length > 0 && (
+              <>
+                <p className="mt-3 text-caption font-semibold uppercase text-ink-3">{resolved.colourTitle}</p>
+                <div className="mt-1.5 flex flex-wrap gap-2">{colourChips(resolved.colours)}</div>
+                <p className="mt-3 text-caption font-semibold uppercase text-ink-3">More colours</p>
+              </>
+            )}
+            <div className="mt-1.5 flex flex-wrap gap-2">{colourChips(PALETTE.filter((c) => !resolved.colours.some((r) => r.name.toLowerCase() === c.name.toLowerCase())))}</div>
             <div className="mt-3 grid grid-cols-[auto_1fr_auto] items-end gap-2 rounded-xl border border-dashed border-line p-2">
               <label className="flex flex-col gap-1 text-caption text-ink-3">Any colour
                 <input type="color" value={customColour.hex} onChange={(e) => setCustomColour((c) => ({ ...c, hex: e.target.value }))} className="h-11 w-14 cursor-pointer rounded-lg border border-line bg-surface p-1" aria-label="Pick a custom colour" />
@@ -412,17 +443,27 @@ export function SellerProductFormPage() {
           )}
 
           <Card padding="lg">
-            <h2 className="font-display text-h3 font-medium text-brand-green-deep">Specifications</h2>
+            <h2 className="font-display text-h3 font-medium text-brand-green-deep">Details</h2>
+            <p className="mt-1 text-small text-ink-3">The facts buyers look for on {(subEntry?.name ?? entry.label).toLowerCase()}. Tap one to fill it in.</p>
+            {resolved.specs.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                {resolved.specs.map((label) => {
+                  const have = specs.some((x) => x.label.trim().toLowerCase() === label.toLowerCase());
+                  return <button key={label} type="button" disabled={have} onClick={() => addSpecs([label])} className={`min-h-[32px] rounded-full border px-2.5 text-caption font-medium transition-colors ${have ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>{label}</button>;
+                })}
+                <button type="button" onClick={() => addSpecs(resolved.specs)} className="min-h-[32px] rounded-full px-2.5 text-caption font-semibold text-brand-green hover:bg-brand-green-mist">Add all</button>
+              </div>
+            )}
             <ul className="mt-3 flex flex-col gap-2">
               {specs.map((s, i) => (
                 <li key={i} className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
-                  <Input label="Label" placeholder="Storage" value={s.label} onChange={(e) => setSpecs((sp) => sp.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} maxLength={60} />
+                  <Input label="Detail" placeholder={resolved.specs[0] ?? 'Storage'} value={s.label} onChange={(e) => setSpecs((sp) => sp.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} maxLength={60} />
                   <Input label="Value" placeholder="256GB" value={s.value} onChange={(e) => setSpecs((sp) => sp.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} maxLength={200} />
-                  <button type="button" onClick={() => setSpecs((sp) => sp.filter((_, j) => j !== i))} className="mb-1 flex h-10 w-10 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-red" aria-label="Remove specification"><Trash2 size={16} /></button>
+                  <button type="button" onClick={() => setSpecs((sp) => sp.filter((_, j) => j !== i))} className="mb-1 flex h-10 w-10 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-red" aria-label="Remove detail"><Trash2 size={16} /></button>
                 </li>
               ))}
             </ul>
-            <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={() => setSpecs((sp) => [...sp, { label: '', value: '' }])} disabled={specs.length >= 30}><Plus size={15} /> Add a specification</Button>
+            <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={() => setSpecs((sp) => [...sp, { label: '', value: '' }])} disabled={specs.length >= 30}><Plus size={15} /> Add another detail</Button>
           </Card>
         </div>
 
