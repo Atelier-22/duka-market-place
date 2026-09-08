@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { env } from '../config/env';
 import { ZodError } from 'zod';
 import { InvalidTransitionError, UnauthorizedTransitionError } from '../utils/orderStateMachine';
 
@@ -56,6 +57,9 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
 
   // eslint-disable-next-line no-console
   console.error('Unhandled error:', err);
+  if (!env.isProduction) {
+    return res.status(500).json({ error: 'Internal server error', detail: err instanceof Error ? err.message : String(err) });
+  }
   return res.status(500).json({ error: 'Internal server error' });
 }
 

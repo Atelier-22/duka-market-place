@@ -59,8 +59,11 @@ export interface PublicVariation {
 
 export interface ProductAttribute { key: string; name: string; value: string; unit: string | null; type: string }
 
+export interface VerifiedSpec { key: string; label: string; value: string; unit: string | null; confidence: number }
+
 export interface PublicProductDetail extends PublicProduct {
   attributes: ProductAttribute[];
+  verifiedSpecs?: VerifiedSpec[];
   images: string[];
   variations: PublicVariation[];
   reviews: { id: string; stars: number; comment: string | null; created_at: string; author_name: string; author_avatar: string | null }[];

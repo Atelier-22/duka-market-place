@@ -346,6 +346,9 @@ export function ProductPage() {
             {(product.attributes?.length ? product.attributes.filter((a) => !['brand', 'model', 'colour'].includes(a.key) || (a.key === 'colour' && product.variations.length === 0)) : product.specifications.map((s) => ({ key: s.label, name: s.label, value: s.value, unit: null, type: 'text' }))).map((a, i) => (
               <div key={`${a.key}-${i}`} className="flex justify-between gap-3"><dt className="text-ink-3">{a.name}</dt><dd className="text-right text-ink">{a.value}{a.unit && !a.value.toLowerCase().includes(a.unit.toLowerCase()) ? ` ${a.unit}` : ''}</dd></div>
             ))}
+            {(product.verifiedSpecs ?? []).map((s) => (
+              <div key={`verified-${s.key}`} className="flex justify-between gap-3"><dt className="text-ink-3">{s.label}</dt><dd className="flex items-center justify-end gap-1.5 text-right text-ink">{s.value}<span className="rounded-full bg-brand-green-mist px-1.5 py-0.5 text-[10px] font-semibold uppercase text-brand-green-deep" title="From Duka's verified product data">Verified</span></dd></div>
+            ))}
           </dl>
           {data!.related.length > 0 && (
             <Link to={`/compare?ids=${[product.id, ...data!.related.slice(0, 2).map((r) => r.id)].join(',')}`} className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-green"><Scale size={15} /> Compare with similar</Link>

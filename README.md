@@ -88,6 +88,7 @@ secret is missing, shorter than 32 characters, or still a placeholder.
 | `JWT_ACCESS_SECRET` | 32+ random characters |
 | `JWT_REFRESH_SECRET` | 32+ random characters, different from the access secret |
 | `ID_HASH_SECRET` | 32+ random characters |
+| `TAVILY_API_KEY` | Optional. Enables background web research of fixed product specifications through the Tavily search API. Without it, research jobs are recorded as skipped and publishing works unchanged. |
 | `CORS_ORIGIN` | `https://www.dukashoppers.com,https://dukashoppers.com` |
 | `PUBLIC_URL` | The public https address of the API, no trailing slash |
 | `TRUST_PROXY` | `true` when behind a platform load balancer (the default in production) |

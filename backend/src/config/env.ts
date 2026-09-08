@@ -68,6 +68,7 @@ export const env = {
   jwtAccessSecret: secret('JWT_ACCESS_SECRET', 'dev_access_secret_change_me'),
   jwtRefreshSecret: secret('JWT_REFRESH_SECRET', 'dev_refresh_secret_change_me'),
   jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
+  tavilyApiKey: (process.env.TAVILY_API_KEY ?? '').trim() || null,
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '30d',
 
   corsOrigins: origins(process.env.CORS_ORIGIN),

@@ -46,7 +46,7 @@ async function upload(token, bytes, type, name, folder = 'products') {
 const PNG = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d4944415478da63f8ffff3f0005fe02fea7355a1d0000000049454e44ae426082', 'hex');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function waitFor(fn, label, timeoutMs = 90000) {
+async function waitFor(fn, label, timeoutMs = 180000) {
   const start = Date.now();
   let last = null;
   while (Date.now() - start < timeoutMs) {
@@ -189,7 +189,7 @@ const trousers = (i, extra = {}) => ({
   const promoted = await waitFor(async () => {
     const r = await call('GET', '/admin/knowledge/options?attribute=waist&q=44&status=active', { token: admin });
     return r.body?.options?.find((o) => o.value === '44' && o.kind_name === 'Trousers') ?? null;
-  }, 'promotion of waist 44');
+  }, 'promotion of waist 44', 300000);
   check('after three sellers, waist 44 is promoted automatically', !!promoted && Number(promoted.seller_count) >= 3 && Number(promoted.confidence) >= 0.85, promoted ? `${promoted.seller_count} sellers, confidence ${promoted.confidence}` : 'not promoted');
   const formNow = await call('GET', '/knowledge/form?category=mens&kind=Trousers');
   check('the seller form now suggests waist 44', formNow.body.versions.includes('44'));

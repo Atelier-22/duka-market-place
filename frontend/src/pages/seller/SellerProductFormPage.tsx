@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Eye, Palette, Plus, Save, Trash2, X } from 'lucide-react';
+import { Eye, Palette, Plus, Save, Sparkles, Trash2, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -15,6 +15,7 @@ import { SkeletonHeading, SkeletonRegion, SkeletonRows } from '../../components/
 import { useToast } from '../../components/ui/Toast';
 import { categoryEntry } from '../../market/categories';
 import { Swatch, useProductKnowledge } from '../../market/knowledge';
+import { useCanonicalProduct } from '../../market/canonical';
 import { CategoryOptions } from '../../components/market/CategoryOptions';
 import { formatUgx } from '../../market/format';
 
@@ -146,6 +147,18 @@ export function SellerProductFormPage() {
   }
 
   const suggestedDetails = resolved.attributes.map((a) => a.name);
+  const { lookup: canonical, state: canonicalState } = useCanonicalProduct(form.brand, form.model, form.category, form.subcategory, !loading);
+  const canonicalSpecs = canonical?.product?.specs.filter((s) => s.status !== 'conflict' || s.confidence >= 0.6) ?? [];
+  const specValueFor = (label: string) => specs.find((x) => x.label.trim().toLowerCase() === label.trim().toLowerCase())?.value ?? '';
+  const applyCanonicalSpec = (label: string, value: string) => {
+    setSpecs((sp) => {
+      const idx = sp.findIndex((x) => x.label.trim().toLowerCase() === label.trim().toLowerCase());
+      if (idx === -1) return [...sp, { label, value }];
+      return sp.map((x, i) => (i === idx ? { ...x, value } : x));
+    });
+  };
+  const qualityTotal = Math.min(12, resolved.attributes.length) + 3;
+  const qualityDone = resolved.attributes.slice(0, 12).filter((a) => specValueFor(a.name).trim()).length + (images.length > 0 ? 1 : 0) + (form.description.trim().length >= 20 ? 1 : 0) + (Number(form.priceUgx) >= 100 ? 1 : 0);
   const optionsForDetail = (label: string) => resolved.attributes.find((a) => a.name.toLowerCase() === label.trim().toLowerCase())?.options ?? [];
 
   function addSpecs(labels: string[]) {
@@ -318,7 +331,7 @@ export function SellerProductFormPage() {
                   <Input label="Brand (optional)" placeholder={resolved.brands[0] ?? 'Brand'} value={form.brand} onChange={(e) => set('brand', e.target.value)} maxLength={80} list={`brands-${entry.key}`} />
                   <datalist id={`brands-${entry.key}`}>{resolved.brands.map((b) => <option key={b} value={b} />)}</datalist>
                 </div>
-                <Input label="Model (optional)" placeholder="A3102" value={form.model} onChange={(e) => set('model', e.target.value)} maxLength={80} />
+                <Input label="Model (optional)" placeholder="A3102" value={form.model} onChange={(e) => set('model', e.target.value)} maxLength={80} hint={form.brand.trim() && form.model.trim() ? undefined : 'Give the brand and model and Duka looks up what it knows.'} />
                 <Select label="Condition" value={form.condition} onChange={(e) => set('condition', e.target.value)}>
                   <option value="new">Brand new</option><option value="used">Used</option><option value="refurbished">Refurbished</option>
                 </Select>
@@ -326,6 +339,35 @@ export function SellerProductFormPage() {
               </div>
             </div>
           </Card>
+
+          {canonicalState !== 'idle' && (
+            <Card padding="lg" data-testid="canonical-card">
+              <h2 className="flex items-center gap-2 font-display text-h3 font-medium text-brand-green-deep"><Sparkles size={18} /> {canonicalState === 'loading' ? 'Checking what Duka knows…' : canonical?.product ? `Duka knows the ${canonical.product.displayName}` : 'Duka does not know this product yet'}</h2>
+              {canonicalState === 'known' && canonicalSpecs.length > 0 && (
+                <>
+                  <p className="mt-1 text-small text-ink-3">Tap a detail to use it. Everything you pick stays editable below, so change it if your item is different. Price is always yours.</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {canonicalSpecs.map((s) => {
+                      const used = specValueFor(s.label).trim().toLowerCase() === s.value.trim().toLowerCase();
+                      return (
+                        <button key={s.key} type="button" onClick={() => applyCanonicalSpec(s.label, s.value)} aria-pressed={used} disabled={used} className={`flex min-h-[40px] items-center gap-2 rounded-full border px-3 text-sm transition-colors ${used ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>
+                          <span className={`h-2 w-2 shrink-0 rounded-full ${s.status === 'verified' ? 'bg-brand-green' : 'bg-brand-yellow'}`} aria-hidden />
+                          <span className="text-ink-3">{s.label}:</span> {s.value}
+                          <span className="text-caption text-ink-3">{Math.round(s.confidence * 100)}%</span>
+                        </button>
+                      );
+                    })}
+                    <button type="button" onClick={() => canonicalSpecs.forEach((s) => applyCanonicalSpec(s.label, s.value))} className="min-h-[40px] rounded-full px-3 text-sm font-semibold text-brand-green hover:bg-brand-green-mist">Use all</button>
+                  </div>
+                  <p className="mt-2 text-caption text-ink-3">Green dot: verified from several sources or by Duka. Yellow: seen once, check it.</p>
+                </>
+              )}
+              {canonicalState === 'known' && canonicalSpecs.length === 0 && (
+                <p className="mt-1 text-small text-ink-3">{canonical?.research?.status === 'queued' || canonical?.research?.status === 'running' ? 'Looking up its specifications in the background. Keep going, they appear here when ready and your listing improves on its own.' : canonical?.research?.status === 'done' ? 'No specifications could be confirmed for it yet. What you enter below teaches Duka.' : 'No verified details for it yet. What you enter below teaches Duka.'}</p>
+              )}
+              {canonicalState === 'unknown' && <p className="mt-1 text-small text-ink-3">Carry on, publishing works as normal. Duka will look this product up in the background and remember it for the next seller.</p>}
+            </Card>
+          )}
 
           <Card padding="lg">
             <h2 className="font-display text-h3 font-medium text-brand-green-deep">Photos</h2>
@@ -451,8 +493,11 @@ export function SellerProductFormPage() {
           )}
 
           <Card padding="lg">
-            <h2 className="font-display text-h3 font-medium text-brand-green-deep">Details</h2>
-            <p className="mt-1 text-small text-ink-3">The facts buyers look for on {(subEntry?.name ?? entry.label).toLowerCase()}. Tap one to fill it in.</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-h3 font-medium text-brand-green-deep">Details</h2>
+              <span className="flex items-center gap-2 text-caption text-ink-2" data-testid="listing-quality"><span className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-2"><span className="block h-full rounded-full bg-brand-green transition-[width]" style={{ width: `${Math.round((qualityDone / Math.max(1, qualityTotal)) * 100)}%` }} /></span>{qualityDone}/{qualityTotal} complete</span>
+            </div>
+            <p className="mt-1 text-small text-ink-3">The facts buyers look for on {(subEntry?.name ?? entry.label).toLowerCase()}. Tap one to fill it in. Photos, a description and a price count too.</p>
             {suggestedDetails.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 {resolved.attributes.map((a) => {

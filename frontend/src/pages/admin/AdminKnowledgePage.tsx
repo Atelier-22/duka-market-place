@@ -14,12 +14,13 @@ import { SkeletonHeading, SkeletonRegion, SkeletonTable } from '../../components
 import { useToast } from '../../components/ui/Toast';
 import { AdminTable, Pill, PillTone, StatTile, Td, Th, Tr, formatDate } from './AdminDetailShell';
 import { categoryLabel } from '../../market/format';
+import { CanonicalProductsTab, CorrectionsTab, DataQualityCard } from './AdminCanonicalPanel';
 
-type Tab = 'overview' | 'suggestions' | 'kinds' | 'attributes' | 'options' | 'colours' | 'brands' | 'observations' | 'audit';
+type Tab = 'overview' | 'products' | 'corrections' | 'suggestions' | 'kinds' | 'attributes' | 'options' | 'colours' | 'brands' | 'observations' | 'audit';
 type Entity = 'kind' | 'attribute' | 'option' | 'brand' | 'kind_attribute';
 
 const TABS: { value: Tab; label: string }[] = [
-  { value: 'overview', label: 'Overview' }, { value: 'suggestions', label: 'Suggestions' }, { value: 'kinds', label: 'Product kinds' }, { value: 'attributes', label: 'Attributes' },
+  { value: 'overview', label: 'Overview' }, { value: 'products', label: 'Products' }, { value: 'corrections', label: 'Corrections' }, { value: 'suggestions', label: 'Suggestions' }, { value: 'kinds', label: 'Product kinds' }, { value: 'attributes', label: 'Attributes' },
   { value: 'options', label: 'Options' }, { value: 'colours', label: 'Colours' }, { value: 'brands', label: 'Brands' }, { value: 'observations', label: 'Observations' }, { value: 'audit', label: 'Audit' },
 ];
 
@@ -47,6 +48,7 @@ export function AdminKnowledgePage() {
     const p = new URLSearchParams();
     if (status !== 'all') p.set('status', status);
     if (q.trim()) p.set('q', q.trim());
+    if (tab === 'products' || tab === 'corrections') { setData({}); return; }
     const path = tab === 'colours' ? `/admin/knowledge/options?colours=1&${p}` : tab === 'overview' ? '/admin/knowledge/overview' : `/admin/knowledge/${tab}?${p}`;
     api.get(path).then((r) => setData(r.data)).catch((err) => { push(apiErrorMessage(err), 'error'); setData({}); });
   }, [tab, status, q, push, refreshKey]);
@@ -104,8 +106,11 @@ export function AdminKnowledgePage() {
       <div className="mt-4">
         {!data ? <SkeletonRegion label="Loading"><SkeletonHeading subtitle={false} /><div className="mt-4"><SkeletonTable rows={6} cols={4} /></div></SkeletonRegion> : (
           <>
+            {tab === 'products' && <CanonicalProductsTab />}
+            {tab === 'corrections' && <CorrectionsTab />}
             {tab === 'overview' && data.observations && (
               <div className="flex flex-col gap-4">
+                <DataQualityCard />
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                   <StatTile label="Observations" value={String(data.observations.total)} sub={`${data.observations.week} this week · ${data.observations.products} products`} />
                   <StatTile label="Sellers teaching Duka" value={String(data.sellersObserved)} />

@@ -23,6 +23,7 @@
     "test:staff": "node scripts/staff-probe.cjs",
     "test:seller": "node scripts/seller-probe.cjs",
     "test:knowledge": "node scripts/knowledge-probe.cjs",
+    "test:intelligence": "node scripts/intelligence-probe.cjs",
     "knowledge:backfill": "tsx src/knowledge/backfill.ts"
   },
   "dependencies": {

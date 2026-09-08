@@ -72,9 +72,24 @@ Product pages show `attributes` (only rows with confidence ≥ 0.9, so inferred 
 
 `backend/src/knowledge/catalogue.ts` and `bootstrap.ts` hold the starting knowledge. `seedKnowledge` loads it with bulk inserts and `ON CONFLICT DO NOTHING`, so admin edits are never overwritten, and it runs at boot when the tables are empty. Migration `021_product_knowledge.sql` creates the tables and copies existing specifications into `seller_product_attributes`. `npm run knowledge:backfill` re-seeds and re-observes every published product. `scripts/purge-test-data.cjs --apply` also removes candidate knowledge that only test products produced.
 
+## Canonical products, research and corrections
+
+Migration `022_canonical_products.sql` adds a product identity layer on top of the knowledge tables:
+
+- `canonical_products` is one row per brand and model (unique on their slugs). `seller_products.canonical_product_id` links a listing to it. Price, stock, condition and images stay on the listing and are never part of canonical data.
+- `canonical_specs` holds one value per fixed specification (screen size, processor, RAM, battery, engine size, capacity, material…) with `confidence`, `status` (`verified`, `pending`, `conflict`, `rejected`), the number of agreeing sources and the best trust tier. `canonical_spec_sources` keeps every piece of evidence: manufacturer (tier 1, weight 0.7), retailer (tier 2, 0.45), unknown site (tier 3, 0.2), seller (tier 4, 0.3 per distinct seller), admin (locks the value at 1.0). Confidence is `1 − Π(1 − weight)` over distinct agreeing sources. A value reaches `verified` at 0.6. A second value at 0.3 or more marks the spec `conflict`.
+- `canonical_corrections` records a seller whose structured detail differs from the canonical value. It stays pending until an admin decides, unless three independent sellers report the same value, which promotes it automatically and marks the corrections approved with no decider. Matching seller values become agreeing sources. Admin decisions lock the field.
+- `research_jobs` is the async queue. `backend/src/knowledge/research.ts` calls the Tavily search API when `TAVILY_API_KEY` is set (two calls at most per product: a general query and one restricted to the manufacturer's domains when known), classifies each result by domain into a trust tier, and runs the deterministic extractor `extractSpecs` over the returned snippets. Only pattern matches become sources; nothing is inferred beyond the text. Duka never fetches pages itself, so no robots.txt or terms are crossed. A product is researched at most once per 90 days. Without a key the job is recorded as `skipped` with the reason, publishing continues, and the admin page says research is off.
+
+Publishing never waits for any of this. The seller form asks `GET /api/knowledge/product?brand&model` after a short pause, and `POST /api/knowledge/research` when the product is new. Known specs are offered as chips the seller taps to copy into editable detail rows. A listing-quality indicator counts filled category details plus photos, description and price.
+
+Admins manage this under Product intelligence → Products and Corrections: provenance per spec with source links, conflicts with the competing values, approve or reject corrections, add or edit specs (which locks them), and re-run research. The overview shows the most corrected fields and categories as a data-quality signal.
+
 ## Limitations
 
 - Categories themselves are still a static list; new top-level categories are a code change. Kinds under them are fully data-driven.
 - Text extraction is rule-based (storage, RAM, shoe size, colour words, brand names). There is no language model in the loop.
 - Search interpretation picks the first kind with a given name when the same kind exists in several categories, and filters by subcategory name rather than category.
 - Merging options rewrites observations and product attributes for that value, but does not rewrite the seller's variation rows.
+- Research depends on Tavily's snippets; when a spec is only on a page Tavily does not summarise, it is not learned. The extractor covers phones, computers, TVs, cameras, gaming, appliances, solar, tools, kitchen, cars and motorcycles.
+- Canonical products key on brand and model text. Two sellers writing the same model differently create two products until an admin merges them (merge is not yet exposed for canonical products).

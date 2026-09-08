@@ -2,6 +2,7 @@ import { query, queryOne } from '../db/pool';
 import { Tx, txOne, txQuery, withTransaction } from './db';
 import { PUBLIC_STORE_COLUMNS, refreshStoreCounters } from './store.model';
 import { attributesForProducts } from '../knowledge/knowledge.model';
+import { verifiedSpecsForListings } from '../knowledge/canonical';
 import { effectivePrice, PromotionLike } from './pricing';
 
 export type ProductStatus = 'draft' | 'published' | 'archived';
@@ -543,9 +544,11 @@ export async function getPublicProduct(id: string) {
   ]);
   const product = toPublicProduct(row, promos[id] ?? []);
   const attributes = (await attributesForProducts([id]))[id] ?? [];
+  const verifiedSpecs = (await verifiedSpecsForListings([id]))[id] ?? [];
   return {
     ...product,
     attributes,
+    verifiedSpecs,
     images: (images[id] ?? []).map((i) => i.url),
     variations: (variations[id] ?? []).map((v) => ({
       id: v.id,
