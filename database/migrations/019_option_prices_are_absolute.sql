@@ -1,11 +1,3 @@
--- A product option (colour, size, model) carries the price the seller typed,
--- not a difference from the product price. Sellers were typing full prices
--- into the difference field, so buyers saw the two added together.
---
--- Existing rows: when any option of a product has a "difference" of at least
--- half the product price, the seller clearly typed full prices, so those are
--- kept as they are. Small differences are converted to the price they meant.
-
 ALTER TABLE seller_product_variations
   ADD COLUMN IF NOT EXISTS price_ugx BIGINT CHECK (price_ugx IS NULL OR price_ugx > 0);
 

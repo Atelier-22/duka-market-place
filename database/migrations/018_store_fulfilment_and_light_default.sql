@@ -1,7 +1,3 @@
--- Stores say how buyers get their goods: the store delivers, buyers collect,
--- or buyers send a Duka shopper. Sellers can be verified automatically, and
--- everyone starts in the light theme.
-
 ALTER TABLE seller_stores
   ADD COLUMN IF NOT EXISTS fulfilment TEXT NOT NULL DEFAULT 'delivery'
   CHECK (fulfilment IN ('delivery', 'pickup', 'shopper'));
