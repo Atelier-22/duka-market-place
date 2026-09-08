@@ -2,6 +2,8 @@ import { query, queryOne } from '../db/pool';
 import { CANONICAL_CATALOGUE, CURRENT_GENERATIONS_BY_CATEGORY, DEFAULT_CURRENT_GENERATIONS } from './canonicalCatalogue';
 import { findKind } from './knowledge.model';
 import { normalizeValue, slugify } from './normalize';
+import { CANONICAL_DETAILS } from './canonicalSpecs';
+
 
 export type Lifecycle = 'current' | 'discontinued' | 'unknown';
 
@@ -80,6 +82,51 @@ export async function seedCanonicalCatalogue(): Promise<number> {
   return inserted;
 }
 
+export async function seedCatalogueDetails(): Promise<{ products: number; specs: number; variants: number }> {
+  const known = await query<{ id: string; brand_slug: string; model_slug: string }>(`SELECT id, brand_slug, model_slug FROM canonical_products WHERE status <> 'merged'`);
+  const byKey = new Map(known.map((k) => [`${k.brand_slug}|${k.model_slug}`, k.id]));
+  const seeded = new Set((await query<{ product_id: string }>(`SELECT DISTINCT product_id FROM canonical_spec_sources WHERE source_type = 'catalogue'`)).map((r) => r.product_id));
+  const sourceRows: unknown[][] = [];
+  const specRows: unknown[][] = [];
+  const variantRows: unknown[][] = [];
+  let products = 0;
+  for (const detail of CANONICAL_DETAILS) {
+    const id = byKey.get(`${slugify(detail.brand)}|${slugify(detail.model)}`);
+    if (!id || seeded.has(id)) continue;
+    products += 1;
+    for (const [label, value] of Object.entries(detail.specs)) {
+      const key = slugify(label);
+      const norm = normalizeValue(value).slice(0, 200);
+      sourceRows.push([id, key, value.slice(0, 200), norm, 'catalogue', 1, 'Duka catalogue']);
+      specRows.push([id, key, label.slice(0, 60), value.slice(0, 200), norm, 0.85, 'verified', 1, 1]);
+    }
+    (detail.colours ?? []).forEach((colour, i) => variantRows.push([id, 'colour', colour.name, normalizeValue(colour.name).slice(0, 80), colour.hex, i]));
+    (detail.storage ?? []).forEach((value, i) => variantRows.push([id, 'storage', value, normalizeValue(value).slice(0, 80), null, i]));
+    (detail.sizes ?? []).forEach((value, i) => variantRows.push([id, 'size', value, normalizeValue(value).slice(0, 80), null, i]));
+  }
+  const bulk = async (table: string, columns: string[], rows: unknown[][], conflict: string) => {
+    for (let i = 0; i < rows.length; i += 300) {
+      const slice = rows.slice(i, i + 300);
+      const params: unknown[] = [];
+      const values = slice.map((row) => `(${row.map((v) => { params.push(v); return `$${params.length}`; }).join(', ')})`).join(', ');
+      await query(`INSERT INTO ${table} (${columns.join(', ')}) VALUES ${values} ${conflict}`, params);
+    }
+  };
+  await bulk('canonical_spec_sources', ['product_id', 'attribute_key', 'value', 'value_norm', 'source_type', 'trust_tier', 'source_title'], sourceRows, 'ON CONFLICT DO NOTHING');
+  await bulk('canonical_specs', ['product_id', 'attribute_key', 'label', 'value', 'value_norm', 'confidence', 'status', 'source_count', 'best_tier'], specRows, 'ON CONFLICT (product_id, attribute_key) DO NOTHING');
+  await bulk('canonical_variants', ['product_id', 'dimension', 'value', 'value_norm', 'display_hex', 'position'], variantRows, 'ON CONFLICT (product_id, dimension, value_norm) DO NOTHING');
+  invalidateSearchIndex();
+  return { products, specs: specRows.length, variants: variantRows.length };
+}
+
+export async function seedCatalogueDetailsIfMissing(): Promise<boolean> {
+  const row = await queryOne<{ n: number }>(`SELECT count(*)::int AS n FROM canonical_spec_sources WHERE source_type = 'catalogue'`).catch(() => null);
+  if (!row || row.n > 0) return false;
+  const counts = await seedCatalogueDetails();
+  console.log(`[knowledge] seeded details for ${counts.products} catalogue products: ${counts.specs} specs, ${counts.variants} variants`);
+  return true;
+}
+
 export async function seedCanonicalCatalogueIfEmpty(): Promise<boolean> {
   const row = await queryOne<{ n: number }>(`SELECT count(*)::int AS n FROM canonical_products WHERE created_by = 'system'`).catch(() => null);
   if (!row || row.n > 0) return false;
@@ -88,9 +135,14 @@ export async function seedCanonicalCatalogueIfEmpty(): Promise<boolean> {
   return true;
 }
 
+export async function ensureCatalogue() {
+  await seedCanonicalCatalogueIfEmpty();
+  await seedCatalogueDetailsIfMissing();
+}
+
 export interface SearchHit {
   id: string; brand: string; model: string; family: string | null; displayName: string; category: string; kind: string | null;
-  releasedOn: string | null; lifecycle: Lifecycle; specCount: number; listingCount: number;
+  releasedOn: string | null; lifecycle: Lifecycle; specCount: number; colourCount: number; listingCount: number;
 }
 
 interface IndexEntry extends SearchHit { words: string[]; text: string }
@@ -102,9 +154,10 @@ export function invalidateSearchIndex() { index = null; }
 
 async function loadIndex(): Promise<IndexEntry[]> {
   if (index && Date.now() - index.loadedAt < INDEX_TTL) return index.entries;
-  const rows = await query<{ id: string; brand: string; model: string; family: string | null; display_name: string; category: string; kind: string | null; released_on: string | null; lifecycle: Lifecycle; lifecycle_override: Lifecycle | null; aliases: string[]; listing_count: number; spec_count: number }>(
+  const rows = await query<{ id: string; brand: string; model: string; family: string | null; display_name: string; category: string; kind: string | null; released_on: string | null; lifecycle: Lifecycle; lifecycle_override: Lifecycle | null; aliases: string[]; listing_count: number; spec_count: number; colour_count: number }>(
     `SELECT cp.id, cp.brand, cp.model, cp.family, cp.display_name, cp.category, k.name AS kind, cp.released_on::text, cp.lifecycle, cp.lifecycle_override, cp.aliases, cp.listing_count,
-            (SELECT count(*)::int FROM canonical_specs s WHERE s.product_id = cp.id AND s.status IN ('verified', 'pending')) AS spec_count
+            (SELECT count(*)::int FROM canonical_specs s WHERE s.product_id = cp.id AND s.status IN ('verified', 'pending')) AS spec_count,
+            (SELECT count(*)::int FROM canonical_variants v WHERE v.product_id = cp.id AND v.dimension = 'colour') AS colour_count
        FROM canonical_products cp LEFT JOIN product_kinds k ON k.id = cp.kind_id
       WHERE cp.status = 'active' ORDER BY cp.released_on DESC NULLS LAST, cp.display_name LIMIT 5000`
   );
@@ -112,7 +165,7 @@ async function loadIndex(): Promise<IndexEntry[]> {
     const text = normalizeValue([r.brand, r.family ?? '', r.model, r.kind ?? '', ...(r.aliases ?? [])].join(' ')).replace(/[()]/g, ' ');
     return {
       id: r.id, brand: r.brand, model: r.model, family: r.family, displayName: r.display_name, category: r.category, kind: r.kind, releasedOn: r.released_on,
-      lifecycle: r.lifecycle_override ?? r.lifecycle, specCount: Number(r.spec_count), listingCount: Number(r.listing_count), words: text.split(/[\s/,-]+/).filter(Boolean), text,
+      lifecycle: r.lifecycle_override ?? r.lifecycle, specCount: Number(r.spec_count), colourCount: Number(r.colour_count), listingCount: Number(r.listing_count), words: text.split(/[\s/,-]+/).filter(Boolean), text,
     };
   });
   index = { loadedAt: Date.now(), entries };
@@ -141,7 +194,7 @@ export async function searchCanonical(q: string, limit = 60): Promise<{ total: n
     scored.push({ entry, score });
   }
   scored.sort((a, b) => b.score - a.score || LIFECYCLE_ORDER[a.entry.lifecycle] - LIFECYCLE_ORDER[b.entry.lifecycle] || (b.entry.releasedOn ?? '').localeCompare(a.entry.releasedOn ?? '') || a.entry.displayName.localeCompare(b.entry.displayName));
-  return { total: scored.length, hits: scored.slice(0, limit).map(({ entry }) => ({ id: entry.id, brand: entry.brand, model: entry.model, family: entry.family, displayName: entry.displayName, category: entry.category, kind: entry.kind, releasedOn: entry.releasedOn, lifecycle: entry.lifecycle, specCount: entry.specCount, listingCount: entry.listingCount })) };
+  return { total: scored.length, hits: scored.slice(0, limit).map(({ entry }) => ({ id: entry.id, brand: entry.brand, model: entry.model, family: entry.family, displayName: entry.displayName, category: entry.category, kind: entry.kind, releasedOn: entry.releasedOn, lifecycle: entry.lifecycle, specCount: entry.specCount, colourCount: entry.colourCount, listingCount: entry.listingCount })) };
 }
 
 export async function lifecycleFor(brand: string | null | undefined, model: string | null | undefined): Promise<{ id: string; lifecycle: Lifecycle; displayName: string } | null> {

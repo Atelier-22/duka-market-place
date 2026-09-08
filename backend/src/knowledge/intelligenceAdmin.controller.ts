@@ -39,16 +39,17 @@ export async function product(req: Request, res: Response) {
   const { id } = z.object({ id: z.string().uuid() }).parse(req.params);
   const row = await queryOne(`SELECT * FROM canonical_products WHERE id = $1`, [id]);
   if (!row) throw new ApiError(404, 'Product not found');
-  const [specs, sources, corrections, jobs, listings] = await Promise.all([
+  const [specs, sources, corrections, jobs, variants, listings] = await Promise.all([
     query(`SELECT * FROM canonical_specs WHERE product_id = $1 ORDER BY (status = 'conflict') DESC, (status = 'verified') DESC, label`, [id]),
     query(`SELECT * FROM canonical_spec_sources WHERE product_id = $1 ORDER BY attribute_key, trust_tier, observed_at DESC`, [id]),
     query(`SELECT c.*, u.full_name AS seller_name FROM canonical_corrections c LEFT JOIN users u ON u.id = c.seller_id WHERE c.product_id = $1 ORDER BY (c.status = 'pending') DESC, c.created_at DESC LIMIT 100`, [id]),
     query(`SELECT * FROM research_jobs WHERE product_id = $1 ORDER BY created_at DESC LIMIT 10`, [id]),
+    query(`SELECT dimension, value, display_hex, source FROM canonical_variants WHERE product_id = $1 ORDER BY dimension, position`, [id]),
     query(`SELECT p.id, p.name, p.status, s.name AS store_name FROM seller_products p LEFT JOIN seller_stores s ON s.id = p.store_id WHERE p.canonical_product_id = $1 ORDER BY p.created_at DESC LIMIT 20`, [id]),
   ]);
   const alternatives: Record<string, unknown> = {};
   for (const s of specs as { attribute_key: string; status: string }[]) if (s.status === 'conflict') alternatives[s.attribute_key] = await alternativesFor(id, s.attribute_key);
-  res.json({ product: row, specs, sources, corrections, jobs, listings, alternatives, researchConfigured: researchConfigured() });
+  res.json({ product: row, specs, sources, corrections, jobs, variants, listings, alternatives, researchConfigured: researchConfigured() });
 }
 
 export async function createProduct(req: Request, res: Response) {

@@ -93,11 +93,18 @@ Migration `023_canonical_lifecycle.sql` adds `family`, `released_on`, `lifecycle
 
 Lifecycle is computed per brand, family and category: distinct release years are ranked newest first, the newest N count as current and the rest as discontinued. N is `CANONICAL_CURRENT_GENERATIONS` (default 2) with per-category rules in `CURRENT_GENERATIONS_BY_CATEGORY`: cars, motorcycles and bicycles keep one current generation because a vehicle generation lasts years; phones, computers, TVs, gaming, cameras and appliances keep two. Products without a release date are `unknown`, and an admin override always wins. When a listing's brand and model resolve to a discontinued product, the form sets Condition to Used with the note "This model is no longer manufactured, so it is listed as Used", disables the field, and the server coerces `new` to `used` on create and edit so the rule holds for API callers too. Refurbished stays allowed. Price is untouched.
 
+## What Duka already knows about a product
+
+`backend/src/knowledge/canonicalSpecs.ts` carries the fixed facts for the catalogue lines: screen, display type, chip, RAM, battery, camera, operating system for phones and tablets; screen, chip, RAM for MacBooks; processor, memory, storage type and resolution for consoles; resolution, panel and smart platform for TVs; engine, fuel, transmission, drive, seats and body type for vehicles. Each fact is stored as a `catalogue` source (trust tier 1, weight 0.85, so it is verified on its own but still flagged as a conflict if enough sellers or a manufacturer page disagree). Official colours (with display hex), storage options and TV sizes live in `canonical_variants` (migration 024).
+
+When a seller picks a product from the name search, the form fills the official storage options as versions and the official colours as colour chips, so the seller only enters stock and prices. A "Use the official …" link re-applies them if the seller has already edited the lists, and both stay editable. Specs still arrive as chips the seller taps into detail rows. Price is never part of any of it.
+
 ## Limitations
 
 - Categories themselves are still a static list; new top-level categories are a code change. Kinds under them are fully data-driven.
 - Text extraction is rule-based (storage, RAM, shoe size, colour words, brand names). There is no language model in the loop.
 - Search interpretation picks the first kind with a given name when the same kind exists in several categories, and filters by subcategory name rather than category.
 - Merging options rewrites observations and product attributes for that value, but does not rewrite the seller's variation rows.
+- The built-in catalogue covers major phone, tablet, laptop, console, TV and vehicle lines with facts known at the time of writing; other products start empty and learn from sellers, admins and research.
 - Research depends on Tavily's snippets; when a spec is only on a page Tavily does not summarise, it is not learned. The extractor covers phones, computers, TVs, cameras, gaming, appliances, solar, tools, kitchen, cars and motorcycles.
 - Canonical products key on brand and model text. Two sellers writing the same model differently create two products until an admin merges them (merge is not yet exposed for canonical products).

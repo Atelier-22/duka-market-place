@@ -5,7 +5,8 @@ export interface CanonicalSpec { key: string; label: string; value: string; unit
 
 export type Lifecycle = 'current' | 'discontinued' | 'unknown';
 
-export interface SearchHit { id: string; brand: string; model: string; family: string | null; displayName: string; category: string; kind: string | null; releasedOn: string | null; lifecycle: Lifecycle; specCount: number; listingCount: number }
+export interface SearchHit { id: string; brand: string; model: string; family: string | null; displayName: string; category: string; kind: string | null; releasedOn: string | null; lifecycle: Lifecycle; specCount: number; colourCount: number; listingCount: number }
+export interface CanonicalVariants { colours: { name: string; hex: string | null }[]; storage: string[]; sizes: string[] }
 export interface SearchGroup { category: string; label: string; products: SearchHit[] }
 
 const searchCache = new Map<string, SearchGroup[]>();
@@ -25,7 +26,7 @@ export const DISCONTINUED_NOTE = 'This model is no longer manufactured, so it is
 
 export interface CanonicalLookup {
   known: boolean;
-  product: { id: string; brand: string; model: string; displayName: string; category: string; listingCount: number; researchedAt: string | null; family: string | null; releasedOn: string | null; lifecycle: Lifecycle; specs: CanonicalSpec[] } | null;
+  product: { id: string; brand: string; model: string; displayName: string; category: string; listingCount: number; researchedAt: string | null; family: string | null; releasedOn: string | null; lifecycle: Lifecycle; specs: CanonicalSpec[]; variants?: CanonicalVariants } | null;
   research: { status: string; specsFound?: number; finishedAt?: string | null; error?: string | null } | null;
   researchConfigured: boolean;
 }

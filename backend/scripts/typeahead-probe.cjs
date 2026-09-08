@@ -59,6 +59,26 @@ const flat = (r) => (r?.groups ?? []).flatMap((g) => g.products);
   const trousers = await search('trouser');
   check('categories without a catalogue return no false matches', (trousers.total ?? 0) === 0);
 
+  const ultra = await call('GET', '/knowledge/product?brand=Samsung&model=Galaxy%20S25%20Ultra');
+  const uSpec = (k) => ultra.body.product.specs.find((s) => s.key === k);
+  check('Duka already knows the Galaxy S25 Ultra: release year, screen, chip, RAM, battery, camera', ultra.body.known && ultra.body.product.releasedOn?.startsWith('2025') && uSpec('screen-size')?.value === '6.9"' && uSpec('battery')?.value === '5000mAh' && uSpec('ram')?.value === '12GB' && uSpec('camera')?.value === '200MP quad' && /Snapdragon 8 Elite/.test(uSpec('processor')?.value ?? ''), JSON.stringify(ultra.body.product?.specs?.map((s) => s.key)));
+  check('catalogue specs are verified with catalogue provenance, not admin or seller', ultra.body.product.specs.every((s) => s.status === 'verified') && uSpec('battery').bestTier === 1);
+  check('it knows the official colours and storage options', ultra.body.product.variants.colours.some((c) => c.name === 'Titanium Black' && /^#/.test(c.hex ?? '')) && ultra.body.product.variants.colours.some((c) => c.name === 'Titanium Silverblue') && ['256GB', '512GB', '1TB'].every((v) => ultra.body.product.variants.storage.includes(v)));
+  const ip13 = await call('GET', '/knowledge/product?brand=Apple&model=iPhone%2013');
+  check('the same holds for an older iPhone: colours, storage and specs', ip13.body.product.variants.colours.some((c) => c.name === 'Midnight') && ip13.body.product.variants.storage.includes('512GB') && ip13.body.product.specs.some((s) => s.key === 'processor' && s.value === 'A15 Bionic'));
+  const ps5 = await call('GET', '/knowledge/product?brand=Sony&model=PlayStation%205');
+  check('consoles carry their fixed specs too', ps5.body.known && ps5.body.product.specs.some((s) => s.key === 'storage-type' && s.value === '825GB SSD'));
+  const tv = await call('GET', '/knowledge/product?brand=Samsung&model=Crystal%20UHD%20DU8000');
+  check('TVs carry sizes and platform', tv.body.product.variants.sizes.includes('55"') && tv.body.product.specs.some((s) => s.key === 'smart-platform' && s.value === 'Tizen'));
+  const car = await call('GET', '/knowledge/product?brand=Toyota&model=Harrier%20(4th%20generation,%202020-)');
+  check('cars carry engine, transmission, drive, seats and body type', ['engine-size', 'transmission', 'drive', 'seats', 'body-type'].every((k) => car.body.product.specs.some((s) => s.key === k)) && car.body.product.specs.find((s) => s.key === 'seats')?.value === '5');
+  const priceLeak = await pool.query(`SELECT count(*)::int AS n FROM canonical_specs WHERE attribute_key ILIKE '%price%'`);
+  check('the catalogue never contains a price', priceLeak.rows[0].n === 0);
+  const s25Search = flat(await search('galaxy s25 ultra'));
+  check('search results advertise how much Duka knows', s25Search[0]?.model === 'Galaxy S25 Ultra' && s25Search[0].specCount >= 6 && s25Search[0].colourCount >= 4);
+  const phonesOnly = await search('samsung phone');
+  check('tapping into a brand and a kind lists every phone of that brand, current or not', phonesOnly.groups.length === 1 && phonesOnly.groups[0].category === 'phones' && phonesOnly.groups[0].products.some((p) => p.lifecycle === 'current') && phonesOnly.groups[0].products.some((p) => p.lifecycle === 'discontinued'));
+
   const old = await call('GET', '/knowledge/product?brand=Apple&model=iPhone%2013');
   check('lookup of a discontinued model says so', old.body.known && old.body.product.lifecycle === 'discontinued' && old.body.product.family === 'iPhone');
   await call('PUT', `/admin/knowledge/products/${old.body.product.id}/specs`, { token: admin, body: { label: 'Screen size', value: '6.1"', unit: '"' } });

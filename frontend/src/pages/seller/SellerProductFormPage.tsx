@@ -67,6 +67,8 @@ export function SellerProductFormPage() {
   const [nameOpen, setNameOpen] = useState(false);
   const [picked, setPicked] = useState<SearchHit | null>(null);
   const nameTyped = useRef(false);
+  const variantsAppliedFor = useRef<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('draft');
   const [flagged, setFlagged] = useState<string | null>(null);
   const [loading, setLoading] = useState(editing);
@@ -158,6 +160,28 @@ export function SellerProductFormPage() {
   useEffect(() => {
     if (conditionLocked && form.condition === 'new') setForm((f) => ({ ...f, condition: 'used' }));
   }, [conditionLocked, form.condition]);
+
+  const officialVariants = canonical?.product?.variants ?? null;
+  const officialOptions = officialVariants ? (officialVariants.storage.length ? officialVariants.storage : officialVariants.sizes) : [];
+  const officialOptionLabel = officialVariants?.storage.length ? 'Storage' : officialVariants?.sizes.length ? 'Size' : null;
+
+  function applyOfficialVariants(replace: boolean) {
+    if (!officialVariants) return;
+    if (officialOptions.length && (replace || versions.length === 0)) {
+      setVersions(officialOptions.map((value) => ({ value, priceUgx: '' })));
+      if (officialOptionLabel) { setVersionType(officialOptionLabel); versionTypeTouched.current = true; }
+    }
+    if (officialVariants.colours.length && (replace || colours.length === 0)) {
+      setColours(officialVariants.colours.map((x) => ({ name: x.name, hex: x.hex ?? '#9CA3AF' })));
+    }
+  }
+
+  useEffect(() => {
+    const id = canonical?.product?.id ?? null;
+    if (!id || !pickedStillApplies || picked?.id !== id || variantsAppliedFor.current === id) return;
+    variantsAppliedFor.current = id;
+    applyOfficialVariants(false);
+  }, [canonical?.product?.id, pickedStillApplies, picked?.id]);
 
   useEffect(() => {
     if (!nameTyped.current) return;
@@ -355,10 +379,10 @@ export function SellerProductFormPage() {
                   <div id="product-name-matches" role="listbox" aria-label="Matching products" data-testid="product-name-matches" className="absolute left-0 right-0 z-30 mt-1 max-h-80 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-raised">
                     {nameMatches.map((group) => (
                       <div key={group.category}>
-                        <p className="px-3 pb-1 pt-2 text-caption font-semibold uppercase text-ink-3">{group.label}</p>
-                        {group.products.map((hit) => (
+                        <p className="flex items-center justify-between px-3 pb-1 pt-2 text-caption font-semibold uppercase text-ink-3"><span>{group.label} · {group.products.length}</span>{group.products.length > 6 && <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setExpandedGroups((g) => ({ ...g, [group.category]: !g[group.category] }))} className="normal-case text-brand-green">{expandedGroups[group.category] ? 'Show fewer' : `Show all ${group.products.length}`}</button>}</p>
+                        {(expandedGroups[group.category] ? group.products : group.products.slice(0, 6)).map((hit) => (
                           <button key={hit.id} type="button" role="option" aria-selected={picked?.id === hit.id} onMouseDown={(e) => e.preventDefault()} onClick={() => pickProduct(hit)} className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-surface-2">
-                            <span className="min-w-0"><span className="block truncate font-medium">{hit.displayName}</span><span className="block text-caption text-ink-3">{[hit.kind, hit.releasedOn ? hit.releasedOn.slice(0, 4) : null, hit.specCount ? `${hit.specCount} details` : null].filter(Boolean).join(' · ')}</span></span>
+                            <span className="min-w-0"><span className="block truncate font-medium">{hit.displayName}</span><span className="block text-caption text-ink-3">{[hit.kind, hit.releasedOn ? hit.releasedOn.slice(0, 4) : null, hit.specCount ? `${hit.specCount} details` : null, hit.colourCount ? `${hit.colourCount} colours` : null].filter(Boolean).join(' · ')}</span></span>
                             <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${hit.lifecycle === 'current' ? 'bg-brand-green-mist text-brand-green-deep' : hit.lifecycle === 'discontinued' ? 'bg-surface-2 text-ink-3' : 'bg-surface-2 text-ink-3'}`}>{hit.lifecycle === 'current' ? 'Current' : hit.lifecycle === 'discontinued' ? 'No longer made' : 'Seller-listed'}</span>
                           </button>
                         ))}
@@ -399,6 +423,12 @@ export function SellerProductFormPage() {
           {canonicalState !== 'idle' && (
             <Card padding="lg" data-testid="canonical-card">
               <h2 className="flex items-center gap-2 font-display text-h3 font-medium text-brand-green-deep"><Sparkles size={18} /> {canonicalState === 'loading' ? 'Checking what Duka knows…' : canonical?.product ? `Duka knows the ${canonical.product.displayName}` : 'Duka does not know this product yet'}</h2>
+              {canonicalState === 'known' && canonical?.product && (canonical.product.releasedOn || officialOptions.length > 0 || (officialVariants?.colours.length ?? 0) > 0) && (
+                <p className="mt-1 text-small text-ink-2">
+                  {[canonical.product.releasedOn ? `Released ${canonical.product.releasedOn.slice(0, 4)}` : null, officialOptions.length ? `${officialOptionLabel?.toLowerCase()}: ${officialOptions.join(', ')}` : null, officialVariants?.colours.length ? `${officialVariants.colours.length} official colours` : null].filter(Boolean).join(' · ')}
+                  {(officialOptions.length > 0 || (officialVariants?.colours.length ?? 0) > 0) && <button type="button" onClick={() => applyOfficialVariants(true)} className="ml-2 font-semibold text-brand-green">Use the official {officialOptions.length && officialVariants?.colours.length ? `${officialOptionLabel?.toLowerCase()} and colours` : officialOptions.length ? officialOptionLabel?.toLowerCase() : 'colours'}</button>}
+                </p>
+              )}
               {canonicalState === 'known' && canonicalSpecs.length > 0 && (
                 <>
                   <p className="mt-1 text-small text-ink-3">Tap a detail to use it. Everything you pick stays editable below, so change it if your item is different. Price is always yours.</p>

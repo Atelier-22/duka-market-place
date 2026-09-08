@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { ApiError } from '../middleware/errorHandler';
 import { STORE_CATEGORIES } from '../seller/categories';
-import { findCanonical, findOrCreateCanonical, specsFor } from './canonical';
+import { findCanonical, findOrCreateCanonical, specsFor, variantsFor } from './canonical';
 import { findKind } from './knowledge.model';
 import { enqueueResearch, latestJob, researchConfigured } from './research';
 import { CATEGORY_LABELS } from '../seller/categories';
@@ -24,11 +24,11 @@ export async function lookup(req: Request, res: Response) {
   if (!brand || !model) { res.json({ known: false, product: null, research: null, researchConfigured: researchConfigured() }); return; }
   const product = await findCanonical(brand, model);
   if (!product) { res.json({ known: false, product: null, research: null, researchConfigured: researchConfigured() }); return; }
-  const [specs, job] = await Promise.all([specsFor(product.id, { statuses: ['verified', 'pending', 'conflict'] }), latestJob(product.id)]);
+  const [specs, job, variants] = await Promise.all([specsFor(product.id, { statuses: ['verified', 'pending', 'conflict'] }), latestJob(product.id), variantsFor(product.id)]);
   res.setHeader('Cache-Control', 'no-store');
   res.json({
     known: true,
-    product: { id: product.id, brand: product.brand, model: product.model, displayName: product.display_name, category: product.category, listingCount: product.listing_count, researchedAt: product.researched_at, family: (product as any).family ?? null, releasedOn: (product as any).released_on ?? null, lifecycle: (product as any).lifecycle_override ?? (product as any).lifecycle ?? 'unknown', specs: specs.map(presentSpec) },
+    product: { id: product.id, brand: product.brand, model: product.model, displayName: product.display_name, category: product.category, listingCount: product.listing_count, researchedAt: product.researched_at, family: (product as any).family ?? null, releasedOn: (product as any).released_on ?? null, lifecycle: (product as any).lifecycle_override ?? (product as any).lifecycle ?? 'unknown', specs: specs.map(presentSpec), variants },
     research: job ? { status: job.status, specsFound: job.specs_found, finishedAt: job.finished_at, error: job.status === 'failed' || job.status === 'skipped' ? job.error : null } : null,
     researchConfigured: researchConfigured(),
   });

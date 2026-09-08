@@ -1,7 +1,7 @@
 import { query, queryOne } from '../db/pool';
 import { cleanValue, normalizeValue, parseMeasure, slugify, titleCase } from './normalize';
 
-export type SourceType = 'manufacturer' | 'retailer' | 'unknown' | 'seller' | 'admin';
+export type SourceType = 'catalogue' | 'manufacturer' | 'retailer' | 'unknown' | 'seller' | 'admin';
 
 export const TIER_WEIGHT: Record<number, number> = { 1: 0.7, 2: 0.45, 3: 0.2, 4: 0.3 };
 export const VERIFIED_AT = 0.6;
@@ -91,11 +91,11 @@ export function scoreValues(sources: { value: string; value_norm: string; trust_
   const byValue = new Map<string, { value: string; miss: number; count: number; bestTier: number; seen: Set<string> }>();
   for (const s of sources) {
     const entry = byValue.get(s.value_norm) ?? { value: s.value, miss: 1, count: 0, bestTier: 9, seen: new Set<string>() };
-    const identity = s.source_type === 'seller' ? `seller:${s.seller_id}` : s.source_type === 'admin' ? 'admin' : `url:${s.source_url ?? ''}`;
+    const identity = s.source_type === 'seller' ? `seller:${s.seller_id}` : s.source_type === 'admin' ? 'admin' : s.source_type === 'catalogue' ? 'catalogue' : `url:${s.source_url ?? ''}`;
     if (!entry.seen.has(identity)) {
       entry.seen.add(identity);
       entry.count += 1;
-      entry.miss *= 1 - (s.source_type === 'admin' ? 1 : s.source_type === 'seller' ? 0.3 : TIER_WEIGHT[s.trust_tier] ?? 0.2);
+      entry.miss *= 1 - (s.source_type === 'admin' ? 1 : s.source_type === 'catalogue' ? 0.85 : s.source_type === 'seller' ? 0.3 : TIER_WEIGHT[s.trust_tier] ?? 0.2);
       entry.bestTier = Math.min(entry.bestTier, s.trust_tier);
     }
     byValue.set(s.value_norm, entry);
@@ -261,4 +261,18 @@ export async function verifiedSpecsForListings(listingIds: string[]): Promise<Re
   const out: Record<string, { key: string; label: string; value: string; unit: string | null; confidence: number }[]> = {};
   for (const r of rows) (out[r.listing_id] ??= []).push({ key: r.attribute_key, label: r.label, value: r.value, unit: r.unit, confidence: Number(r.confidence) });
   return out;
+}
+
+export interface CanonicalVariants { colours: { name: string; hex: string | null }[]; storage: string[]; sizes: string[] }
+
+export async function variantsFor(productId: string): Promise<CanonicalVariants> {
+  const rows = await query<{ dimension: string; value: string; display_hex: string | null }>(
+    `SELECT dimension, value, display_hex FROM canonical_variants WHERE product_id = $1 ORDER BY dimension, position, value`,
+    [productId]
+  );
+  return {
+    colours: rows.filter((r) => r.dimension === 'colour').map((r) => ({ name: r.value, hex: r.display_hex })),
+    storage: rows.filter((r) => r.dimension === 'storage').map((r) => r.value),
+    sizes: rows.filter((r) => r.dimension === 'size').map((r) => r.value),
+  };
 }

@@ -189,6 +189,16 @@ export function CanonicalProductDialog({ id, onClose }: { id: string; onClose: (
             </Card>
           )}
 
+          {(data.variants ?? []).length > 0 && (
+            <div>
+              <p className="font-semibold text-ink">Official options</p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {data.variants.map((v: any, i: number) => (
+                  <span key={i} className="flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-caption text-ink">{v.display_hex && <span className="h-3 w-3 rounded-full border border-black/10" style={{ background: v.display_hex }} />}{v.dimension === 'colour' ? '' : `${v.dimension}: `}{v.value}</span>
+                ))}
+              </div>
+            </div>
+          )}
           {data.jobs.length > 0 && (
             <div>
               <p className="font-semibold text-ink">Research runs</p>
