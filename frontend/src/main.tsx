@@ -6,11 +6,13 @@ import { AuthProvider } from './context/AuthContext';
 import { PreferencesProvider } from './context/PreferencesContext';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { CartProvider } from './market/cart';
+import { BootSplash } from './components/ui/BootSplash';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
+      <BootSplash />
       <BrowserRouter>
         <AuthProvider>
           <PreferencesProvider>

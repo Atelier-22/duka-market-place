@@ -25,7 +25,7 @@ export function SellerOnboardingPage({ onCreated }: { onCreated?: () => void }) 
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: '', tagline: '', category: 'general', city: 'Kampala', location: '', description: '',
-    logoUrl: '', coverUrl: '', contactPhone: '', whatsapp: '', deliveryFeeUgx: '5000', policies: '',
+    logoUrl: '', coverUrl: '', contactPhone: '', whatsapp: '', contactEmail: '', deliveryFeeUgx: '5000', policies: '', fulfilment: 'delivery',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -65,6 +65,8 @@ export function SellerOnboardingPage({ onCreated }: { onCreated?: () => void }) 
         coverUrl: form.coverUrl || null,
         contactPhone: form.contactPhone.trim() || null,
         whatsapp: form.whatsapp.trim() || null,
+        contactEmail: form.contactEmail.trim() || null,
+        fulfilment: form.fulfilment,
         deliveryFeeUgx: Number(form.deliveryFeeUgx),
         policies: form.policies.trim() || null,
       });
@@ -130,7 +132,13 @@ export function SellerOnboardingPage({ onCreated }: { onCreated?: () => void }) 
 
           {step === 2 && (
             <div className="flex flex-col gap-4">
-              <Input label="Delivery fee (UGX)" type="number" inputMode="numeric" min={0} value={form.deliveryFeeUgx} onChange={(e) => set('deliveryFeeUgx', e.target.value)} error={errors.deliveryFeeUgx} hint="Charged once per order from your store. Set 0 for free delivery." />
+              <Select label="How buyers get their goods" value={form.fulfilment} onChange={(e) => set('fulfilment', e.target.value)}>
+                <option value="delivery">We deliver</option>
+                <option value="pickup">Customers collect from our shop</option>
+                <option value="shopper">No delivery: customers send a Duka shopper</option>
+              </Select>
+              {form.fulfilment === 'delivery' && <Input label="Delivery fee (UGX)" type="number" inputMode="numeric" min={0} value={form.deliveryFeeUgx} onChange={(e) => set('deliveryFeeUgx', e.target.value)} error={errors.deliveryFeeUgx} hint="Charged once per order from your store. Set 0 for free delivery." />}
+              <Input label="Contact email (optional)" type="email" placeholder="shop@example.com" value={form.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input label="Contact phone (optional)" type="tel" placeholder="0700 000 000" value={form.contactPhone} onChange={(e) => set('contactPhone', e.target.value)} />
                 <Input label="WhatsApp (optional)" type="tel" placeholder="+256 700 000 000" value={form.whatsapp} onChange={(e) => set('whatsapp', e.target.value)} />

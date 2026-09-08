@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { BadgeCheck, Check, ImageOff, Minus, Package, Plus, ShoppingCart, Star, Store as StoreIcon, Truck } from 'lucide-react';
+import { Check, Mail, MapPin, MessageCircle, Minus, Package, Phone, Plus, ShoppingBag, ShoppingCart, Star, Store as StoreIcon, Truck, Users } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { usePageMeta } from '../../hooks/usePageMeta';
@@ -15,6 +15,8 @@ import { Bone, SkeletonRegion } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
 import { ProductCard } from '../../components/market/ProductCard';
 import { FollowButton } from '../../components/market/FollowButton';
+import { PhotoCarousel } from '../../components/market/PhotoCarousel';
+import { VerifiedBadge } from '../../components/market/VerifiedBadge';
 import { useCart } from '../../market/cart';
 import { PublicProduct, PublicProductDetail } from '../../market/types';
 import { categoryLabel, conditionLabel, formatUgx, timeAgo } from '../../market/format';
@@ -27,16 +29,14 @@ export function ProductPage() {
   const cart = useCart();
   const [data, setData] = useState<{ product: PublicProductDetail; following: boolean; related: PublicProduct[] } | null>(null);
   const [missing, setMissing] = useState(false);
-  const [image, setImage] = useState(0);
   const [variationId, setVariationId] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
-  const [lightbox, setLightbox] = useState(false);
+  const [lightbox, setLightbox] = useState<number | null>(null);
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
     setData(null);
     setMissing(false);
-    setImage(0);
     setVariationId(null);
     setQty(1);
     api.get(`/marketplace/products/${id}`).then((r) => setData(r.data)).catch(() => setMissing(true));
@@ -73,11 +73,15 @@ export function ProductPage() {
     );
   }
 
-  function addToCart() {
-    if (!product) return;
-    if (needsVariation) { push(`Choose a ${product.variations[0].name.toLowerCase()} first`, 'error'); return; }
-    if (available <= 0) return;
-    if (user && user.role === 'seller') { push('Switch to your customer account to buy', 'error'); return; }
+  const store = product.storeDetail;
+  const fulfilment = store.fulfilment ?? 'delivery';
+  const sellerOnly = user?.role === 'seller';
+
+  function addToCart(): boolean {
+    if (!product) return false;
+    if (needsVariation) { push(`Choose a ${product.variations[0].name.toLowerCase()} first`, 'error'); return false; }
+    if (available <= 0) return false;
+    if (sellerOnly) { push('Switch to your customer account to buy', 'error'); return false; }
     cart.add({
       productId: product.id,
       variationId: variation?.id ?? null,
@@ -85,22 +89,44 @@ export function ProductPage() {
       variationLabel: variation ? `${variation.name}: ${variation.value}` : null,
       unitPriceUgx: price,
       imageUrl: product.images[0] ?? null,
-      storeId: product.storeDetail.id,
-      storeName: product.storeDetail.name,
-      storeSlug: product.storeDetail.slug,
-      deliveryFeeUgx: 0,
+      storeId: store.id,
+      storeName: store.name,
+      storeSlug: store.slug,
+      deliveryFeeUgx: store.deliveryFeeUgx ?? 0,
+      fulfilment,
+      storeLocation: store.location ?? null,
       maxQuantity: available,
     }, qty);
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
+    return true;
   }
 
   function buyNow() {
-    addToCart();
-    if (!needsVariation && available > 0) navigate('/cart');
+    if (addToCart()) navigate('/cart');
   }
 
-  const store = product.storeDetail;
+  function askShopper() {
+    const params = new URLSearchParams({
+      title: product!.name,
+      description: `Please pick this up from ${store.name}${store.location ? ` (${store.location}, ${store.city})` : ` in ${store.city}`}. Listed at ${formatUgx(price)} on their Duka store: ${window.location.origin}/product/${product!.id}`,
+      budget: String(price),
+    });
+    if (!user) {
+      try { sessionStorage.setItem('duka_return_to', `/app/requests/new?${params.toString()}`); } catch { /* storage unavailable */ }
+      navigate('/register?role=customer');
+      return;
+    }
+    if (user.role !== 'customer') { push('Switch to your customer account to post a request', 'error'); return; }
+    navigate(`/app/requests/new?${params.toString()}`);
+  }
+
+  const contacts = [
+    store.contactPhone ? { href: `tel:${store.contactPhone}`, label: 'Call', icon: Phone } : null,
+    store.whatsapp ? { href: `https://wa.me/${store.whatsapp.replace(/[^0-9]/g, '')}`, label: 'WhatsApp', icon: MessageCircle, external: true } : null,
+    store.contactEmail ? { href: `mailto:${store.contactEmail}`, label: 'Email', icon: Mail } : null,
+  ].filter(Boolean) as { href: string; label: string; icon: typeof Phone; external?: boolean }[];
+
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -108,7 +134,6 @@ export function ProductPage() {
     image: product.images,
     description: product.description ?? undefined,
     brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
-    sku: undefined,
     category: categoryLabel(product.category),
     aggregateRating: product.ratingCount > 0 ? { '@type': 'AggregateRating', ratingValue: product.ratingAvg, reviewCount: product.ratingCount } : undefined,
     offers: {
@@ -122,8 +147,10 @@ export function ProductPage() {
     },
   };
 
+  const canBuy = available > 0 && !sellerOnly;
+
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-24 pt-4 sm:px-6 md:pb-16">
+    <div className="mx-auto max-w-6xl px-4 pt-4 sm:px-6 with-action-bar md:pb-16">
       <StructuredData id={`product-${product.id}`} data={schema} />
       <nav aria-label="Breadcrumb" className="mb-3 flex flex-wrap items-center gap-1.5 text-caption text-ink-3">
         <Link to="/marketplace" className="hover:text-brand-green">Marketplace</Link>
@@ -134,29 +161,7 @@ export function ProductPage() {
       </nav>
 
       <div className="grid gap-6 md:grid-cols-2 lg:gap-10">
-        <div>
-          <button
-            type="button"
-            onClick={() => product.images.length && setLightbox(true)}
-            className="surface block aspect-square w-full overflow-hidden rounded-3xl shadow-card"
-            aria-label="Open photo full screen"
-          >
-            {product.images[image] ? (
-              <img src={product.images[image]} alt={product.name} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-ink-3"><ImageOff size={40} strokeWidth={1.4} /></div>
-            )}
-          </button>
-          {product.images.length > 1 && (
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {product.images.map((src, i) => (
-                <button key={src + i} type="button" onClick={() => setImage(i)} className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 ${i === image ? 'border-brand-green' : 'border-transparent'}`} aria-label={`Photo ${i + 1}`}>
-                  <img src={src} alt="" className="h-full w-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <PhotoCarousel images={product.images} alt={product.name} onOpen={(i) => setLightbox(i)} />
 
         <div>
           <p className="text-label font-semibold uppercase tracking-wide text-ink-3">{product.brand || categoryLabel(product.category)}{product.model ? ` · ${product.model}` : ''}</p>
@@ -209,45 +214,54 @@ export function ProductPage() {
           </div>
 
           <div className="mt-4 hidden gap-3 md:flex">
-            <Button size="lg" onClick={addToCart} disabled={available <= 0} className="flex-1">
+            <Button size="lg" onClick={addToCart} disabled={!canBuy} className="flex-1">
               {added ? <><Check size={18} /> Added</> : <><ShoppingCart size={18} /> Add to cart</>}
             </Button>
-            <Button size="lg" variant="secondary" onClick={buyNow} disabled={available <= 0} className="flex-1">Buy now</Button>
+            {fulfilment === 'shopper'
+              ? <Button size="lg" variant="secondary" onClick={askShopper} className="flex-1"><Users size={18} /> Ask a shopper</Button>
+              : <Button size="lg" variant="secondary" onClick={buyNow} disabled={!canBuy} className="flex-1">Buy now</Button>}
           </div>
 
           <Card className="mt-6" padding="md">
-            <p className="text-label font-semibold uppercase text-ink-3">Sold by</p>
-            <div className="mt-2 flex items-center gap-3">
-              <Link to={`/store/${store.slug}`} className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand-green-mist text-brand-green-deep">
-                {store.logoUrl ? <img src={store.logoUrl} alt="" className="h-full w-full object-cover" /> : <StoreIcon size={20} />}
+            <div className="flex items-center gap-3">
+              <Link to={`/store/${store.slug}`} className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-green-mist text-brand-green-deep">
+                {store.logoUrl ? <img src={store.logoUrl} alt="" className="h-full w-full object-cover" /> : <StoreIcon size={22} />}
               </Link>
               <div className="min-w-0 flex-1">
-                <Link to={`/store/${store.slug}`} className="flex items-center gap-1.5 font-medium text-ink hover:text-brand-green">
-                  <span className="truncate">{store.name}</span>
-                  {store.isVerified && <BadgeCheck size={16} className="shrink-0 text-brand-green" aria-label="Verified" />}
-                </Link>
-                <p className="text-caption text-ink-3">
-                  {store.ratingCount > 0 ? <><Star size={11} className="inline fill-brand-yellow text-brand-yellow" /> {store.ratingAvg.toFixed(1)} · </> : null}{store.city}
+                <p className="text-label font-semibold uppercase text-ink-3">Sold by</p>
+                <Link to={`/store/${store.slug}`} className="block truncate font-medium text-ink hover:text-brand-green">{store.name}</Link>
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-ink-3">
+                  {store.isVerified && <VerifiedBadge size="sm" />}
+                  {store.ratingCount > 0 && <span className="flex items-center gap-1"><Star size={11} className="fill-brand-yellow text-brand-yellow" /> {store.ratingAvg.toFixed(1)} ({store.ratingCount})</span>}
+                  {typeof store.followerCount === 'number' && <span className="flex items-center gap-1"><Users size={11} /> {store.followerCount}</span>}
                 </p>
               </div>
             </div>
-            <div className="mt-3 flex gap-2">
-              <Link to={`/store/${store.slug}`} className="flex-1"><Button variant="secondary" size="sm" fullWidth>View store</Button></Link>
-              {(!user || user.id !== store.id) && (
-                <FollowButton
-                  slug={store.slug}
-                  size="sm"
-                  following={data!.following}
-                  followerCount={0}
-                  onChange={(next) => setData((d) => d && ({ ...d, following: next.following }))}
-                />
+            <p className="mt-3 flex items-center gap-1.5 text-sm text-ink-2"><MapPin size={14} className="shrink-0 text-brand-green" /> {store.location ? `${store.location}, ${store.city}` : store.city}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link to={`/store/${store.slug}`}><Button variant="secondary" size="sm">View store</Button></Link>
+              {(!user || user.id !== store.id) && !sellerOnly && (
+                <FollowButton slug={store.slug} size="sm" following={data!.following} followerCount={store.followerCount ?? 0} onChange={(next) => setData((d) => d && ({ ...d, following: next.following, product: { ...d.product, storeDetail: { ...d.product.storeDetail, followerCount: next.followerCount } } }))} />
               )}
+              {contacts.map((c) => (
+                <a key={c.label} href={c.href} target={c.external ? '_blank' : undefined} rel={c.external ? 'noreferrer' : undefined} className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-sm font-medium text-ink hover:border-line-strong"><c.icon size={14} className="text-brand-green" /> {c.label}</a>
+              ))}
             </div>
           </Card>
 
-          <div className="mt-4 flex items-start gap-2 rounded-xl bg-surface-2 p-3 text-sm text-ink-2">
-            <Truck size={16} className="mt-0.5 shrink-0 text-brand-green" />
-            <span>{product.deliveryInfo || 'Delivered by the store. Pay on delivery.'}</span>
+          <div className="mt-4 rounded-xl bg-surface-2 p-3 text-sm text-ink-2">
+            {fulfilment === 'delivery' && (
+              <p className="flex items-start gap-2"><Truck size={16} className="mt-0.5 shrink-0 text-brand-green" /><span>{product.deliveryInfo || 'Delivered by the store.'} Delivery {store.deliveryFeeUgx ? formatUgx(store.deliveryFeeUgx) : 'free'}, paid on delivery.</span></p>
+            )}
+            {fulfilment === 'pickup' && (
+              <p className="flex items-start gap-2"><StoreIcon size={16} className="mt-0.5 shrink-0 text-brand-green" /><span><span className="font-medium text-ink">Find us at the shop.</span> {store.location ? `${store.location}, ${store.city}.` : `${store.city}.`} Order here and collect in person; no delivery fee.</span></p>
+            )}
+            {fulfilment === 'shopper' && (
+              <div>
+                <p className="flex items-start gap-2"><ShoppingBag size={16} className="mt-0.5 shrink-0 text-brand-green" /><span><span className="font-medium text-ink">This store does not deliver.</span> Ask a Duka shopper to pick it up from {store.location ? `${store.location}, ${store.city}` : store.city} and bring it to your door, or collect it yourself.</span></p>
+                <Button size="sm" className="mt-3" onClick={askShopper}><Users size={15} /> Ask a shopper to bring it</Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -273,7 +287,7 @@ export function ProductPage() {
       <section className="mt-10">
         <h2 className="font-display text-h3 font-medium text-brand-green-deep">Reviews</h2>
         {product.reviews.length === 0 ? (
-          <p className="mt-2 text-sm text-ink-3">No reviews yet. Buyers can review after delivery.</p>
+          <p className="mt-2 text-sm text-ink-3">No reviews yet. Buyers can review after their order is complete.</p>
         ) : (
           <div className="mt-3 flex flex-col gap-3">
             {product.reviews.map((r) => (
@@ -301,20 +315,21 @@ export function ProductPage() {
         </section>
       )}
 
-      <div className="fixed inset-x-0 bottom-[calc(var(--duka-nav-height,0px))] z-30 border-t border-line bg-surface p-3 md:hidden" style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
+      <div className="fixed inset-x-0 bottom-[var(--duka-nav-height,0px)] z-30 border-t border-line bg-surface p-3 md:hidden" style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}>
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <div className="min-w-0">
             <p className="truncate text-caption text-ink-3">{product.name}</p>
             <p className="font-display text-lg font-semibold text-brand-green-deep">{formatUgx(price * qty)}</p>
           </div>
-          <Button size="lg" onClick={addToCart} disabled={available <= 0} className="ml-auto flex-1">
+          {fulfilment === 'shopper' && <Button size="lg" variant="secondary" onClick={askShopper} aria-label="Ask a shopper"><Users size={18} /></Button>}
+          <Button size="lg" onClick={addToCart} disabled={!canBuy} className="ml-auto flex-1">
             {added ? <><Check size={18} /> Added</> : <><ShoppingCart size={18} /> Add to cart</>}
           </Button>
         </div>
       </div>
 
-      {lightbox && product.images[image] && (
-        <ImageLightbox src={product.images[image]} alt={product.name} caption={product.name} onClose={() => setLightbox(false)} />
+      {lightbox !== null && product.images[lightbox] && (
+        <ImageLightbox src={product.images[lightbox]} alt={product.name} caption={`${product.name} · photo ${lightbox + 1} of ${product.images.length}`} onClose={() => setLightbox(null)} />
       )}
     </div>
   );

@@ -162,7 +162,7 @@ export async function decideVerification(req: Request, res: Response) {
     'UPDATE seller_verifications SET status = $2, review_note = $3, reviewed_by = $4, reviewed_at = now() WHERE id = $1',
     [record.id, status, input.note ?? null, req.user!.id]
   );
-  await setVerificationStatus(record.seller_id, status);
+  await setVerificationStatus(record.seller_id, status, input.approve ? 'admin' : null);
   if (record.document_key) await storageService.delete(record.document_key).catch(() => undefined);
   await query('UPDATE seller_verifications SET document_key = NULL WHERE id = $1', [record.id]);
   await notifySellerVerification({ sellerId: record.seller_id, verified: input.approve, note: input.note });

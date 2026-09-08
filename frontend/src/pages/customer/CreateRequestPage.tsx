@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, LucideIcon, MapPin, Search, ShoppingBag, Smartphone, Store } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
@@ -37,8 +38,9 @@ export function CreateRequestPage() {
   const [locationsLoading, setLocationsLoading] = useState(true);
   const [addressesLoading, setAddressesLoading] = useState(true);
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [prefill] = useSearchParams();
+  const [title, setTitle] = useState(prefill.get('title')?.slice(0, 200) ?? '');
+  const [description, setDescription] = useState(prefill.get('description')?.slice(0, 2000) ?? '');
   const [quantity, setQuantity] = useState('1');
 
   const [sourcingType, setSourcingType] = useState<SourcingType>((preferences.default_sourcing as SourcingType) || 'shopper_choice');
@@ -46,7 +48,7 @@ export function CreateRequestPage() {
   const [socialSellerUrl, setSocialSellerUrl] = useState('');
 
   const [budgetMin, setBudgetMin] = useState('');
-  const [budgetMax, setBudgetMax] = useState('');
+  const [budgetMax, setBudgetMax] = useState(/^\d+$/.test(prefill.get('budget') ?? '') ? String(prefill.get('budget')) : '');
 
   const [addressId, setAddressId] = useState('');
   const [newAddressLine, setNewAddressLine] = useState('');

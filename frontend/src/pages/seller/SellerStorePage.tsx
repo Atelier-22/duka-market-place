@@ -29,7 +29,7 @@ export function SellerStorePage() {
       setStore(r.data.store);
       setProfile(r.data.profile);
       const s = r.data.store;
-      if (s) setForm({ name: s.name, slug: s.slug, tagline: s.tagline ?? '', description: s.description ?? '', category: s.category, city: s.city, location: s.location ?? '', contactPhone: s.contact_phone ?? '', contactEmail: s.contact_email ?? '', whatsapp: s.whatsapp ?? '', logoUrl: s.logo_url ?? '', coverUrl: s.cover_url ?? '', policies: s.policies ?? '', deliveryFeeUgx: String(s.delivery_fee_ugx) });
+      if (s) setForm({ name: s.name, slug: s.slug, tagline: s.tagline ?? '', description: s.description ?? '', category: s.category, city: s.city, location: s.location ?? '', contactPhone: s.contact_phone ?? '', contactEmail: s.contact_email ?? '', whatsapp: s.whatsapp ?? '', logoUrl: s.logo_url ?? '', coverUrl: s.cover_url ?? '', policies: s.policies ?? '', deliveryFeeUgx: String(s.delivery_fee_ugx), fulfilment: s.fulfilment ?? 'delivery' });
     }).catch(() => setStore(null));
   }
   useEffect(load, []);
@@ -44,7 +44,7 @@ export function SellerStorePage() {
         name: form.name.trim(), slug: form.slug.trim() || undefined, tagline: form.tagline.trim() || null, description: form.description.trim() || null,
         category: form.category, city: form.city.trim(), location: form.location.trim() || null, contactPhone: form.contactPhone.trim() || null,
         contactEmail: form.contactEmail.trim() || null, whatsapp: form.whatsapp.trim() || null, logoUrl: form.logoUrl || null, coverUrl: form.coverUrl || null,
-        policies: form.policies.trim() || null, deliveryFeeUgx: Number(form.deliveryFeeUgx),
+        policies: form.policies.trim() || null, deliveryFeeUgx: Number(form.deliveryFeeUgx), fulfilment: form.fulfilment,
       });
       setStore(res.data.store);
       setForm((f) => ({ ...f, slug: res.data.store.slug }));
@@ -65,7 +65,7 @@ export function SellerStorePage() {
   if (store === null) return <SellerOnboardingPage onCreated={load} />;
 
   return (
-    <div className="mx-auto max-w-4xl pb-28 md:pb-10">
+    <div className="mx-auto max-w-4xl with-action-bar">
       <PageHeader
         title="Store"
         subtitle={<span className="flex flex-wrap items-center gap-2">{profile?.verification_status === 'verified' ? <span className="flex items-center gap-1 text-brand-green"><BadgeCheck size={15} /> Verified</span> : <Link to="/seller/settings/verification" className="text-brand-green underline">Get verified</Link>}<span>· dukashoppers.com/store/{store.slug}</span></span>}
@@ -97,8 +97,19 @@ export function SellerStorePage() {
             <Input label="Contact phone" type="tel" value={form.contactPhone} onChange={(e) => set('contactPhone', e.target.value)} maxLength={30} />
             <Input label="WhatsApp" type="tel" value={form.whatsapp} onChange={(e) => set('whatsapp', e.target.value)} maxLength={30} />
             <Input label="Contact email" type="email" value={form.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} maxLength={255} />
-            <Input label="Delivery fee (UGX)" type="number" inputMode="numeric" min={0} value={form.deliveryFeeUgx} onChange={(e) => set('deliveryFeeUgx', e.target.value)} />
           </div>
+        </Card>
+        <Card padding="lg">
+          <h2 className="font-display text-h3 font-medium text-brand-green-deep">How buyers get their goods</h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Select label="Fulfilment" value={form.fulfilment} onChange={(e) => set('fulfilment', e.target.value)}>
+              <option value="delivery">We deliver</option>
+              <option value="pickup">Customers collect from our shop</option>
+              <option value="shopper">No delivery: customers send a Duka shopper</option>
+            </Select>
+            {form.fulfilment === 'delivery' && <Input label="Delivery fee (UGX)" type="number" inputMode="numeric" min={0} value={form.deliveryFeeUgx} onChange={(e) => set('deliveryFeeUgx', e.target.value)} />}
+          </div>
+          <p className="mt-3 text-small text-ink-3">{form.fulfilment === 'pickup' ? 'Your store page tells buyers to find you at your location. Orders are collected in person and paid there.' : form.fulfilment === 'shopper' ? 'Buyers get a one-tap button to ask a Duka shopper to pick the item up from you and bring it to them.' : 'You bring the order to the buyer and collect cash on delivery.'}</p>
         </Card>
         <Card padding="lg">
           <h2 className="font-display text-h3 font-medium text-brand-green-deep">Policies</h2>

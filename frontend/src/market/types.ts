@@ -7,6 +7,13 @@ export interface PublicStoreSummary {
   ratingAvg: number;
   ratingCount: number;
   isVerified: boolean;
+  fulfilment?: 'delivery' | 'pickup' | 'shopper';
+  location?: string | null;
+  deliveryFeeUgx?: number;
+  followerCount?: number;
+  contactPhone?: string | null;
+  whatsapp?: string | null;
+  contactEmail?: string | null;
 }
 
 export interface PublicProduct {
@@ -68,6 +75,7 @@ export interface PublicStore {
   cover_url: string | null;
   policies: string | null;
   delivery_fee_ugx: number;
+  fulfilment: 'delivery' | 'pickup' | 'shopper';
   status: string;
   rating_avg: number | string;
   rating_count: number;
@@ -76,6 +84,7 @@ export interface PublicStore {
   sales_count: number;
   created_at: string;
   is_verified: boolean;
+  verified_at?: string | null;
   followed_at?: string;
 }
 
@@ -184,6 +193,7 @@ export interface SellerStore {
   cover_url: string | null;
   policies: string | null;
   delivery_fee_ugx: number;
+  fulfilment: 'delivery' | 'pickup' | 'shopper';
   status: 'active' | 'hidden' | 'suspended';
   rating_avg: number | string;
   rating_count: number;

@@ -143,7 +143,7 @@ const checkoutSchema = z.object({
     variationId: z.string().uuid().nullable().optional(),
     quantity: z.number().int().min(1).max(50),
   })).min(1).max(30),
-  addressId: z.string().uuid(),
+  addressId: z.string().uuid().nullable().optional(),
   notes: z.string().trim().max(500).nullable().optional(),
 });
 

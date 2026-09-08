@@ -48,6 +48,12 @@ export function conditionLabel(c: string): string {
   return c === 'new' ? 'Brand new' : c === 'used' ? 'Used' : 'Refurbished';
 }
 
+export const FULFILMENT_LABEL: Record<string, string> = {
+  delivery: 'Delivers to you',
+  pickup: 'Collect from the store',
+  shopper: 'No delivery. Send a Duka shopper',
+};
+
 export const ORDER_STATUS_LABEL: Record<string, string> = {
   pending: 'Waiting for the store',
   confirmed: 'Confirmed',

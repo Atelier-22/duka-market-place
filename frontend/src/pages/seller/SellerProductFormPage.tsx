@@ -135,7 +135,7 @@ export function SellerProductFormPage() {
   const totalVariationStock = variations.reduce((s, v) => s + (Number(v.stockQuantity) || 0), 0);
 
   return (
-    <div className="mx-auto max-w-4xl pb-28 md:pb-10">
+    <div className="mx-auto max-w-4xl with-action-bar">
       <PageHeader
         back="/seller/products"
         backLabel="Products"

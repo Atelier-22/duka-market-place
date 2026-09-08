@@ -61,7 +61,7 @@ export function SellerOrderDetailPage() {
   const canCancel = ['pending', 'confirmed', 'preparing', 'ready'].includes(order.status);
 
   return (
-    <div className="mx-auto max-w-4xl pb-28 md:pb-10">
+    <div className="mx-auto max-w-4xl with-action-bar">
       <PageHeader back="/seller/orders" backLabel="Orders" title={`Order #${order.order_number}`} subtitle={`${ORDER_STATUS_LABEL[order.status]} · placed ${timeAgo(order.created_at)}`} actions={<StatusBadge status={order.status} />} />
 
       {order.status === 'pending' && (

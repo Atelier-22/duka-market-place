@@ -25,7 +25,7 @@ export function CartPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 pb-24 pt-4 sm:px-6 md:pb-16">
+    <div className="mx-auto max-w-4xl px-4 pt-4 sm:px-6 with-action-bar">
       <PageHeader title="Your cart" subtitle={cart.count ? `${cart.count} item${cart.count === 1 ? '' : 's'} from ${cart.byStore.length} store${cart.byStore.length === 1 ? '' : 's'}` : undefined} back="/marketplace" backLabel="Marketplace" />
 
       {cart.lines.length === 0 ? (
@@ -37,7 +37,7 @@ export function CartPage() {
               <Card key={group.storeId} padding="none">
                 <div className="flex items-center justify-between border-b border-line px-4 py-3">
                   <Link to={`/store/${group.storeSlug}`} className="font-medium text-ink hover:text-brand-green">{group.storeName}</Link>
-                  <span className="text-caption text-ink-3">Separate delivery</span>
+                  <span className="text-caption text-ink-3">{group.fulfilment === 'pickup' ? `Collect from ${group.storeLocation || 'the store'}` : group.fulfilment === 'shopper' ? 'No delivery: send a shopper' : 'Delivered by the store'}</span>
                 </div>
                 <ul className="divide-y divide-line">
                   {group.lines.map((line) => (
@@ -70,7 +70,7 @@ export function CartPage() {
               <h2 className="font-display text-h3 font-medium text-brand-green-deep">Summary</h2>
               <dl className="mt-3 flex flex-col gap-2 text-sm">
                 <div className="flex justify-between"><dt className="text-ink-2">Items</dt><dd className="text-ink">{formatUgx(cart.subtotal)}</dd></div>
-                <div className="flex justify-between"><dt className="text-ink-2">Delivery</dt><dd className="text-ink-3">Set by each store at checkout</dd></div>
+                <div className="flex justify-between"><dt className="text-ink-2">Delivery</dt><dd className="text-ink-3">{cart.byStore.every((g) => g.fulfilment !== 'delivery') ? 'None, you collect' : 'Set by each store at checkout'}</dd></div>
               </dl>
               <p className="mt-3 text-caption text-ink-3">You pay the store on delivery. Nothing is charged online.</p>
               <Button size="lg" fullWidth className="mt-4 hidden md:flex" onClick={checkout}>Check out <ArrowRight size={16} /></Button>

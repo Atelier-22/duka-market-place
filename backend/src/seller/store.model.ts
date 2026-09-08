@@ -30,6 +30,7 @@ export interface StoreRow {
   cover_url: string | null;
   policies: string | null;
   delivery_fee_ugx: number;
+  fulfilment: 'delivery' | 'pickup' | 'shopper';
   status: StoreStatus;
   rating_avg: string | number;
   rating_count: number;
@@ -67,9 +68,9 @@ export type StoreCategory = (typeof STORE_CATEGORIES)[number];
 export const PUBLIC_STORE_COLUMNS = `
   s.id, s.name, s.slug, s.tagline, s.description, s.category, s.city, s.location,
   s.contact_phone, s.contact_email, s.whatsapp, s.logo_url, s.cover_url, s.policies,
-  s.delivery_fee_ugx, s.status, s.rating_avg, s.rating_count, s.follower_count,
+  s.delivery_fee_ugx, s.fulfilment, s.status, s.rating_avg, s.rating_count, s.follower_count,
   s.product_count, s.sales_count, s.created_at,
-  (sp.verification_status = 'verified') AS is_verified`;
+  (sp.verification_status = 'verified') AS is_verified, sp.verified_at, sp.verified_by`;
 
 export function slugify(value: string): string {
   return value
@@ -141,6 +142,7 @@ export interface StoreInput {
   coverUrl?: string | null;
   policies?: string | null;
   deliveryFeeUgx?: number;
+  fulfilment?: 'delivery' | 'pickup' | 'shopper';
 }
 
 export async function createStore(ownerId: string, input: StoreInput): Promise<StoreRow> {
@@ -148,14 +150,14 @@ export async function createStore(ownerId: string, input: StoreInput): Promise<S
   const row = await queryOne<StoreRow>(
     `INSERT INTO seller_stores
        (owner_id, name, slug, tagline, description, category, city, location,
-        contact_phone, contact_email, whatsapp, logo_url, cover_url, policies, delivery_fee_ugx)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+        contact_phone, contact_email, whatsapp, logo_url, cover_url, policies, delivery_fee_ugx, fulfilment)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
      RETURNING *`,
     [
       ownerId, input.name.trim(), slug, input.tagline ?? null, input.description ?? null,
       input.category, input.city, input.location ?? null, input.contactPhone ?? null,
       input.contactEmail ?? null, input.whatsapp ?? null, input.logoUrl ?? null,
-      input.coverUrl ?? null, input.policies ?? null, input.deliveryFeeUgx ?? 5000,
+      input.coverUrl ?? null, input.policies ?? null, input.deliveryFeeUgx ?? 5000, input.fulfilment ?? 'delivery',
     ]
   );
   if (!row) throw new Error('Failed to create store');
@@ -179,6 +181,7 @@ export async function updateStore(storeId: string, patch: Partial<StoreInput> & 
     cover_url: patch.coverUrl,
     policies: patch.policies,
     delivery_fee_ugx: patch.deliveryFeeUgx,
+    fulfilment: patch.fulfilment,
     status: patch.status,
   };
   const sets: string[] = [];
@@ -298,10 +301,15 @@ export async function updateSettings(userId: string, patch: SellerSettingsPatch)
   return row;
 }
 
-export async function setVerificationStatus(userId: string, status: SellerVerificationStatus): Promise<void> {
+export async function setVerificationStatus(userId: string, status: SellerVerificationStatus, by: 'auto' | 'admin' | null = null): Promise<void> {
   await query(
-    'UPDATE seller_profiles SET verification_status = $2, updated_at = now() WHERE user_id = $1',
-    [userId, status]
+    `UPDATE seller_profiles SET
+       verification_status = $2,
+       verified_at = CASE WHEN $2 = 'verified' THEN now() ELSE NULL END,
+       verified_by = CASE WHEN $2 = 'verified' THEN $3 ELSE NULL END,
+       updated_at = now()
+     WHERE user_id = $1`,
+    [userId, status, by]
   );
 }
 

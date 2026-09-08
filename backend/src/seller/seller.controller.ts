@@ -21,7 +21,7 @@ import {
   orderWithDetails, replyToReview, transitionOrder,
 } from './order.model';
 import { RangeKey, sellerDashboard, storeAnalytics, storeForecast } from './analytics';
-import { notifyFollowersOfNewProduct } from './notify';
+import { notifyFollowersOfNewProduct, notifySellerVerification } from './notify';
 
 interface SellerContext {
   user: UserRow;
@@ -93,6 +93,7 @@ const storeSchema = z.object({
   coverUrl: mediaUrl.nullable().optional(),
   policies: z.string().trim().max(3000).nullable().optional(),
   deliveryFeeUgx: z.number().int().min(0).max(5_000_000).optional(),
+  fulfilment: z.enum(['delivery', 'pickup', 'shopper']).optional(),
 });
 
 export async function createMyStore(req: Request, res: Response) {
@@ -500,14 +501,36 @@ export async function submitVerification(req: Request, res: Response) {
     key = await storageService.save(file.buffer, file.originalname ?? 'document', 'seller-verification', { mimeType: mime, uploadedBy: user.id });
   }
 
+  const checks = automaticChecks(store!, body, !!key);
+  const autoVerified = checks.every((c) => c.passed);
+
   const record = await queryOne(
-    `INSERT INTO seller_verifications (seller_id, business_name, registration_number, document_key, note)
-     VALUES ($1,$2,$3,$4,$5) RETURNING id, status, business_name, created_at`,
-    [user.id, body.businessName, body.registrationNumber ?? null, key, body.note ?? null]
+    `INSERT INTO seller_verifications (seller_id, business_name, registration_number, document_key, note, status, review_note, reviewed_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7, CASE WHEN $6 = 'verified' THEN now() ELSE NULL END)
+     RETURNING id, status, business_name, created_at`,
+    [user.id, body.businessName, body.registrationNumber ?? null, autoVerified ? null : key, body.note ?? null,
+     autoVerified ? 'verified' : 'pending', autoVerified ? 'Verified automatically by Duka' : null]
   );
-  await setVerificationStatus(user.id, 'pending');
+  if (autoVerified) {
+    if (key) await storageService.delete(key).catch(() => undefined);
+    await setVerificationStatus(user.id, 'verified', 'auto');
+    await notifySellerVerification({ sellerId: user.id, verified: true });
+  } else {
+    await setVerificationStatus(user.id, 'pending');
+  }
   await refreshStoreCounters(store!.id);
-  res.status(201).json({ verification: record });
+  res.status(201).json({ verification: record, autoVerified, checks });
+}
+
+function automaticChecks(store: StoreRow, body: { businessName: string; registrationNumber?: string | null }, hasDocument: boolean) {
+  const words = (s: string | null | undefined) => (s ?? '').trim().split(/\s+/).filter(Boolean).length;
+  return [
+    { id: 'business_name', label: 'A real business name', passed: body.businessName.trim().length >= 3 && /[a-z]/i.test(body.businessName) },
+    { id: 'store_identity', label: 'A store logo or a document', passed: !!store.logo_url || hasDocument },
+    { id: 'store_description', label: 'A description of at least 25 words', passed: words(store.description) >= 25 || hasDocument },
+    { id: 'contact', label: 'A phone, WhatsApp or email buyers can reach', passed: !!(store.contact_phone || store.whatsapp || store.contact_email) },
+    { id: 'location', label: 'A location or city', passed: !!(store.location || store.city) },
+  ];
 }
 
 export async function myVerifications(req: Request, res: Response) {

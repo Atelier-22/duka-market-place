@@ -405,6 +405,9 @@ export interface PublicProductFilters {
 const PUBLIC_PRODUCT_BASE = `
   SELECT p.*, s.name AS store_name, s.slug AS store_slug, s.logo_url AS store_logo, s.city AS store_city,
          s.rating_avg AS store_rating, s.rating_count AS store_rating_count,
+         s.fulfilment AS store_fulfilment, s.location AS store_location, s.contact_phone AS store_phone,
+         s.whatsapp AS store_whatsapp, s.contact_email AS store_email, s.delivery_fee_ugx AS store_delivery_fee,
+         s.follower_count AS store_followers,
          (sp.verification_status = 'verified') AS store_verified,
          (SELECT url FROM seller_product_images i WHERE i.product_id = p.id ORDER BY position, created_at LIMIT 1) AS image_url
     FROM seller_products p
@@ -486,6 +489,9 @@ export function toPublicProduct(p: any, promotions: PromotionLike[] = []) {
           ratingAvg: Number(p.store_rating ?? 0),
           ratingCount: Number(p.store_rating_count ?? 0),
           isVerified: !!p.store_verified,
+          fulfilment: p.store_fulfilment ?? 'delivery',
+          location: p.store_location ?? null,
+          deliveryFeeUgx: Number(p.store_delivery_fee ?? 0),
         }
       : undefined,
   };
@@ -527,6 +533,13 @@ export async function getPublicProduct(id: string) {
       ratingAvg: Number(row.store_rating ?? 0),
       ratingCount: Number(row.store_rating_count ?? 0),
       isVerified: !!row.store_verified,
+      fulfilment: row.store_fulfilment ?? 'delivery',
+      location: row.store_location ?? null,
+      deliveryFeeUgx: Number(row.store_delivery_fee ?? 0),
+      followerCount: Number(row.store_followers ?? 0),
+      contactPhone: row.store_phone ?? null,
+      whatsapp: row.store_whatsapp ?? null,
+      contactEmail: row.store_email ?? null,
     },
   };
 }

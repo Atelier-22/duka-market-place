@@ -12,6 +12,8 @@ export interface CartLine {
   storeName: string;
   storeSlug: string;
   deliveryFeeUgx: number;
+  fulfilment: 'delivery' | 'pickup' | 'shopper';
+  storeLocation: string | null;
   maxQuantity: number;
   quantity: number;
 }
@@ -23,7 +25,7 @@ interface CartValue {
   setQuantity: (key: string, quantity: number) => void;
   remove: (key: string) => void;
   clear: () => void;
-  byStore: { storeId: string; storeName: string; storeSlug: string; deliveryFeeUgx: number; lines: CartLine[]; subtotal: number }[];
+  byStore: { storeId: string; storeName: string; storeSlug: string; deliveryFeeUgx: number; fulfilment: 'delivery' | 'pickup' | 'shopper'; storeLocation: string | null; lines: CartLine[]; subtotal: number }[];
   subtotal: number;
   total: number;
 }
@@ -72,14 +74,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CartValue>(() => {
     const groups = new Map<string, CartValue['byStore'][number]>();
     for (const l of lines) {
-      const g = groups.get(l.storeId) ?? { storeId: l.storeId, storeName: l.storeName, storeSlug: l.storeSlug, deliveryFeeUgx: l.deliveryFeeUgx, lines: [], subtotal: 0 };
+      const g = groups.get(l.storeId) ?? { storeId: l.storeId, storeName: l.storeName, storeSlug: l.storeSlug, deliveryFeeUgx: l.deliveryFeeUgx, fulfilment: l.fulfilment ?? 'delivery', storeLocation: l.storeLocation ?? null, lines: [], subtotal: 0 };
       g.lines.push(l);
       g.subtotal += l.unitPriceUgx * l.quantity;
       groups.set(l.storeId, g);
     }
     const byStore = [...groups.values()];
     const subtotal = byStore.reduce((s, g) => s + g.subtotal, 0);
-    const total = subtotal + byStore.reduce((s, g) => s + g.deliveryFeeUgx, 0);
+    const total = subtotal + byStore.reduce((s, g) => s + (g.fulfilment === 'delivery' ? g.deliveryFeeUgx : 0), 0);
     return {
       lines,
       count: lines.reduce((s, l) => s + l.quantity, 0),

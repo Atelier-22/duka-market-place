@@ -60,6 +60,9 @@ interface PricedLine {
   sellerId: string;
   storeName: string;
   deliveryFeeUgx: number;
+  fulfilment: 'delivery' | 'pickup' | 'shopper';
+  storeLocation: string | null;
+  storeCity: string;
   productName: string;
   variationLabel: string | null;
   imageUrl: string | null;
@@ -71,7 +74,7 @@ async function priceLines(tx: Tx, lines: CartLine[]): Promise<PricedLine[]> {
   const ids = [...new Set(lines.map((l) => l.productId))];
   const rows = await txQuery<any>(
     tx,
-    `SELECT p.*, s.name AS store_name, s.delivery_fee_ugx AS store_delivery_fee, s.status AS store_status,
+    `SELECT p.*, s.name AS store_name, s.delivery_fee_ugx AS store_delivery_fee, s.status AS store_status, s.fulfilment AS store_fulfilment, s.location AS store_location, s.city AS store_city,
             sp.is_suspended, u.is_active AS owner_active,
             (SELECT url FROM seller_product_images i WHERE i.product_id = p.id ORDER BY position, created_at LIMIT 1) AS image_url
        FROM seller_products p
@@ -116,7 +119,10 @@ async function priceLines(tx: Tx, lines: CartLine[]): Promise<PricedLine[]> {
       storeId: p.store_id,
       sellerId: p.owner_id,
       storeName: p.store_name,
-      deliveryFeeUgx: Number(p.store_delivery_fee),
+      deliveryFeeUgx: p.store_fulfilment === 'delivery' ? Number(p.store_delivery_fee) : 0,
+      fulfilment: p.store_fulfilment ?? 'delivery',
+      storeLocation: p.store_location ?? null,
+      storeCity: p.store_city,
       productName: p.name,
       variationLabel: label,
       imageUrl: p.image_url,
@@ -158,14 +164,16 @@ async function moveStock(tx: Tx, line: { productId: string; variationId: string 
 export async function placeOrders(input: {
   customer: { id: string; fullName: string; phone: string };
   lines: CartLine[];
-  addressId: string;
+  addressId?: string | null;
   notes?: string | null;
 }): Promise<SellerOrderRow[]> {
-  const address = await queryOne<{ id: string; line1: string; city: string; phone: string | null }>(
-    'SELECT id, line1, city, phone FROM addresses WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
-    [input.addressId, input.customer.id]
-  );
-  if (!address) throw new ApiError(400, 'Choose one of your saved delivery addresses');
+  const address = input.addressId
+    ? await queryOne<{ id: string; line1: string; city: string; phone: string | null }>(
+        'SELECT id, line1, city, phone FROM addresses WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL',
+        [input.addressId, input.customer.id]
+      )
+    : null;
+  if (input.addressId && !address) throw new ApiError(400, 'Choose one of your saved delivery addresses');
 
   const merged = new Map<string, CartLine>();
   for (const l of input.lines) {
@@ -184,7 +192,11 @@ export async function placeOrders(input: {
     for (const [storeId, lines] of byStore) {
       for (const line of lines) await moveStock(tx, line, 'reserve', input.customer.id);
       const subtotal = lines.reduce((sum, l) => sum + l.unitPriceUgx * l.quantity, 0);
-      const delivery = lines[0].deliveryFeeUgx;
+      const delivers = lines[0].fulfilment === 'delivery';
+      if (delivers && !address) throw new ApiError(400, 'Choose a delivery address for ' + lines[0].storeName);
+      const delivery = delivers ? lines[0].deliveryFeeUgx : 0;
+      const dropLine1 = delivers ? address!.line1 : `Collect from ${lines[0].storeName}${lines[0].storeLocation ? `, ${lines[0].storeLocation}` : ''}`;
+      const dropCity = delivers ? address!.city : lines[0].storeCity;
       const settings = await txOne<{ auto_confirm_orders: boolean }>(tx, 'SELECT auto_confirm_orders FROM seller_settings WHERE user_id = $1', [lines[0].sellerId]);
       const status: SellerOrderStatus = settings?.auto_confirm_orders ? 'confirmed' : 'pending';
 
@@ -197,8 +209,8 @@ export async function placeOrders(input: {
          RETURNING *`,
         [
           storeId, lines[0].sellerId, input.customer.id, status, subtotal, delivery, subtotal + delivery,
-          address.id, address.line1, address.city, input.notes ?? null, input.customer.fullName,
-          address.phone || input.customer.phone,
+          delivers ? address!.id : null, dropLine1, dropCity, input.notes ?? null, input.customer.fullName,
+          (delivers && address?.phone) || input.customer.phone,
         ]
       );
       if (!order) throw new Error('Failed to create order');

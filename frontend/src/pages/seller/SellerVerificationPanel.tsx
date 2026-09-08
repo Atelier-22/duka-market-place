@@ -1,5 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { BadgeCheck, FileText, Upload } from 'lucide-react';
+import { BadgeCheck, FileText, Upload, X, Check } from 'lucide-react';
+import { Modal } from '../../components/ui/Modal';
+import { VerifiedBadge } from '../../components/market/VerifiedBadge';
 import { api, apiErrorMessage } from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -18,6 +20,8 @@ export function SellerVerificationPanel() {
   const [note, setNote] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
+  const [checks, setChecks] = useState<{ id: string; label: string; passed: boolean }[] | null>(null);
 
   function load() { api.get('/seller/verification').then((r) => setData(r.data)).catch(() => setData({ status: 'unverified', records: [] })); }
   useEffect(load, []);
@@ -32,8 +36,10 @@ export function SellerVerificationPanel() {
       if (registrationNumber.trim()) form.append('registrationNumber', registrationNumber.trim());
       if (note.trim()) form.append('note', note.trim());
       if (file) form.append('document', file);
-      await api.post('/seller/verification', form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      push('Submitted. Duka will review it and let you know.', 'success');
+      const res = await api.post('/seller/verification', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setChecks(res.data.checks ?? null);
+      if (res.data.autoVerified) setCelebrate(true);
+      else push('Submitted. Duka will review it and let you know.', 'success');
       setBusinessName(''); setRegistrationNumber(''); setNote(''); setFile(null);
       load();
     } catch (err) { push(apiErrorMessage(err), 'error'); } finally { setBusy(false); }
@@ -44,12 +50,29 @@ export function SellerVerificationPanel() {
 
   return (
     <div className="flex flex-col gap-4">
+      <Modal open={celebrate} onClose={() => setCelebrate(false)} title="You are verified">
+        <div className="flex flex-col items-center py-2 text-center">
+          <span className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-green-mist text-brand-green"><BadgeCheck size={44} strokeWidth={2} /></span>
+          <VerifiedBadge className="mt-4" />
+          <p className="mt-4 text-body text-ink-2">Your details checked out. Everyone browsing Duka now sees the green badge on your store and every product.</p>
+          <Button className="mt-5" onClick={() => setCelebrate(false)}>Brilliant</Button>
+        </div>
+      </Modal>
+      {checks && checks.some((c) => !c.passed) && data.status !== 'verified' && (
+        <Card padding="lg" tone="warning">
+          <p className="text-sm font-medium text-brand-green-deep">Duka could not verify automatically yet. Add these and submit again, or wait for a manual review.</p>
+          <ul className="mt-2 flex flex-col gap-1.5 text-sm">
+            {checks.map((c) => <li key={c.id} className="flex items-center gap-2">{c.passed ? <Check size={15} className="text-brand-green" /> : <X size={15} className="text-brand-red" />}<span className={c.passed ? 'text-ink-3' : 'text-ink'}>{c.label}</span></li>)}
+          </ul>
+        </Card>
+      )}
       <Card padding="lg">
         <div className="flex items-start gap-3">
           <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${data.status === 'verified' ? 'bg-brand-green-mist text-brand-green' : 'bg-surface-2 text-ink-3'}`}><BadgeCheck size={22} /></span>
           <div>
             <p className="font-medium text-ink">{data.status === 'verified' ? 'Your store is verified' : data.status === 'pending' ? 'Under review' : data.status === 'rejected' ? 'Not approved yet' : 'Not verified'}</p>
-            <p className="mt-0.5 text-small text-ink-2">{data.status === 'verified' ? 'Buyers see the verified badge on your store and every product.' : 'Verified stores show a badge and get more trust from buyers. Send your business details and, if you have one, a registration document or a photo of your shop.'}</p>
+            <p className="mt-0.5 text-small text-ink-2">{data.status === 'verified' ? 'Buyers see the green Verified by Duka badge on your store and every product.' : 'Duka checks your store automatically: a real business name, a logo or document, a proper description, a way to reach you, and a location. Pass them all and you are verified on the spot.'}</p>
+            {data.status === 'verified' && <VerifiedBadge className="mt-2" />}
           </div>
         </div>
       </Card>

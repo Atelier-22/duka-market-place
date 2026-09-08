@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { BadgeCheck, MapPin, Star, Store as StoreIcon, Users } from 'lucide-react';
+import { MapPin, Star, Store as StoreIcon, Users } from 'lucide-react';
+import { VerifiedBadge } from './VerifiedBadge';
 import { PublicStore } from '../../market/types';
 import { categoryLabel } from '../../market/format';
 
@@ -15,7 +16,7 @@ export function StoreCard({ store }: { store: PublicStore }) {
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
           <span className="truncate font-medium text-ink">{store.name}</span>
-          {store.is_verified && <BadgeCheck size={15} strokeWidth={2} className="shrink-0 text-brand-green" />}
+          {store.is_verified && <VerifiedBadge size="sm" />}
         </span>
         <span className="mt-0.5 block truncate text-caption text-ink-3">
           {categoryLabel(store.category)} · <MapPin size={11} className="inline" /> {store.city}
