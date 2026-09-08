@@ -190,7 +190,8 @@ export function SellerProductFormPage() {
     versionTypeTouched.current = false;
   }
 
-  const suggestedDetails = resolved.attributes.map((a) => a.name);
+  const groupedKeys = new Set(resolved.attributes.filter((a) => a.groups?.length).flatMap((a) => [a.key, a.groupKey ?? '']));
+  const suggestedDetails = resolved.attributes.filter((a) => !groupedKeys.has(a.key)).map((a) => a.name);
   const { lookup: canonical, state: canonicalState } = useCanonicalProduct(form.brand, form.model, form.category, form.subcategory, !loading);
   const pickedStillApplies = picked !== null && picked.brand.toLowerCase() === form.brand.trim().toLowerCase() && picked.model.toLowerCase() === form.model.trim().toLowerCase();
   const conditionLocked = canonical?.product?.lifecycle === 'discontinued' || (pickedStillApplies && picked?.lifecycle === 'discontinued');
@@ -451,6 +452,10 @@ export function SellerProductFormPage() {
 
   const basePrice = Number(form.salePriceUgx) || Number(form.priceUgx) || 0;
   const typeLabel = versionType.trim() || 'Version';
+  const hiddenIdentity = showIdentity ? [] : [
+    !resolved.traits.brand && !form.brand.trim() ? 'brand' : null,
+    !resolved.traits.model && !form.model.trim() ? 'model' : null,
+  ].filter((x): x is string => x !== null);
 
   return (
     <div className="mx-auto max-w-4xl with-action-bar">
@@ -545,8 +550,8 @@ export function SellerProductFormPage() {
                 {(resolved.traits.model || showIdentity || form.model) && (
                   <Input label="Model" placeholder="Only if it has one" value={form.model} onChange={(e) => set('model', e.target.value)} maxLength={80} hint={form.brand.trim() && form.model.trim() ? undefined : 'With a brand and model Duka looks up what it knows.'} />
                 )}
-                {!resolved.traits.brand && !resolved.traits.model && !showIdentity && !form.brand && !form.model && (
-                  <button type="button" onClick={() => setShowIdentity(true)} className="min-h-[44px] self-end text-left text-sm font-medium text-brand-green" data-testid="add-identity">+ Add a brand or model anyway</button>
+                {hiddenIdentity.length > 0 && (
+                  <button type="button" onClick={() => setShowIdentity(true)} className="min-h-[44px] self-end text-left text-sm font-medium text-brand-green" data-testid="add-identity">+ Add a {hiddenIdentity.join(' or ')} anyway</button>
                 )}
                 <Select label="Condition" value={form.condition} onChange={(e) => set('condition', e.target.value)} disabled={conditionLocked} hint={conditionLocked ? DISCONTINUED_NOTE : undefined} data-testid="condition-select">
                   <option value="new">Brand new</option><option value="used">Used</option><option value="refurbished">Refurbished</option>
