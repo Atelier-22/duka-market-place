@@ -258,7 +258,7 @@ const trousers = (i, extra = {}) => ({
 
   const sellerAdmin = await call('GET', '/admin/knowledge/overview', { token: sellers[0].accessToken });
   const buyerAct = await call('POST', `/admin/knowledge/option/${promoted?.id}/reject`, { token: buyer.accessToken });
-  check('sellers and buyers cannot touch global knowledge', sellerAdmin.status === 403 && buyerAct.status === 403);
+  check('sellers and buyers cannot touch global knowledge', sellerAdmin.status === 403 && buyerAct.status === 403, `${sellerAdmin.status}/${buyerAct.status} ${JSON.stringify(buyerAct.body)}`);
   const overview = await call('GET', '/admin/knowledge/overview', { token: admin });
   check('admin overview reports observations, sellers and rules', overview.status === 200 && overview.body.observations.total > 20 && overview.body.sellersObserved >= 3 && overview.body.rules.option.lowRisk.sellers === 2);
   const brandRow = (await call('GET', '/admin/knowledge/brands?q=local%20tailor', { token: admin })).body.brands.find((b) => b.name === 'Local tailor');

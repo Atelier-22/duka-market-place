@@ -452,6 +452,14 @@ export function SellerProductFormPage() {
 
   const basePrice = Number(form.salePriceUgx) || Number(form.priceUgx) || 0;
   const typeLabel = versionType.trim() || 'Version';
+  const [isPhone, setIsPhone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const sync = () => setIsPhone(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
   const hiddenIdentity = showIdentity ? [] : [
     !resolved.traits.brand && !form.brand.trim() ? 'brand' : null,
     !resolved.traits.model && !form.model.trim() ? 'model' : null,
@@ -683,7 +691,8 @@ export function SellerProductFormPage() {
             <Card padding="lg" id="field-options">
               <h2 className="font-display text-h3 font-medium text-brand-green-deep">How many of each</h2>
               <p className="mt-1 text-small text-ink-3">{versions.length && colours.length ? 'Enter the stock for every version in every colour. A 0 shows as sold out.' : versions.length ? 'Enter the stock for each version.' : 'Enter the stock for each colour.'}</p>
-              <div className="mt-3 flex flex-col gap-3 sm:hidden" data-testid="stock-stack">
+              {isPhone && (
+              <div className="mt-3 flex flex-col gap-3" data-testid="stock-stack">
                 {rowsFor.map((v, vi) => (
                   <div key={`${v}-${vi}`} className="rounded-xl border border-line p-3">
                     <p className="text-sm font-semibold text-ink">{v === NONE ? (colours.length ? 'All' : 'Stock') : v || <span className="text-ink-3">unnamed</span>}</p>
@@ -693,7 +702,7 @@ export function SellerProductFormPage() {
                         return (
                           <li key={c} className="flex items-center justify-between gap-3">
                             <span className="flex min-w-0 items-center gap-2 text-sm text-ink-2">{colour && <span className="h-4 w-4 shrink-0 rounded-full border border-black/10" style={{ background: colour.hex }} aria-hidden />}<span className="truncate">{c === NONE ? 'In stock' : c}</span></span>
-                            <input type="number" inputMode="numeric" min={0} value={stock[key(v, c)] ?? ''} onChange={(e) => setStock((s) => ({ ...s, [key(v, c)]: e.target.value }))} placeholder="0" aria-label={`Stock for ${v === NONE ? '' : v} ${c === NONE ? '' : c} on phone`.trim()} className="h-10 w-20 rounded-lg border border-line bg-surface text-center text-sm outline-none focus:border-brand-green focus:shadow-focus" />
+                            <input type="number" inputMode="numeric" min={0} value={stock[key(v, c)] ?? ''} onChange={(e) => setStock((s) => ({ ...s, [key(v, c)]: e.target.value }))} placeholder="0" aria-label={`Stock for ${v === NONE ? '' : v} ${c === NONE ? '' : c}`.trim()} className="h-10 w-20 rounded-lg border border-line bg-surface text-center text-sm outline-none focus:border-brand-green focus:shadow-focus" />
                           </li>
                         );
                       })}
@@ -702,7 +711,9 @@ export function SellerProductFormPage() {
                 ))}
                 <p className="text-sm font-semibold text-ink">Total: {totalStock}</p>
               </div>
-              <div className="mt-3 hidden overflow-x-auto sm:block">
+              )}
+              {!isPhone && (
+              <div className="mt-3 overflow-x-auto">
                 <table className="w-full min-w-[320px] text-sm">
                   <thead>
                     <tr className="text-left text-label uppercase text-ink-3">
@@ -734,6 +745,7 @@ export function SellerProductFormPage() {
                   </tbody>
                 </table>
               </div>
+              )}
               {errors.options && <p className="mt-2 text-small text-brand-red">{errors.options}</p>}
               <div className="mt-3 rounded-xl bg-surface-2 p-3 text-sm">
                 <p className="text-caption font-semibold uppercase text-ink-3">Buyers will see</p>
