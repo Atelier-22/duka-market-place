@@ -5,6 +5,7 @@ import { query, queryOne } from '../db/pool';
 import { findUserById } from '../models/user.model';
 import { verifyAccessToken } from '../utils/auth';
 import { STORE_CATEGORIES, findPublicStoreBySlug, follow, isFollowing, listFollowing, unfollow } from './store.model';
+import { matchCategories } from './categories';
 import { getPublicProduct, listPublicProducts, listPublicStores, publicCategories, recordProductView } from './product.model';
 import { listCustomerOrders, orderWithDetails, placeOrders, publicStoreReviews, reviewOrder, transitionOrder } from './order.model';
 import { notifySellerFollower } from './notify';
@@ -104,7 +105,7 @@ export async function search(req: Request, res: Response) {
     listPublicProducts({ q, limit: limit ?? 12, sort: 'popular' }),
     listPublicStores({ q, limit: 6 }),
   ]);
-  const categories = STORE_CATEGORIES.filter((c) => c.includes(q.toLowerCase()));
+  const categories = matchCategories(q);
   res.json({ products: items.products, totalProducts: items.total, stores: shops, categories });
 }
 

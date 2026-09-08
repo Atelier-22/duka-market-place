@@ -13,8 +13,9 @@ import { ImageUpload } from '../../components/ui/ImageUpload';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { SkeletonHeading, SkeletonRegion, SkeletonRows } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
-import { STORE_CATEGORIES } from '../../market/types';
-import { categoryLabel, formatUgx } from '../../market/format';
+import { categoryEntry } from '../../market/categories';
+import { CategoryOptions } from '../../components/market/CategoryOptions';
+import { formatUgx } from '../../market/format';
 
 interface Version { value: string; priceUgx: string }
 interface Colour { name: string; hex: string }
@@ -34,6 +35,23 @@ const EMPTY = {
 };
 
 const NONE = 'none';
+
+function versionHint(category: string): string {
+  switch (category) {
+    case 'phones': case 'computers': case 'electronics': case 'tv-audio': case 'gaming': case 'cameras':
+      return 'Different models or storage sizes at different prices, like Pro and Pro Max, or 128GB and 256GB.';
+    case 'cars': case 'motorcycles': case 'bicycles':
+      return 'Different trims, engines or years at different prices. Colours go in the next section.';
+    case 'fashion': case 'mens': case 'womens': case 'kids-fashion': case 'shoes': case 'sports': case 'baby':
+      return 'The sizes you have. Each size can have its own price, and stock is counted per size and colour.';
+    case 'groceries': case 'fresh': case 'drinks': case 'agriculture': case 'bakery': case 'ready-food': case 'kitchen': case 'beauty':
+      return 'Pack sizes or portions at different prices, like 1kg and 5kg, or Small and Family.';
+    case 'services': case 'events': case 'property':
+      return 'Packages or types at different prices, like Basic, Standard and Premium.';
+    default:
+      return 'Only if this comes in more than one version at different prices, like Small and Large.';
+  }
+}
 const key = (v: string, c: string) => `${v}|${c}`;
 
 export function SellerProductFormPage() {
@@ -45,7 +63,7 @@ export function SellerProductFormPage() {
   const [form, setForm] = useState({ ...EMPTY });
   const [images, setImages] = useState<string[]>([]);
   const [specs, setSpecs] = useState<Spec[]>([]);
-  const [versionType, setVersionType] = useState('Model');
+  const [versionType, setVersionType] = useState(categoryEntry(EMPTY.category).versionType);
   const [versions, setVersions] = useState<Version[]>([]);
   const [colours, setColours] = useState<Colour[]>([]);
   const [stock, setStock] = useState<Record<string, string>>({});
@@ -55,6 +73,16 @@ export function SellerProductFormPage() {
   const [loading, setLoading] = useState(editing);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (id) return;
+    api.get('/seller/me').then((r) => {
+      const category = r.data.store?.category;
+      if (!category) return;
+      setForm((f) => (f.category === EMPTY.category ? { ...f, category } : f));
+      setVersionType((t) => (t === categoryEntry(EMPTY.category).versionType ? categoryEntry(category).versionType : t));
+    }).catch(() => undefined);
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -76,7 +104,7 @@ export function SellerProductFormPage() {
         if (row.color_name && !cs.some((c) => c.name === row.color_name)) cs.push({ name: row.color_name, hex: row.color_hex ?? '#9CA3AF' });
         st[key(row.value || NONE, row.color_name || NONE)] = String(row.stock_quantity);
       }
-      if (rows[0]?.name && rows[0].value) setVersionType(rows[0].name);
+      setVersionType(rows[0]?.name && rows[0].value ? rows[0].name : categoryEntry(p.category).versionType);
       setVersions(vs);
       setColours(cs);
       setStock(st);
@@ -96,7 +124,21 @@ export function SellerProductFormPage() {
   const stockAt = (v: string, c: string) => Number(stock[key(v, c)] || 0);
   const totalStock = rowsFor.reduce((s, v) => s + colsFor.reduce((t, c) => t + stockAt(v, c), 0), 0);
 
-  function addVersion() { setVersions((vs) => [...vs, { value: '', priceUgx: '' }]); }
+  const entry = categoryEntry(form.category);
+
+  function changeCategory(next: string) {
+    const previous = categoryEntry(form.category);
+    set('category', next);
+    if (versionType.trim() === previous.versionType || !versionType.trim()) setVersionType(categoryEntry(next).versionType);
+  }
+
+  function addVersion(value = '') { setVersions((vs) => [...vs, { value, priceUgx: '' }]); }
+  function addSuggestedVersions(values: string[]) {
+    setVersions((vs) => {
+      const have = new Set(vs.map((v) => v.value.trim().toLowerCase()));
+      return [...vs.filter((v) => v.value.trim()), ...values.filter((v) => !have.has(v.toLowerCase())).map((value) => ({ value, priceUgx: '' }))];
+    });
+  }
   function addColour(c: Colour) {
     if (!c.name.trim()) { push('Give the colour a name', 'error'); return; }
     if (colours.some((x) => x.name.toLowerCase() === c.name.trim().toLowerCase())) { push('That colour is already added', 'error'); return; }
@@ -219,10 +261,20 @@ export function SellerProductFormPage() {
               <Input label="Product name" placeholder="iPhone 17" value={form.name} onChange={(e) => set('name', e.target.value)} error={errors.name} maxLength={200} />
               <Textarea label="Description" placeholder="What it is, what is in the box, condition, warranty…" value={form.description} onChange={(e) => set('description', e.target.value)} rows={5} maxLength={5000} hint="At least 20 characters to publish." />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Select label="Category" value={form.category} onChange={(e) => set('category', e.target.value)}>
-                  {STORE_CATEGORIES.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
+                <Select label="Category" value={form.category} onChange={(e) => changeCategory(e.target.value)} hint="Pick the closest one. Buyers browse by it.">
+                  <CategoryOptions />
                 </Select>
-                <Input label="Subcategory (optional)" placeholder="Smartphones" value={form.subcategory} onChange={(e) => set('subcategory', e.target.value)} maxLength={80} />
+                <div>
+                  <Input label="Subcategory (optional)" placeholder={entry.subcategories[0] ?? 'Smartphones'} value={form.subcategory} onChange={(e) => set('subcategory', e.target.value)} maxLength={80} list={`subcategories-${entry.key}`} />
+                  <datalist id={`subcategories-${entry.key}`}>{entry.subcategories.map((s) => <option key={s} value={s} />)}</datalist>
+                  {entry.subcategories.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {entry.subcategories.slice(0, 8).map((s) => (
+                        <button key={s} type="button" onClick={() => set('subcategory', s)} aria-pressed={form.subcategory === s} className={`min-h-[32px] rounded-full border px-2.5 text-caption font-medium transition-colors ${form.subcategory === s ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>{s}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <Input label="Brand (optional)" placeholder="Apple" value={form.brand} onChange={(e) => set('brand', e.target.value)} maxLength={80} />
                 <Input label="Model (optional)" placeholder="A3102" value={form.model} onChange={(e) => set('model', e.target.value)} maxLength={80} />
                 <Select label="Condition" value={form.condition} onChange={(e) => set('condition', e.target.value)}>
@@ -251,10 +303,20 @@ export function SellerProductFormPage() {
 
           <Card padding="lg">
             <h2 className="font-display text-h3 font-medium text-brand-green-deep">Versions</h2>
-            <p className="mt-1 text-small text-ink-3">Only if this product comes in more than one version at different prices, like Pro and Pro Max, or Small and Large.</p>
+            <p className="mt-1 text-small text-ink-3">{versionHint(entry.key)}</p>
+            {entry.versions.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <span className="text-caption text-ink-3">Quick add {entry.versionType.toLowerCase()}:</span>
+                {entry.versions.map((v) => {
+                  const have = versions.some((x) => x.value.trim().toLowerCase() === v.toLowerCase());
+                  return <button key={v} type="button" disabled={have} onClick={() => addSuggestedVersions([v])} className={`min-h-[32px] rounded-full border px-2.5 text-caption font-medium transition-colors ${have ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>{v}</button>;
+                })}
+                <button type="button" onClick={() => addSuggestedVersions(entry.versions)} className="min-h-[32px] rounded-full px-2.5 text-caption font-semibold text-brand-green hover:bg-brand-green-mist">Add all</button>
+              </div>
+            )}
             {versions.length > 0 && (
               <div className="mt-3">
-                <Input label="What do you call the versions?" value={versionType} onChange={(e) => setVersionType(e.target.value)} placeholder="Model" maxLength={60} hint="Model, Size, Storage, Edition…" />
+                <Input label="What do you call the versions?" value={versionType} onChange={(e) => setVersionType(e.target.value)} placeholder={entry.versionType} maxLength={60} hint="Size, Storage, Model, Trim, Pack size, Package…" />
                 <ul className="mt-3 flex flex-col gap-2">
                   {versions.map((v, i) => (
                     <li key={i} className="grid grid-cols-[1fr_auto] items-end gap-2 rounded-xl border border-line p-2 sm:grid-cols-[1.2fr_1fr_auto]">
@@ -266,12 +328,12 @@ export function SellerProductFormPage() {
                 </ul>
               </div>
             )}
-            <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={addVersion}><Plus size={15} /> Add a version</Button>
+            <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={() => addVersion()}><Plus size={15} /> Add a version</Button>
           </Card>
 
           <Card padding="lg">
             <h2 className="flex items-center gap-2 font-display text-h3 font-medium text-brand-green-deep"><Palette size={18} /> Colours</h2>
-            <p className="mt-1 text-small text-ink-3">Tap the colours this product comes in. Buyers pick one and see how many of that colour you have.</p>
+            <p className="mt-1 text-small text-ink-3">If it comes in colours, tap them. Buyers pick one and see how many of that colour you have. Skip this for things without a colour.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {PALETTE.map((c) => {
                 const chosen = colours.some((x) => x.name.toLowerCase() === c.name.toLowerCase());

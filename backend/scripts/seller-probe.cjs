@@ -98,6 +98,12 @@ const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000
   check('product with images, specs and variations is created as a draft', productA.status === 201 && productA.body.product.status === 'draft' && Number(productA.body.product.stock_quantity) === 5, JSON.stringify(productA.body).slice(0, 80));
   const pid = productA.body.product.id;
 
+  const carListing = await call('POST', '/seller/products', { token: sellerA.accessToken, body: { name: 'Toyota Harrier 2015', category: 'cars', subcategory: 'SUV', priceUgx: 85000000, variations: [{ name: 'Trim', value: 'Premium', colorName: 'Pearl white', colorHex: '#F5F5F5', stockQuantity: 1 }] } });
+  check('a car listing with a trim and paint colour is accepted', carListing.status === 201 && carListing.body.product.category === 'cars');
+  const catSearch = await call('GET', '/marketplace/search?q=tyre');
+  check('search matches categories by their label too', catSearch.status === 200 && catSearch.body.categories.includes('tyres'));
+  const catList = await call('GET', '/marketplace/categories');
+  check('the category list covers electronics, vehicles, food and services', catList.body.all.length >= 50 && ['electronics', 'cars', 'groceries', 'services', 'property'].every((c) => catList.body.all.includes(c)));
   const blankCombo = await call('POST', '/seller/products', { token: sellerA.accessToken, body: { name: 'Blank option', category: 'phones', priceUgx: 100000, variations: [{ name: 'Model', value: '', stockQuantity: 1 }] } });
   check('an option with neither a version nor a colour is rejected', blankCombo.status === 400);
   const dupCombo = await call('POST', '/seller/products', { token: sellerA.accessToken, body: { name: 'Twice', category: 'phones', priceUgx: 100000, variations: [{ name: 'Model', value: 'Pro', colorName: 'Blue', stockQuantity: 1 }, { name: 'Model', value: 'pro', colorName: 'blue', stockQuantity: 1 }] } });
@@ -263,7 +269,7 @@ const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000
   const sellersList = await call('GET', `/admin/sellers?q=techhub`, { token: admin });
   check('admin can search sellers by store name', sellersList.body.sellers.some((s) => s.id === sellerA.user.id));
   const sellerDetail = await call('GET', `/admin/sellers/${sellerA.user.id}`, { token: admin });
-  check('admin seller detail shows store, products, orders, verification', sellerDetail.status === 200 && sellerDetail.body.store && sellerDetail.body.products.length === 2 && sellerDetail.body.orders.length === 1 && sellerDetail.body.verifications.length === 1);
+  check('admin seller detail shows store, products, orders, verification', sellerDetail.status === 200 && sellerDetail.body.store && sellerDetail.body.products.length === 3 && sellerDetail.body.orders.length === 1 && sellerDetail.body.verifications.length === 1);
   const queue = await call('GET', '/admin/sellers/verifications', { token: admin });
   const verId = queue.body.verifications.find((v) => v.seller_id === sellerA.user.id)?.id;
   const doc = await fetch(`${API}/admin/sellers/verifications/${verId}/document`, { headers: { Authorization: `Bearer ${admin}` } });

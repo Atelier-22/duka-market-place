@@ -1,3 +1,4 @@
+import { CATEGORY_ENTRIES } from './categories';
 export interface PublicStoreSummary {
   id: string;
   name: string;
@@ -214,9 +215,6 @@ export interface SellerProfile {
   suspended_reason: string | null;
 }
 
-export const STORE_CATEGORIES = [
-  'electronics', 'phones', 'fashion', 'shoes', 'beauty', 'home', 'kitchen', 'groceries',
-  'baby', 'sports', 'books', 'automotive', 'health', 'crafts', 'general',
-] as const;
+export const STORE_CATEGORIES = CATEGORY_ENTRIES.map((c) => c.key);
 
-export type StoreCategory = (typeof STORE_CATEGORIES)[number];
+export type StoreCategory = string;

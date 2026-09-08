@@ -1,4 +1,5 @@
 import { query, queryOne } from '../db/pool';
+import { STORE_CATEGORIES } from './categories';
 
 export type SellerVerificationStatus = 'unverified' | 'pending' | 'verified' | 'rejected';
 export type StoreStatus = 'active' | 'hidden' | 'suspended';
@@ -58,12 +59,8 @@ export interface SellerSettingsRow {
   updated_at: string;
 }
 
-export const STORE_CATEGORIES = [
-  'electronics', 'phones', 'fashion', 'shoes', 'beauty', 'home', 'kitchen', 'groceries',
-  'baby', 'sports', 'books', 'automotive', 'health', 'crafts', 'general',
-] as const;
-
-export type StoreCategory = (typeof STORE_CATEGORIES)[number];
+export { STORE_CATEGORIES } from './categories';
+export type { StoreCategory } from './categories';
 
 export const PUBLIC_STORE_COLUMNS = `
   s.id, s.name, s.slug, s.tagline, s.description, s.category, s.city, s.location,

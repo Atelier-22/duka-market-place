@@ -1,23 +1,6 @@
-const CATEGORY_LABELS: Record<string, string> = {
-  electronics: 'Electronics',
-  phones: 'Phones & tablets',
-  fashion: 'Fashion',
-  shoes: 'Shoes',
-  beauty: 'Beauty',
-  home: 'Home',
-  kitchen: 'Kitchen',
-  groceries: 'Groceries',
-  baby: 'Baby & kids',
-  sports: 'Sports',
-  books: 'Books',
-  automotive: 'Automotive',
-  health: 'Health',
-  crafts: 'Crafts',
-  general: 'General',
-};
-
+import { categoryEntry } from './categories';
 export function categoryLabel(key: string): string {
-  return CATEGORY_LABELS[key] ?? key.charAt(0).toUpperCase() + key.slice(1);
+  return categoryEntry(key).label;
 }
 
 export function formatUgx(n: number | string | null | undefined): string {

@@ -11,8 +11,7 @@ import { Textarea } from '../../components/ui/Textarea';
 import { ImageUpload } from '../../components/ui/ImageUpload';
 import { useToast } from '../../components/ui/Toast';
 import { useBrandTransition } from '../../components/ui/BrandTransition';
-import { STORE_CATEGORIES } from '../../market/types';
-import { categoryLabel } from '../../market/format';
+import { CategoryOptions } from '../../components/market/CategoryOptions';
 
 const STEPS = ['Your store', 'Look and feel', 'Delivery and policies'];
 
@@ -111,8 +110,8 @@ export function SellerOnboardingPage({ onCreated }: { onCreated?: () => void }) 
               <Input label="Store name" placeholder="TechHub Electronics" value={form.name} onChange={(e) => set('name', e.target.value)} error={errors.name} icon={<StoreIcon size={18} strokeWidth={1.8} />} autoFocus />
               <Input label="One-line tagline (optional)" placeholder="Phones, laptops and accessories in Kampala" value={form.tagline} onChange={(e) => set('tagline', e.target.value)} maxLength={160} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Select label="Category" value={form.category} onChange={(e) => set('category', e.target.value)}>
-                  {STORE_CATEGORIES.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
+                <Select label="Category" value={form.category} onChange={(e) => set('category', e.target.value)} hint="What you mostly sell. Every product can have its own category.">
+                  <CategoryOptions />
                 </Select>
                 <Input label="City" value={form.city} onChange={(e) => set('city', e.target.value)} error={errors.city} />
               </div>

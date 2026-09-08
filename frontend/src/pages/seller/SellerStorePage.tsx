@@ -13,8 +13,8 @@ import { ImageUpload } from '../../components/ui/ImageUpload';
 import { SkeletonHeading, SkeletonRegion, SkeletonRows } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
 import { SellerOnboardingPage } from './SellerOnboardingPage';
-import { STORE_CATEGORIES, SellerProfile, SellerStore } from '../../market/types';
-import { categoryLabel } from '../../market/format';
+import { SellerProfile, SellerStore } from '../../market/types';
+import { CategoryOptions } from '../../components/market/CategoryOptions';
 
 export function SellerStorePage() {
   usePageMeta({ title: 'Store settings', noindex: true });
@@ -85,7 +85,7 @@ export function SellerStorePage() {
             <Input label="Store name" value={form.name} onChange={(e) => set('name', e.target.value)} maxLength={120} />
             <Input label="Store address" value={form.slug} onChange={(e) => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))} hint="dukashoppers.com/store/…" maxLength={60} />
             <Input label="Tagline" value={form.tagline} onChange={(e) => set('tagline', e.target.value)} maxLength={160} />
-            <Select label="Category" value={form.category} onChange={(e) => set('category', e.target.value)}>{STORE_CATEGORIES.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}</Select>
+            <Select label="Category" value={form.category} onChange={(e) => set('category', e.target.value)}><CategoryOptions /></Select>
           </div>
           <Textarea className="mt-4" label="About" value={form.description} onChange={(e) => set('description', e.target.value)} rows={5} maxLength={3000} />
         </Card>
