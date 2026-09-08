@@ -1,5 +1,5 @@
 import {
-  BadgeCheck, ChartLine, Eye, FileText, LayoutDashboard, Package, Percent, Scale,
+  BadgeCheck, ChartLine, Eye, FileText, LayoutDashboard, Lightbulb, Package, Percent, Scale,
   Settings, ShieldCheck, ShoppingBag, Store, Tag, Users, Wallet, Wrench,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +13,7 @@ const ITEMS: NavItem[] = [
   { to: '/admin/shoppers', label: 'Shoppers', icon: ShoppingBag },
   { to: '/admin/sellers', label: 'Sellers', icon: Store },
   { to: '/admin/seller-products', label: 'Products', icon: Tag },
+  { to: '/admin/knowledge', label: 'Intelligence', icon: Lightbulb },
   { to: '/admin/verifications', label: 'Verification', icon: BadgeCheck },
   { to: '/admin/finance', label: 'Finance', icon: Wallet },
   { to: '/admin/analytics', label: 'Analytics', icon: ChartLine },

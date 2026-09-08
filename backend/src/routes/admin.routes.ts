@@ -5,6 +5,7 @@ import { requireAuth, requireRole, requireSuperAdmin } from '../middleware/auth'
 import * as ops from '../controllers/adminOps.controller';
 import * as staff from '../controllers/staff.controller';
 import * as sellers from '../seller/sellerAdmin.controller';
+import * as knowledge from '../knowledge/knowledgeAdmin.controller';
 import { asyncHandler } from '../middleware/errorHandler';
 
 const router = Router();
@@ -51,6 +52,16 @@ router.post('/locations/:id/toggle', asyncHandler(ops.toggleLocation));
 router.get('/analytics', asyncHandler(ops.analytics));
 router.get('/audit', asyncHandler(ops.auditLog));
 
+router.get('/knowledge/overview', asyncHandler(knowledge.overview));
+router.get('/knowledge/kinds', asyncHandler(knowledge.kinds));
+router.get('/knowledge/attributes', asyncHandler(knowledge.attributes));
+router.get('/knowledge/options', asyncHandler(knowledge.options));
+router.get('/knowledge/brands', asyncHandler(knowledge.brands));
+router.get('/knowledge/observations', asyncHandler(knowledge.observations));
+router.get('/knowledge/suggestions', asyncHandler(knowledge.suggestions));
+router.get('/knowledge/audit', asyncHandler(knowledge.auditLog));
+router.get('/knowledge/explain', asyncHandler(knowledge.explain));
+router.post('/knowledge/:entity/:id/:action', asyncHandler(knowledge.act));
 router.get('/sellers/stats', asyncHandler(sellers.stats));
 router.get('/sellers/verifications', asyncHandler(sellers.verificationQueue));
 router.get('/sellers/verifications/:id/document', asyncHandler(sellers.verificationDocument));

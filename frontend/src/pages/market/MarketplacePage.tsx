@@ -14,6 +14,7 @@ import { ProductCard } from '../../components/market/ProductCard';
 import { StoreCard } from '../../components/market/StoreCard';
 import { PublicProduct, PublicStore } from '../../market/types';
 import { categoryLabel } from '../../market/format';
+import { FilterFacet, Interpretation, fetchFilters } from '../../market/knowledge';
 
 interface HomeData {
   featured: PublicProduct[];
@@ -50,7 +51,11 @@ export function MarketplacePage() {
   const category = params.get('category') ?? '';
   const sort = params.get('sort') ?? 'popular';
   const inStock = params.get('inStock') === '1';
-  const browsing = Boolean(q || category);
+  const kind = params.get('kind') ?? '';
+  const brand = params.get('brand') ?? '';
+  const attrParams = useMemo(() => [...params.entries()].filter(([k, v]) => k.startsWith('attr_') && v), [params]);
+  const attrKey = attrParams.map(([k, v]) => `${k}=${v}`).join('&');
+  const browsing = Boolean(q || category || kind || brand || attrParams.length);
 
   usePageMeta({
     title: browsing ? `${q || categoryLabel(category)} on the Duka marketplace` : 'Duka Marketplace',
@@ -58,7 +63,8 @@ export function MarketplacePage() {
   });
 
   const [home, setHome] = useState<HomeData | null>(null);
-  const [results, setResults] = useState<{ products: PublicProduct[]; total: number; stores: PublicStore[] } | null>(null);
+  const [results, setResults] = useState<{ products: PublicProduct[]; total: number; stores: PublicStore[]; interpretation?: Interpretation; usedKnowledge?: boolean } | null>(null);
+  const [facets, setFacets] = useState<FilterFacet[]>([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState(q);
   const [showFilters, setShowFilters] = useState(false);
@@ -74,17 +80,24 @@ export function MarketplacePage() {
       const query = new URLSearchParams();
       if (q) query.set('q', q);
       if (category) query.set('category', category);
+      if (kind) query.set('kind', kind);
+      if (brand) query.set('brand', brand);
+      for (const [k, v] of attrParams) query.set(k, v);
       query.set('sort', sort);
       if (inStock) query.set('inStock', '1');
       query.set('limit', '48');
       Promise.all([
         api.get(`/marketplace/products?${query.toString()}`),
         q ? api.get(`/marketplace/stores?q=${encodeURIComponent(q)}&limit=6`) : Promise.resolve({ data: { stores: [] } }),
-      ]).then(([p, s]) => { if (!cancelled) setResults({ products: p.data.products, total: p.data.total, stores: s.data.stores }); })
-        .finally(() => { if (!cancelled) setLoading(false); });
+      ]).then(([p, s]) => {
+        if (cancelled) return;
+        setResults({ products: p.data.products, total: p.data.total, stores: s.data.stores, interpretation: p.data.interpretation, usedKnowledge: p.data.usedKnowledge });
+        const facetCategory = category || null;
+        fetchFilters(facetCategory, kind || p.data.interpretation?.kind || null).then((f) => { if (!cancelled) setFacets(f); }).catch(() => { if (!cancelled) setFacets([]); });
+      }).finally(() => { if (!cancelled) setLoading(false); });
     }
     return () => { cancelled = true; };
-  }, [browsing, q, category, sort, inStock]);
+  }, [browsing, q, category, sort, inStock, kind, brand, attrKey]);
 
   const categories = useMemo(() => home?.categories ?? [], [home]);
 
@@ -153,9 +166,9 @@ export function MarketplacePage() {
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-display text-h3 font-medium text-brand-green-deep">
-                {q ? `Results for “${q}”` : categoryLabel(category)}
+                {q ? `Results for “${q}”` : kind || brand || (category ? categoryLabel(category) : 'Products')}
               </h2>
-              {results && <p className="text-small text-ink-3">{results.total} product{results.total === 1 ? '' : 's'}</p>}
+              {results && <p className="text-small text-ink-3">{results.total} product{results.total === 1 ? '' : 's'}{results.usedKnowledge && results.interpretation && results.interpretation.matched.length > 0 ? ` · understood as ${results.interpretation.matched.map((m) => `${m.type === 'kind' || m.type === 'brand' || m.type === 'colour' ? '' : `${m.type.replace(/-/g, ' ')} `}${m.as}`).join(' · ')}` : ''}</p>}
             </div>
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => setShowFilters((v) => !v)}>
@@ -163,6 +176,27 @@ export function MarketplacePage() {
               </Button>
             </div>
           </div>
+          {(kind || brand || attrParams.length > 0) && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {kind && <button type="button" onClick={() => update({ kind: null })} className="flex min-h-[36px] items-center gap-1 rounded-full border border-brand-green bg-brand-green-mist px-3 text-sm font-medium text-brand-green-deep">{kind} <span aria-hidden>×</span></button>}
+              {brand && <button type="button" onClick={() => update({ brand: null })} className="flex min-h-[36px] items-center gap-1 rounded-full border border-brand-green bg-brand-green-mist px-3 text-sm font-medium text-brand-green-deep">{brand} <span aria-hidden>×</span></button>}
+              {attrParams.map(([k, v]) => <button key={k} type="button" onClick={() => update({ [k]: null })} className="flex min-h-[36px] items-center gap-1 rounded-full border border-brand-green bg-brand-green-mist px-3 text-sm font-medium text-brand-green-deep">{k.slice(5).replace(/-/g, ' ')}: {v} <span aria-hidden>×</span></button>)}
+            </div>
+          )}
+          {facets.length > 0 && (
+            <div className="mt-3 flex flex-col gap-2">
+              {facets.filter((f) => !params.get(`attr_${f.key}`)).slice(0, 4).map((f) => (
+                <div key={f.key} className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <span className="shrink-0 text-caption font-semibold uppercase text-ink-3">{f.name}</span>
+                  {f.values.map((v) => (
+                    <button key={v.value} type="button" onClick={() => update({ [`attr_${f.key}`]: v.value })} className="flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink-2 hover:border-line-strong">
+                      {v.hex && <span className="h-3.5 w-3.5 rounded-full border border-black/10" style={{ background: v.hex }} aria-hidden />}{v.value} <span className="text-ink-3">{v.count}</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
           {showFilters && (
             <Card className="mt-3 grid gap-3 sm:grid-cols-3" padding="md">
               <Select label="Sort" value={sort} onChange={(e) => update({ sort: e.target.value })}>

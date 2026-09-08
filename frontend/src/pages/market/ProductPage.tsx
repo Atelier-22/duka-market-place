@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Check, Mail, MapPin, MessageCircle, Minus, Package, Phone, Plus, ShoppingBag, ShoppingCart, Star, Store as StoreIcon, Truck, Users } from 'lucide-react';
+import { Check, Mail, MapPin, MessageCircle, Minus, Package, Phone, Plus, Scale, ShoppingBag, ShoppingCart, Star, Store as StoreIcon, Truck, Users } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { usePageMeta } from '../../hooks/usePageMeta';
@@ -343,10 +343,13 @@ export function ProductPage() {
             <div className="flex justify-between gap-3"><dt className="text-ink-3">Condition</dt><dd className="text-ink">{conditionLabel(product.condition)}</dd></div>
             {product.brand && <div className="flex justify-between gap-3"><dt className="text-ink-3">Brand</dt><dd className="text-ink">{product.brand}</dd></div>}
             {product.model && <div className="flex justify-between gap-3"><dt className="text-ink-3">Model</dt><dd className="text-ink">{product.model}</dd></div>}
-            {product.specifications.map((s) => (
-              <div key={s.label} className="flex justify-between gap-3"><dt className="text-ink-3">{s.label}</dt><dd className="text-right text-ink">{s.value}</dd></div>
+            {(product.attributes?.length ? product.attributes.filter((a) => !['brand', 'model', 'colour'].includes(a.key) || (a.key === 'colour' && product.variations.length === 0)) : product.specifications.map((s) => ({ key: s.label, name: s.label, value: s.value, unit: null, type: 'text' }))).map((a, i) => (
+              <div key={`${a.key}-${i}`} className="flex justify-between gap-3"><dt className="text-ink-3">{a.name}</dt><dd className="text-right text-ink">{a.value}{a.unit && !a.value.toLowerCase().includes(a.unit.toLowerCase()) ? ` ${a.unit}` : ''}</dd></div>
             ))}
           </dl>
+          {data!.related.length > 0 && (
+            <Link to={`/compare?ids=${[product.id, ...data!.related.slice(0, 2).map((r) => r.id)].join(',')}`} className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-green"><Scale size={15} /> Compare with similar</Link>
+          )}
         </Card>
       </div>
 

@@ -4,9 +4,10 @@ import { ApiError } from '../middleware/errorHandler';
 import { query, queryOne } from '../db/pool';
 import { findUserById } from '../models/user.model';
 import { verifyAccessToken } from '../utils/auth';
-import { STORE_CATEGORIES, findPublicStoreBySlug, follow, isFollowing, listFollowing, unfollow } from './store.model';
-import { matchCategories } from './categories';
-import { getPublicProduct, listPublicProducts, listPublicStores, publicCategories, recordProductView } from './product.model';
+import { findPublicStoreBySlug, follow, isFollowing, listFollowing, unfollow } from './store.model';
+import { STORE_CATEGORIES, matchCategories } from './categories';
+import { Interpretation, interpretQuery } from '../knowledge/interpret';
+import { PublicProductFilters, compareProducts, getPublicProduct, listPublicProducts, listPublicStores, publicCategories, recordProductView } from './product.model';
 import { listCustomerOrders, orderWithDetails, placeOrders, publicStoreReviews, reviewOrder, transitionOrder } from './order.model';
 import { notifySellerFollower } from './notify';
 
@@ -49,7 +50,15 @@ const listSchema = z.object({
 
 export async function products(req: Request, res: Response) {
   const q = listSchema.parse(req.query);
-  res.json(await listPublicProducts({ ...q, storeId: q.store, inStockOnly: !!q.inStock }));
+  const extra = z.object({ kind: z.string().trim().max(80).optional(), brand: z.string().trim().max(80).optional() }).parse(req.query);
+  const base: PublicProductFilters = { ...q, storeId: q.store, inStockOnly: !!q.inStock, attributes: attributeFilters(req.query as Record<string, unknown>), kind: extra.kind || undefined, brand: extra.brand || undefined };
+  if (q.q) {
+    const interpretation = await interpretQuery(q.q);
+    const result = await searchWithKnowledge(q.q, interpretation, base);
+    res.json({ ...result, interpretation });
+    return;
+  }
+  res.json(await listPublicProducts(base));
 }
 
 export async function product(req: Request, res: Response) {
@@ -101,12 +110,49 @@ export async function store(req: Request, res: Response) {
 
 export async function search(req: Request, res: Response) {
   const { q, limit } = z.object({ q: z.string().trim().min(1).max(80), limit: z.coerce.number().int().min(1).max(30).optional() }).parse(req.query);
+  const interpretation = await interpretQuery(q);
   const [items, shops] = await Promise.all([
-    listPublicProducts({ q, limit: limit ?? 12, sort: 'popular' }),
+    searchWithKnowledge(q, interpretation, { limit: limit ?? 12, sort: 'popular' }),
     listPublicStores({ q, limit: 6 }),
   ]);
   const categories = matchCategories(q);
-  res.json({ products: items.products, totalProducts: items.total, stores: shops, categories });
+  res.json({ products: items.products, totalProducts: items.total, stores: shops, categories, interpretation, usedKnowledge: items.usedKnowledge });
+}
+
+function attributeFilters(queryParams: Record<string, unknown>): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const [key, raw] of Object.entries(queryParams)) {
+    if (!key.startsWith('attr_')) continue;
+    const attr = key.slice(5).toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const values = (Array.isArray(raw) ? raw : [raw]).flatMap((v) => String(v).split('|')).map((v) => v.trim()).filter(Boolean).slice(0, 10);
+    if (attr && values.length) out[attr] = values;
+  }
+  return out;
+}
+
+async function searchWithKnowledge(q: string, interpretation: Interpretation, base: Partial<PublicProductFilters>) {
+  const structured: Partial<PublicProductFilters> = {};
+  if (interpretation.kind) structured.kind = interpretation.kindTerms.length ? interpretation.kindTerms : interpretation.kind;
+  if (interpretation.brand) structured.brand = interpretation.brand;
+  if (Object.keys(interpretation.attributes).length) structured.attributes = { ...(base.attributes ?? {}), ...interpretation.attributes };
+  const hasStructure = Object.keys(structured).length > 0;
+  if (hasStructure) {
+    const smart = await listPublicProducts({ ...base, ...structured, q: interpretation.text || undefined });
+    if (smart.total > 0) return { ...smart, usedKnowledge: true };
+    if (interpretation.text) {
+      const loose = await listPublicProducts({ ...base, ...structured, q: undefined });
+      if (loose.total > 0) return { ...loose, usedKnowledge: true };
+    }
+  }
+  const plain = await listPublicProducts({ ...base, q });
+  return { ...plain, usedKnowledge: false };
+}
+
+export async function compare(req: Request, res: Response) {
+  const { ids } = z.object({ ids: z.string().min(1).max(400) }).parse(req.query);
+  const list = [...new Set(ids.split(',').map((s) => s.trim()).filter((s) => /^[0-9a-f-]{36}$/i.test(s)))].slice(0, 4);
+  if (list.length < 1) throw new ApiError(400, 'Choose products to compare');
+  res.json(await compareProducts(list));
 }
 
 export async function categories(_req: Request, res: Response) {

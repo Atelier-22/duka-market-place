@@ -57,7 +57,10 @@ export interface PublicVariation {
   available: number;
 }
 
+export interface ProductAttribute { key: string; name: string; value: string; unit: string | null; type: string }
+
 export interface PublicProductDetail extends PublicProduct {
+  attributes: ProductAttribute[];
   images: string[];
   variations: PublicVariation[];
   reviews: { id: string; stars: number; comment: string | null; created_at: string; author_name: string; author_avatar: string | null }[];

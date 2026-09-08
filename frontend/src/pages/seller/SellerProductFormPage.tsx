@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Eye, Palette, Plus, Save, Trash2, X } from 'lucide-react';
 import { api, apiErrorMessage } from '../../services/api';
@@ -13,7 +13,8 @@ import { ImageUpload } from '../../components/ui/ImageUpload';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { SkeletonHeading, SkeletonRegion, SkeletonRows } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
-import { Swatch, categoryEntry, resolveOptions } from '../../market/categories';
+import { categoryEntry } from '../../market/categories';
+import { Swatch, useProductKnowledge } from '../../market/knowledge';
 import { CategoryOptions } from '../../components/market/CategoryOptions';
 import { formatUgx } from '../../market/format';
 
@@ -21,13 +22,6 @@ interface Version { value: string; priceUgx: string }
 interface Colour { name: string; hex: string }
 interface Spec { label: string; value: string }
 
-const PALETTE: Colour[] = [
-  { name: 'Black', hex: '#111111' }, { name: 'White', hex: '#F5F5F5' }, { name: 'Navy blue', hex: '#1F3A93' },
-  { name: 'Blue', hex: '#2563EB' }, { name: 'Sky blue', hex: '#7DD3FC' }, { name: 'Green', hex: '#16A34A' },
-  { name: 'Red', hex: '#DC2626' }, { name: 'Orange', hex: '#F97316' }, { name: 'Yellow', hex: '#FACC15' },
-  { name: 'Pink', hex: '#EC4899' }, { name: 'Purple', hex: '#7C3AED' }, { name: 'Grey', hex: '#9CA3AF' },
-  { name: 'Brown', hex: '#8B5E3C' }, { name: 'Gold', hex: '#D4AF37' }, { name: 'Silver', hex: '#C0C0C0' },
-];
 
 const EMPTY = {
   name: '', description: '', category: 'general', subcategory: '', brand: '', model: '', condition: 'new',
@@ -63,7 +57,7 @@ export function SellerProductFormPage() {
   const [form, setForm] = useState({ ...EMPTY });
   const [images, setImages] = useState<string[]>([]);
   const [specs, setSpecs] = useState<Spec[]>([]);
-  const [versionType, setVersionType] = useState(categoryEntry(EMPTY.category).versionType);
+  const [versionType, setVersionType] = useState('Option');
   const [versions, setVersions] = useState<Version[]>([]);
   const [colours, setColours] = useState<Colour[]>([]);
   const [stock, setStock] = useState<Record<string, string>>({});
@@ -80,7 +74,6 @@ export function SellerProductFormPage() {
       const category = r.data.store?.category;
       if (!category) return;
       setForm((f) => (f.category === EMPTY.category ? { ...f, category } : f));
-      setVersionType((t) => (t === categoryEntry(EMPTY.category).versionType ? categoryEntry(category).versionType : t));
     }).catch(() => undefined);
   }, [id]);
 
@@ -104,7 +97,7 @@ export function SellerProductFormPage() {
         if (row.color_name && !cs.some((c) => c.name === row.color_name)) cs.push({ name: row.color_name, hex: row.color_hex ?? '#9CA3AF' });
         st[key(row.value || NONE, row.color_name || NONE)] = String(row.stock_quantity);
       }
-      setVersionType(rows[0]?.name && rows[0].value ? rows[0].name : categoryEntry(p.category).versionType);
+      if (rows[0]?.name && rows[0].value) { setVersionType(rows[0].name); versionTypeTouched.current = true; }
       setVersions(vs);
       setColours(cs);
       setStock(st);
@@ -125,24 +118,35 @@ export function SellerProductFormPage() {
   const totalStock = rowsFor.reduce((s, v) => s + colsFor.reduce((t, c) => t + stockAt(v, c), 0), 0);
 
   const entry = categoryEntry(form.category);
-  const resolved = useMemo(() => resolveOptions(form.category, form.subcategory, form.brand), [form.category, form.subcategory, form.brand]);
-  const subEntry = entry.subcategories.find((x) => x.name.toLowerCase() === form.subcategory.trim().toLowerCase());
+  const { knowledge: resolved } = useProductKnowledge(form.category, form.subcategory, form.brand);
+  const subEntry = resolved.kind && !resolved.kind.isDefault ? resolved.kind : null;
+  const versionTypeTouched = useRef(false);
+  const requiredSeeded = useRef<string | null>(null);
 
-  function followVersionType(before: string, after: string) {
-    if (versionType.trim() === before || !versionType.trim()) setVersionType(after);
-  }
+  useEffect(() => {
+    if (!versionTypeTouched.current || !versionType.trim()) setVersionType(resolved.versionType);
+  }, [resolved.versionType]);
+
+  useEffect(() => {
+    const required = resolved.attributes.filter((a) => a.role === 'required').map((a) => a.name);
+    const marker = `${resolved.category}|${resolved.kind?.id ?? ''}`;
+    if (required.length === 0 || requiredSeeded.current === marker) return;
+    requiredSeeded.current = marker;
+    addSpecs(required);
+  }, [resolved]);
 
   function changeCategory(next: string) {
-    const after = resolveOptions(next, '', form.brand).versionType;
     setForm((f) => ({ ...f, category: next, subcategory: '' }));
-    followVersionType(resolved.versionType, after);
+    versionTypeTouched.current = false;
   }
 
   function changeSubcategory(next: string) {
-    const after = resolveOptions(form.category, next, form.brand).versionType;
     set('subcategory', next);
-    followVersionType(resolved.versionType, after);
+    versionTypeTouched.current = false;
   }
+
+  const suggestedDetails = resolved.attributes.map((a) => a.name);
+  const optionsForDetail = (label: string) => resolved.attributes.find((a) => a.name.toLowerCase() === label.trim().toLowerCase())?.options ?? [];
 
   function addSpecs(labels: string[]) {
     setSpecs((sp) => {
@@ -156,7 +160,7 @@ export function SellerProductFormPage() {
       const chosen = colours.some((x) => x.name.toLowerCase() === c.name.toLowerCase());
       return (
         <button key={c.name} type="button" onClick={() => (chosen ? setColours((cs) => cs.filter((x) => x.name.toLowerCase() !== c.name.toLowerCase())) : addColour(c))} aria-pressed={chosen} className={`flex min-h-[40px] items-center gap-2 rounded-full border px-3 text-sm transition-colors ${chosen ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>
-          <span className="h-5 w-5 rounded-full border border-black/10" style={{ background: c.hex }} aria-hidden />
+          <span className="h-5 w-5 rounded-full border border-black/10" style={{ background: c.hex ?? '#9CA3AF' }} aria-hidden />
           {c.name}
         </button>
       );
@@ -170,10 +174,10 @@ export function SellerProductFormPage() {
       return [...vs.filter((v) => v.value.trim()), ...values.filter((v) => !have.has(v.toLowerCase())).map((value) => ({ value, priceUgx: '' }))];
     });
   }
-  function addColour(c: Colour) {
+  function addColour(c: Swatch) {
     if (!c.name.trim()) { push('Give the colour a name', 'error'); return; }
     if (colours.some((x) => x.name.toLowerCase() === c.name.trim().toLowerCase())) { push('That colour is already added', 'error'); return; }
-    setColours((cs) => [...cs, { name: c.name.trim(), hex: c.hex }]);
+    setColours((cs) => [...cs, { name: c.name.trim(), hex: c.hex ?? '#9CA3AF' }]);
   }
 
   function validate(): boolean {
@@ -247,6 +251,10 @@ export function SellerProductFormPage() {
     if (publishAfter && images.length === 0) { push('Add at least one photo before publishing', 'error'); return; }
     if (publishAfter && form.description.trim().length < 20) { push('Write a short description before publishing', 'error'); return; }
     if (publishAfter && hasOptions && totalStock === 0) { push('Every option is at 0. Enter how many you have before publishing.', 'error'); return; }
+    if (publishAfter) {
+      const missing = resolved.attributes.filter((a) => a.role === 'required' && !specs.some((x) => x.label.trim().toLowerCase() === a.name.toLowerCase() && x.value.trim()));
+      if (missing.length) { push(`Fill in ${missing.map((a) => a.name).join(', ')} before publishing`, 'error'); return; }
+    }
     setSaving(true);
     try {
       const res = editing ? await api.patch(`/seller/products/${id}`, payload()) : await api.post('/seller/products', payload());
@@ -296,11 +304,11 @@ export function SellerProductFormPage() {
                   <CategoryOptions />
                 </Select>
                 <div>
-                  <Input label="What kind?" placeholder={entry.subcategories[0]?.name ?? 'Type it in'} value={form.subcategory} onChange={(e) => changeSubcategory(e.target.value)} maxLength={80} list={`subcategories-${entry.key}`} hint="Sizes, details and colours below follow this." />
-                  <datalist id={`subcategories-${entry.key}`}>{entry.subcategories.map((x) => <option key={x.name} value={x.name} />)}</datalist>
-                  {entry.subcategories.length > 0 && (
+                  <Input label="What kind?" placeholder={resolved.kinds[0]?.name ?? 'Type it in'} value={form.subcategory} onChange={(e) => changeSubcategory(e.target.value)} maxLength={80} list={`subcategories-${entry.key}`} hint="Sizes, details and colours below follow this. Type your own if it is not listed." />
+                  <datalist id={`subcategories-${entry.key}`}>{resolved.kinds.map((x) => <option key={x.id} value={x.name} />)}</datalist>
+                  {resolved.kinds.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      {entry.subcategories.map((x) => (
+                      {resolved.kinds.map((x) => (
                         <button key={x.name} type="button" onClick={() => changeSubcategory(form.subcategory === x.name ? '' : x.name)} aria-pressed={form.subcategory === x.name} className={`min-h-[32px] rounded-full border px-2.5 text-caption font-medium transition-colors ${form.subcategory === x.name ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>{x.name}</button>
                       ))}
                     </div>
@@ -375,7 +383,7 @@ export function SellerProductFormPage() {
                 <p className="mt-3 text-caption font-semibold uppercase text-ink-3">More colours</p>
               </>
             )}
-            <div className="mt-1.5 flex flex-wrap gap-2">{colourChips(PALETTE.filter((c) => !resolved.colours.some((r) => r.name.toLowerCase() === c.name.toLowerCase())))}</div>
+            <div className="mt-1.5 flex flex-wrap gap-2">{colourChips(resolved.palette)}</div>
             <div className="mt-3 grid grid-cols-[auto_1fr_auto] items-end gap-2 rounded-xl border border-dashed border-line p-2">
               <label className="flex flex-col gap-1 text-caption text-ink-3">Any colour
                 <input type="color" value={customColour.hex} onChange={(e) => setCustomColour((c) => ({ ...c, hex: e.target.value }))} className="h-11 w-14 cursor-pointer rounded-lg border border-line bg-surface p-1" aria-label="Pick a custom colour" />
@@ -445,24 +453,28 @@ export function SellerProductFormPage() {
           <Card padding="lg">
             <h2 className="font-display text-h3 font-medium text-brand-green-deep">Details</h2>
             <p className="mt-1 text-small text-ink-3">The facts buyers look for on {(subEntry?.name ?? entry.label).toLowerCase()}. Tap one to fill it in.</p>
-            {resolved.specs.length > 0 && (
+            {suggestedDetails.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                {resolved.specs.map((label) => {
-                  const have = specs.some((x) => x.label.trim().toLowerCase() === label.toLowerCase());
-                  return <button key={label} type="button" disabled={have} onClick={() => addSpecs([label])} className={`min-h-[32px] rounded-full border px-2.5 text-caption font-medium transition-colors ${have ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>{label}</button>;
+                {resolved.attributes.map((a) => {
+                  const have = specs.some((x) => x.label.trim().toLowerCase() === a.name.toLowerCase());
+                  return <button key={a.key} type="button" disabled={have} onClick={() => addSpecs([a.name])} className={`min-h-[32px] rounded-full border px-2.5 text-caption font-medium transition-colors ${have ? 'border-brand-green bg-brand-green-mist text-brand-green-deep' : a.role === 'required' ? 'border-brand-green/60 bg-surface text-brand-green-deep hover:border-brand-green' : 'border-line bg-surface text-ink-2 hover:border-line-strong'}`}>{a.name}{a.role === 'required' && !have ? ' *' : ''}</button>;
                 })}
-                <button type="button" onClick={() => addSpecs(resolved.specs)} className="min-h-[32px] rounded-full px-2.5 text-caption font-semibold text-brand-green hover:bg-brand-green-mist">Add all</button>
+                <button type="button" onClick={() => addSpecs(suggestedDetails)} className="min-h-[32px] rounded-full px-2.5 text-caption font-semibold text-brand-green hover:bg-brand-green-mist">Add all</button>
               </div>
             )}
             <ul className="mt-3 flex flex-col gap-2">
               {specs.map((s, i) => (
                 <li key={i} className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
-                  <Input label="Detail" placeholder={resolved.specs[0] ?? 'Storage'} value={s.label} onChange={(e) => setSpecs((sp) => sp.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} maxLength={60} />
-                  <Input label="Value" placeholder="256GB" value={s.value} onChange={(e) => setSpecs((sp) => sp.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} maxLength={200} />
+                  <Input label="Detail" placeholder={suggestedDetails[0] ?? 'Storage'} value={s.label} onChange={(e) => setSpecs((sp) => sp.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} maxLength={60} list={`detail-labels-${entry.key}`} />
+                  <div>
+                    <Input label="Value" placeholder={optionsForDetail(s.label)[0] ?? '256GB'} value={s.value} onChange={(e) => setSpecs((sp) => sp.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} maxLength={200} list={optionsForDetail(s.label).length ? `detail-values-${i}` : undefined} />
+                    {optionsForDetail(s.label).length > 0 && <datalist id={`detail-values-${i}`}>{optionsForDetail(s.label).map((v) => <option key={v} value={v} />)}</datalist>}
+                  </div>
                   <button type="button" onClick={() => setSpecs((sp) => sp.filter((_, j) => j !== i))} className="mb-1 flex h-10 w-10 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-brand-red" aria-label="Remove detail"><Trash2 size={16} /></button>
                 </li>
               ))}
             </ul>
+            <datalist id={`detail-labels-${entry.key}`}>{suggestedDetails.map((l) => <option key={l} value={l} />)}</datalist>
             <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={() => setSpecs((sp) => [...sp, { label: '', value: '' }])} disabled={specs.length >= 30}><Plus size={15} /> Add another detail</Button>
           </Card>
         </div>

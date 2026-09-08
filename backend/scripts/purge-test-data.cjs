@@ -165,6 +165,13 @@ async function main() {
     await run('transactions by test users', 'DELETE FROM transactions WHERE user_id = ANY($1)', [testIds]);
     await run('preferences', 'DELETE FROM user_preferences WHERE user_id = ANY($1)', [testIds]);
     await run('accounts', 'DELETE FROM users WHERE id = ANY($1)', [testIds]);
+    await run('knowledge options learned only from tests', `DELETE FROM product_attribute_options o WHERE o.source <> 'bootstrap' AND o.source <> 'admin' AND NOT EXISTS (SELECT 1 FROM product_observations ob JOIN product_attributes a ON a.key = ob.attribute_key WHERE a.id = o.attribute_id AND ob.value_norm = o.value_norm)`);
+    await run('knowledge kind rules learned only from tests', `DELETE FROM product_kind_attributes ka WHERE ka.source <> 'bootstrap' AND ka.source <> 'admin' AND NOT EXISTS (SELECT 1 FROM product_observations ob JOIN product_attributes a ON a.key = ob.attribute_key WHERE a.id = ka.attribute_id AND ob.kind_id = ka.kind_id)`);
+    await run('knowledge kinds learned only from tests', `DELETE FROM product_kinds k WHERE k.source <> 'bootstrap' AND k.source <> 'admin' AND NOT EXISTS (SELECT 1 FROM product_observations ob WHERE ob.kind_id = k.id)`);
+    await run('knowledge attributes learned only from tests', `DELETE FROM product_attributes a WHERE a.source <> 'bootstrap' AND a.source <> 'admin' AND NOT EXISTS (SELECT 1 FROM product_observations ob WHERE ob.attribute_key = a.key) AND NOT EXISTS (SELECT 1 FROM seller_product_attributes spa WHERE spa.attribute_id = a.id)`);
+    await run('knowledge brands learned only from tests', `DELETE FROM product_brands b WHERE b.source <> 'bootstrap' AND b.source <> 'admin' AND NOT EXISTS (SELECT 1 FROM product_observations ob WHERE ob.entity_type = 'brand' AND ob.value_norm = b.slug)`);
+    await run('knowledge audit rows for removed entries', `DELETE FROM product_knowledge_audit au WHERE NOT EXISTS (SELECT 1 FROM product_kinds WHERE id = au.entity_id) AND NOT EXISTS (SELECT 1 FROM product_attributes WHERE id = au.entity_id) AND NOT EXISTS (SELECT 1 FROM product_attribute_options WHERE id = au.entity_id) AND NOT EXISTS (SELECT 1 FROM product_brands WHERE id = au.entity_id) AND NOT EXISTS (SELECT 1 FROM product_kind_attributes WHERE id = au.entity_id)`);
+    await run('knowledge synonyms pointing nowhere', `DELETE FROM product_synonyms s WHERE NOT EXISTS (SELECT 1 FROM product_kinds WHERE id = s.entity_id) AND NOT EXISTS (SELECT 1 FROM product_attributes WHERE id = s.entity_id) AND NOT EXISTS (SELECT 1 FROM product_attribute_options WHERE id = s.entity_id) AND NOT EXISTS (SELECT 1 FROM product_brands WHERE id = s.entity_id)`);
 
     await client.query('COMMIT');
 

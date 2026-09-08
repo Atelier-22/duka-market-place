@@ -12,6 +12,7 @@ router.get('/products/:id', asyncHandler(market.product));
 router.get('/stores', asyncHandler(market.stores));
 router.get('/stores/:slug', asyncHandler(market.store));
 router.get('/search', asyncHandler(market.search));
+router.get('/compare', asyncHandler(market.compare));
 router.get('/categories', asyncHandler(market.categories));
 
 router.post('/stores/:slug/follow', requireAuth, limits.write, asyncHandler(market.followStore));

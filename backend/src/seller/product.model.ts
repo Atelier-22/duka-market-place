@@ -1,6 +1,7 @@
 import { query, queryOne } from '../db/pool';
 import { Tx, txOne, txQuery, withTransaction } from './db';
 import { PUBLIC_STORE_COLUMNS, refreshStoreCounters } from './store.model';
+import { attributesForProducts } from '../knowledge/knowledge.model';
 import { effectivePrice, PromotionLike } from './pricing';
 
 export type ProductStatus = 'draft' | 'published' | 'archived';
@@ -389,6 +390,9 @@ export async function listStoreProducts(storeId: string, f: StoreProductFilters 
 }
 
 export interface PublicProductFilters {
+  kind?: string | string[];
+  brand?: string;
+  attributes?: Record<string, string[]>;
   q?: string;
   category?: string;
   storeId?: string;
@@ -421,6 +425,17 @@ const PUBLIC_PRODUCT_BASE = `
 export async function listPublicProducts(f: PublicProductFilters = {}) {
   const conditions: string[] = [];
   const params: unknown[] = [];
+  if (f.kind) {
+    const names = (Array.isArray(f.kind) ? f.kind : [f.kind]).map((k) => k.trim().toLowerCase()).filter(Boolean);
+    if (names.length) { params.push(names); conditions.push(`lower(coalesce(p.subcategory, '')) = ANY($${params.length})`); }
+  }
+  if (f.brand) { params.push(f.brand.trim().toLowerCase()); conditions.push(`(lower(coalesce(p.brand, '')) = $${params.length} OR EXISTS (SELECT 1 FROM seller_product_attributes ba WHERE ba.product_id = p.id AND ba.attribute_key = 'brand' AND ba.value_norm = $${params.length}))`); }
+  for (const [key, values] of Object.entries(f.attributes ?? {})) {
+    const wanted = values.map((v) => v.trim().toLowerCase().replace(/\s+/g, ' ')).filter(Boolean);
+    if (!wanted.length) continue;
+    params.push(key.toLowerCase(), wanted);
+    conditions.push(`EXISTS (SELECT 1 FROM seller_product_attributes fa WHERE fa.product_id = p.id AND fa.attribute_key = $${params.length - 1} AND fa.value_norm = ANY($${params.length}) AND fa.confidence >= 0.9)`);
+  }
   if (f.q) {
     params.push(f.q.trim().split(/\s+/).filter(Boolean).map((w) => w.replace(/[^\w]/g, '') + ':*').join(' & '));
     params.push(`%${f.q.toLowerCase()}%`);
@@ -527,8 +542,10 @@ export async function getPublicProduct(id: string) {
     ),
   ]);
   const product = toPublicProduct(row, promos[id] ?? []);
+  const attributes = (await attributesForProducts([id]))[id] ?? [];
   return {
     ...product,
+    attributes,
     images: (images[id] ?? []).map((i) => i.url),
     variations: (variations[id] ?? []).map((v) => ({
       id: v.id,
@@ -657,4 +674,20 @@ export async function refreshProductRating(productId: string): Promise<void> {
      WHERE p.id = $1`,
     [productId]
   );
+}
+
+export async function compareProducts(ids: string[]) {
+  const rows = await query<any>(`${PUBLIC_PRODUCT_BASE} AND p.id = ANY($1)`, [ids]);
+  const promos = await livePromotionsFor(rows.map((r) => r.id));
+  const attributes = await attributesForProducts(rows.map((r) => r.id));
+  const products = rows.map((p) => ({ ...toPublicProduct(p, promos[p.id] ?? []), attributes: attributes[p.id] ?? [] }));
+  const keys = new Map<string, { key: string; name: string; unit: string | null }>();
+  for (const product of products) {
+    for (const a of product.attributes) if (!keys.has(a.key)) keys.set(a.key, { key: a.key, name: a.name, unit: a.unit });
+  }
+  const rowsOut = [...keys.values()].map((k) => ({
+    ...k,
+    values: products.map((p) => p.attributes.filter((a) => a.key === k.key).map((a) => a.value).join(', ') || null),
+  }));
+  return { products, rows: rowsOut };
 }

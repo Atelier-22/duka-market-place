@@ -21,7 +21,9 @@
     "test:settings": "node scripts/settings-probe.cjs",
     "test:adminops": "node scripts/admin-ops-probe.cjs",
     "test:staff": "node scripts/staff-probe.cjs",
-    "test:seller": "node scripts/seller-probe.cjs"
+    "test:seller": "node scripts/seller-probe.cjs",
+    "test:knowledge": "node scripts/knowledge-probe.cjs",
+    "knowledge:backfill": "tsx src/knowledge/backfill.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",

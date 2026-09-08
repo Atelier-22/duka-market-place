@@ -67,6 +67,7 @@ const MarketplacePage = lazy(() => import('./pages/market/MarketplacePage').then
 const StorePage = lazy(() => import('./pages/market/StorePage').then((m) => ({ default: m.StorePage })));
 const ProductPage = lazy(() => import('./pages/market/ProductPage').then((m) => ({ default: m.ProductPage })));
 const CartPage = lazy(() => import('./pages/market/CartPage').then((m) => ({ default: m.CartPage })));
+const ComparePage = lazy(() => import('./pages/market/ComparePage').then((m) => ({ default: m.ComparePage })));
 const CheckoutPage = lazy(() => import('./pages/market/CheckoutPage').then((m) => ({ default: m.CheckoutPage })));
 const PurchasesPage = lazy(() => import('./pages/customer/PurchasesPage').then((m) => ({ default: m.PurchasesPage })));
 const PurchaseDetailPage = lazy(() => import('./pages/customer/PurchaseDetailPage').then((m) => ({ default: m.PurchaseDetailPage })));
@@ -90,6 +91,7 @@ const SellerPaymentsPage = lazy(() => import('./pages/seller/SellerPaymentsPage'
 const AdminSellersPage = lazy(() => import('./pages/admin/AdminSellersPage').then((m) => ({ default: m.AdminSellersPage })));
 const AdminSellerDetailPage = lazy(() => import('./pages/admin/AdminSellerDetailPage').then((m) => ({ default: m.AdminSellerDetailPage })));
 const AdminSellerProductsPage = lazy(() => import('./pages/admin/AdminSellerProductsPage').then((m) => ({ default: m.AdminSellerProductsPage })));
+const AdminKnowledgePage = lazy(() => import('./pages/admin/AdminKnowledgePage').then((m) => ({ default: m.AdminKnowledgePage })));
 
 export default function App() {
   return (
@@ -119,6 +121,7 @@ export default function App() {
           <Route path="/store/:slug" element={<StorePage />} />
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/cart" element={<CartPage />} />
+          <Route path="/compare" element={<ComparePage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
         </Route>
 
@@ -203,6 +206,7 @@ export default function App() {
             <Route path="/admin/sellers" element={<AdminSellersPage />} />
             <Route path="/admin/sellers/:id" element={<AdminSellerDetailPage />} />
             <Route path="/admin/seller-products" element={<AdminSellerProductsPage />} />
+            <Route path="/admin/knowledge" element={<AdminKnowledgePage />} />
             <Route path="/admin/settings/:section?" element={<SettingsPage />} />
           </Route>
         </Route>

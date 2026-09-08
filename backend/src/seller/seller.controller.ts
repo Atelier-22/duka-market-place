@@ -22,6 +22,7 @@ import {
 } from './order.model';
 import { RangeKey, sellerDashboard, storeAnalytics, storeForecast } from './analytics';
 import { notifyFollowersOfNewProduct, notifySellerVerification } from './notify';
+import { emitProductEvent } from './events';
 
 interface SellerContext {
   user: UserRow;
@@ -185,6 +186,26 @@ export async function getProduct(req: Request, res: Response) {
   res.json({ product: { ...product, available: availableQuantity(product) }, images: images[product.id] ?? [], variations: variations[product.id] ?? [], events });
 }
 
+function assertCleanDetails(specifications?: { label: string; value: string }[], variations?: { sku?: string | null }[]) {
+  if (specifications && specifications.length) {
+    const seen = new Set<string>();
+    for (const spec of specifications) {
+      const key = spec.label.trim().toLowerCase();
+      if (seen.has(key)) throw new ApiError(400, `The detail "${spec.label}" is listed twice`);
+      seen.add(key);
+    }
+  }
+  if (variations && variations.length) {
+    const skus = new Set<string>();
+    for (const v of variations) {
+      const sku = (v.sku ?? '').trim().toLowerCase();
+      if (!sku) continue;
+      if (skus.has(sku)) throw new ApiError(400, `The SKU ${v.sku} is used by two options`);
+      skus.add(sku);
+    }
+  }
+}
+
 function assertCombos(variations?: { value: string; colorName?: string | null }[]) {
   if (!variations || variations.length === 0) return;
   const seen = new Set<string>();
@@ -214,8 +235,10 @@ export async function createNewProduct(req: Request, res: Response) {
   const input = withOptionPrices(parsed, parsed.priceUgx);
   assertCombos(input.variations);
   const { user, store } = await context(req, { requireStore: true, write: true });
+  assertCleanDetails(input.specifications, input.variations);
   const product = await createProduct(store!.id, user.id, input as ProductInput);
   await refreshStoreCounters(store!.id);
+  emitProductEvent('product.created', { productId: product.id, ownerId: user.id, storeId: store!.id });
   res.status(201).json({ product });
 }
 
@@ -228,7 +251,9 @@ export async function editProduct(req: Request, res: Response) {
   }
   const prepared = withOptionPrices(input, input.priceUgx ?? Number(existing.price_ugx));
   assertCombos(prepared.variations);
+  assertCleanDetails(prepared.specifications, prepared.variations);
   const product = await updateProduct(existing.id, user.id, prepared as Partial<ProductInput>);
+  emitProductEvent('product.updated', { productId: product.id, ownerId: user.id, storeId: existing.store_id });
   res.json({ product });
 }
 
@@ -246,13 +271,16 @@ export async function publishProduct(req: Request, res: Response) {
   if (!wasPublished && !profile.is_suspended) {
     notified = await notifyFollowersOfNewProduct({ storeId: store!.id, storeName: store!.name, productId: product.id, productName: product.name, ownerId: store!.owner_id });
   }
+  emitProductEvent('product.published', { productId: product.id, ownerId: store!.owner_id, storeId: store!.id });
   res.json({ product: updated, followersNotified: notified });
 }
 
 export async function unpublishProduct(req: Request, res: Response) {
   await context(req, { write: true });
   const product = await ownedProductOrThrow(req);
-  res.json({ product: await setProductStatus(product.id, 'draft') });
+  const drafted = await setProductStatus(product.id, 'draft');
+  emitProductEvent('product.unpublished', { productId: product.id, ownerId: product.owner_id, storeId: product.store_id });
+  res.json({ product: drafted });
 }
 
 export async function archiveProduct(req: Request, res: Response) {

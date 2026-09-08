@@ -1,5 +1,4 @@
 import { query, queryOne } from '../db/pool';
-import { STORE_CATEGORIES } from './categories';
 
 export type SellerVerificationStatus = 'unverified' | 'pending' | 'verified' | 'rejected';
 export type StoreStatus = 'active' | 'hidden' | 'suspended';

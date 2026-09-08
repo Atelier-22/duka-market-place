@@ -18,6 +18,8 @@ import ratingRoutes from './routes/rating.routes';
 import disputeRoutes from './routes/dispute.routes';
 import shopperRoutes from './routes/shopper.routes';
 import adminRoutes from './routes/admin.routes';
+import knowledgeRoutes from './knowledge/knowledge.routes';
+import { registerKnowledge } from './knowledge';
 import locationRoutes from './routes/location.routes';
 import addressRoutes from './routes/address.routes';
 import uploadRoutes from './routes/upload.routes';
@@ -96,10 +98,12 @@ app.use('/api/messages', conversationRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/seller', sellerRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/knowledge', knowledgeRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 app.use(errorHandler);
 
+registerKnowledge();
 const server = app.listen(env.port, () => {
   // eslint-disable-next-line no-console
   console.log(`Duka API listening on port ${env.port} (${env.nodeEnv})`);
