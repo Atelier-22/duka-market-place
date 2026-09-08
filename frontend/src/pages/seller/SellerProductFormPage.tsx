@@ -180,7 +180,7 @@ export function SellerProductFormPage() {
     const id = canonical?.product?.id ?? null;
     if (!id || !pickedStillApplies || picked?.id !== id || variantsAppliedFor.current === id) return;
     variantsAppliedFor.current = id;
-    applyOfficialVariants(false);
+    applyOfficialVariants(true);
   }, [canonical?.product?.id, pickedStillApplies, picked?.id]);
 
   useEffect(() => {
